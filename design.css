@@ -1,0 +1,126 @@
+/* ── Читаемость для пользователей 40–55 лет ── */
+body { font-size: 15px; }
+.text-xs  { font-size: 0.8rem  !important; }
+.text-sm  { font-size: 0.9rem  !important; }
+.text-base{ font-size: 1rem    !important; }
+input, textarea, select, button { font-size: inherit; }
+
+/* ── Meridian code — Inter bold, not monospace (i ≠ 1) ── */
+.mer-code {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+
+/* Glass morphism */
+.glass-panel {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(242,242,247,0.15);
+}
+.glow-active { box-shadow: inset 0 0 15px rgba(0,242,255,0.3); }
+.glow-cyan   { box-shadow: 0 0 20px rgba(0,242,255,0.15); }
+.meridian-glow-text { text-shadow: 0 0 10px rgba(0,242,255,0.5); }
+
+/* prevent horizontal overflow in all content pages */
+.md\:ml-64 { overflow-x: hidden; max-width: calc(100vw - 16rem); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* Nav active */
+.nav-active {
+  background: rgba(0,242,255,0.1) !important;
+  color: #00F2FF !important;
+  border-right: 3px solid #00F2FF;
+}
+
+/* Pulse */
+@keyframes pulse-glow {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.4; }
+}
+.pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+
+/* Page fade-in */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.page-enter { animation: fadeUp 0.35s ease-out both; }
+
+/* Bar fill animation */
+@keyframes barFill {
+  from { width: 0; }
+}
+.bar-animate { animation: barFill 0.6s ease-out both; }
+
+/* Video container */
+.vid-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  background: #0e0e0e;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.vid-wrap video { width:100%; height:100%; object-fit:contain; }
+
+/* Checkbox custom */
+.sym-check-wrap input[type="checkbox"] {
+  width: 18px; height: 18px;
+  appearance: none;
+  background: #1f1f1f;
+  border: 2px solid #414755;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  position: relative;
+}
+.sym-check-wrap input[type="checkbox"]:checked {
+  background: #0A84FF;
+  border-color: #0A84FF;
+}
+.sym-check-wrap input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px; top: 0px;
+  width: 6px; height: 10px;
+  border: 2px solid white;
+  border-top: none; border-left: none;
+  transform: rotate(45deg);
+}
+.sym-check-wrap label { cursor: pointer; user-select: none; }
+.sym-check-wrap:hover { background: rgba(255,255,255,0.05); }
+
+/* Step indicator */
+.step-circle {
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700;
+  border: 2px solid #414755;
+  background: #1f1f1f; color:#8b90a0;
+  transition: all 0.3s;
+}
+.step-circle.active {
+  border-color: #00F2FF;
+  background: rgba(0,242,255,0.15);
+  color: #00F2FF;
+  box-shadow: 0 0 12px rgba(0,242,255,0.3);
+}
+.step-circle.done {
+  border-color: #0A84FF;
+  background: #0A84FF;
+  color: white;
+}
+.step-line {
+  flex:1; height:2px;
+  background: #414755;
+  transition: background 0.4s;
+}
+.step-line.done { background: #0A84FF; }

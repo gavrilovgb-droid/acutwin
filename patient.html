@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Карточка пациента</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313',
+  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
+  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
+  'primary':'#adc6ff','primary-container':'#4b8eff',
+  'outline':'#8b90a0','outline-variant':'#414755',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+}}}}
+</script>
+<style>
+#body-bg { position:fixed; top:0; right:0; bottom:0; left:16rem; pointer-events:none; z-index:0; overflow:hidden; }
+.md\:ml-64 > * { position:relative; z-index:1; }
+.stat-card { background:#1f1f1f; border-radius:12px; padding:12px 16px; border:1px solid #2a2a2a; }
+.trend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+
+/* ── PDF print ──────────────────────────────── */
+#pdf-report { display:none; }
+@media print {
+  body > * { display:none !important; }
+  #pdf-report {
+    display:block !important;
+    font-family:'Inter',Arial,sans-serif;
+    font-size:12px; color:#111; background:#fff;
+    padding:28px 36px; max-width:740px; margin:0 auto;
+  }
+  #pdf-report h1 { font-size:20px; font-weight:700; margin:0 0 4px; }
+  #pdf-report h2 { font-size:13px; font-weight:700; margin:18px 0 6px; border-bottom:1px solid #ddd; padding-bottom:3px; }
+  #pdf-report .meta { color:#555; font-size:11px; margin-bottom:16px; }
+  #pdf-report table { width:100%; border-collapse:collapse; margin-bottom:8px; }
+  #pdf-report td, #pdf-report th { padding:4px 8px; border:1px solid #e0e0e0; font-size:11px; }
+  #pdf-report th { background:#f5f5f5; font-weight:600; text-align:left; }
+  #pdf-report .pts { color:#0A84FF; font-family:monospace; font-size:10px; }
+  #pdf-report .outcome-p { color:#2a7a2a; font-weight:600; }
+  #pdf-report .outcome-n { color:#888; }
+  #pdf-report .outcome-neg { color:#b33; font-weight:600; }
+  #pdf-report .sep { border:none; border-top:2px solid #111; margin:14px 0; }
+}
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+<div id="body-bg">
+  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
+</div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center px-6 gap-4 flex-shrink-0">
+    <button onclick="history.back()" class="flex items-center gap-1 text-[#8b90a0] hover:text-white transition-colors">
+      <span class="material-symbols-outlined" style="font-size:20px;zoom:1">arrow_back</span>
+    </button>
+    <div class="flex-1">
+      <h2 id="hdr-name" class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Карточка пациента</h2>
+    </div>
+    <button onclick="exportPDF()"
+            class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#8b90a0] border border-white/10 transition-colors text-sm font-semibold">
+      <span class="material-symbols-outlined" style="font-size:16px;zoom:1">picture_as_pdf</span>
+      PDF
+    </button>
+    <button id="hdr-recipe-btn" onclick="openTreatment()"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 text-[#0A84FF] border border-[#0A84FF]/40 transition-colors text-sm font-bold">
+      <span class="material-symbols-outlined" style="font-size:16px;zoom:1">medical_services</span>
+      Назначить рецепт
+    </button>
+  </header>
+
+  <main class="flex-1 p-6 page-enter">
+    <div class="max-w-3xl mx-auto space-y-5">
+
+      <!-- Шапка пациента -->
+      <div class="glass-panel rounded-2xl p-5" id="patient-header">
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-[#1f1f1f] border border-[#414755] flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:28px;zoom:1">person</span>
+            </div>
+            <div>
+              <h3 id="p-name" class="text-xl font-bold" style="font-family:'Hanken Grotesk',sans-serif">—</h3>
+              <div id="p-meta" class="text-sm text-[#8b90a0] mt-1"></div>
+            </div>
+          </div>
+          <div id="p-status-wrap" class="flex flex-col items-end gap-2 relative">
+            <div id="p-status"></div>
+            <button id="p-status-btn" onclick="toggleStatusDrop(event)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-xs font-semibold"
+                    style="background:#1f1f1f;border-color:#414755;color:#8b90a0">
+              <span class="material-symbols-outlined" id="p-status-icon" style="font-size:14px;zoom:1">flag</span>
+              <span id="p-status-label">Статус курса</span>
+              <span class="material-symbols-outlined" style="font-size:14px;zoom:1">expand_more</span>
+            </button>
+            <div id="p-status-drop"
+                 class="hidden absolute right-0 top-full mt-1 z-50 rounded-xl border border-[#414755] bg-[#1f1f1f] shadow-xl overflow-hidden min-w-[160px]">
+              <button onmousedown="setPatientStatus('')"    class="status-opt w-full flex items-center gap-2 px-3 py-2 text-xs text-[#8b90a0] hover:bg-white/5 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[#414755]"></span>Не указан
+              </button>
+              <div class="border-t border-[#2a2a2a]"></div>
+              <button onmousedown="setPatientStatus('started')"   class="status-opt w-full flex items-center gap-2 px-3 py-2 text-xs text-[#0A84FF] hover:bg-[#0A84FF]/10 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[#0A84FF]"></span>Начат
+              </button>
+              <div class="border-t border-[#2a2a2a]"></div>
+              <button onmousedown="setPatientStatus('active')"    class="status-opt w-full flex items-center gap-2 px-3 py-2 text-xs text-[#FFD60A] hover:bg-[#FFD60A]/10 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[#FFD60A]"></span>В процессе
+              </button>
+              <div class="border-t border-[#2a2a2a]"></div>
+              <button onmousedown="setPatientStatus('completed')" class="status-opt w-full flex items-center gap-2 px-3 py-2 text-xs text-[#5AC85A] hover:bg-[#5AC85A]/10 transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[#5AC85A]"></span>Завершён
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Статистика -->
+      <div class="grid grid-cols-4 gap-3" id="p-stats">
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Визитов</div>
+          <div id="ps-visits" class="text-2xl font-bold font-mono text-[#00F2FF]">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Первый визит</div>
+          <div id="ps-first" class="text-sm font-bold text-[#adc6ff]">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Последний визит</div>
+          <div id="ps-last" class="text-sm font-bold text-[#adc6ff]">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Точек назначено</div>
+          <div id="ps-points" class="text-2xl font-bold font-mono text-[#FFD60A]">0</div>
+        </div>
+      </div>
+
+      <!-- Следующий визит -->
+      <div class="glass-panel rounded-xl p-4" id="next-visit-wrap">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Следующий визит</div>
+          <button onclick="toggleNextForm()" id="next-visit-add-btn"
+                  class="flex items-center gap-1 text-xs text-[#0A84FF] hover:text-[#adc6ff] transition-colors font-semibold">
+            <span class="material-symbols-outlined" style="font-size:14px;zoom:1">add</span>Запланировать
+          </button>
+        </div>
+        <div id="next-visit-display"></div>
+        <div id="next-visit-form" class="hidden mt-2 flex gap-2 flex-wrap items-end">
+          <div class="flex-1 min-w-[140px]">
+            <label class="block text-[10px] text-[#8b90a0] mb-1">Дата</label>
+            <input id="nv-date" type="date"
+                   class="w-full px-3 py-1.5 bg-[#131313] border border-[#414755] rounded-lg text-sm text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
+          </div>
+          <div class="flex-1 min-w-[160px]">
+            <label class="block text-[10px] text-[#8b90a0] mb-1">Заметка (опц.)</label>
+            <input id="nv-note" type="text" placeholder="Контрольный осмотр..."
+                   class="w-full px-3 py-1.5 bg-[#131313] border border-[#414755] rounded-lg text-sm text-[#e2e2e2] placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] transition-all"/>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="saveNextVisit()"
+                    class="px-4 py-1.5 rounded-lg bg-[#0A84FF]/20 hover:bg-[#0A84FF]/30 border border-[#0A84FF]/40 text-[#0A84FF] text-xs font-bold transition-colors">
+              Сохранить
+            </button>
+            <button onclick="toggleNextForm()"
+                    class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#8b90a0] text-xs transition-colors">
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- График динамики -->
+      <div class="glass-panel rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Прогресс по сессиям</div>
+          <div class="flex items-center gap-3 text-[10px] text-[#8b90a0]">
+            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5AC85A"></span>Улучшение</span>
+            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b90a0"></span>Нейтрально</span>
+            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffb4ab"></span>Ухудшение</span>
+          </div>
+        </div>
+        <div id="p-chart" style="width:100%;overflow-x:auto"></div>
+      </div>
+
+      <!-- Часто используемые точки -->
+      <div class="glass-panel rounded-xl p-4">
+        <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider mb-3">Часто назначаемые точки</div>
+        <div id="p-top-points" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- История визитов -->
+      <div>
+        <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider mb-3">История визитов</div>
+        <div id="p-timeline" class="space-y-3 relative">
+          <div class="absolute left-[18px] top-0 bottom-0 w-px bg-[#414755]"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- PDF report (visible only on print) -->
+<div id="pdf-report"></div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc, safeSetItem } from './shared.js';
+import { requireAuth } from './auth.js';
+import { apiGetRecords } from './api.js';
+
+const session = await requireAuth();
+if (!session) throw new Error('redirect');
+const isBoss = session.role === 'boss';
+document.getElementById('nav-mount').innerHTML = buildSidebar('', session);
+initElementClock();
+
+// Получаем имя пациента
+const patientName = sessionStorage.getItem('acutwin_patient_view') || '';
+if (!patientName) { history.back(); throw new Error('no patient'); }
+
+// Загружаем записи
+const allRecs = await apiGetRecords();
+const recs = allRecs
+  .filter(r => r.patient === patientName && (isBoss || r.doctor === session.username))
+  .sort((a, b) => (b.date + (b.time||'')).localeCompare(a.date + (a.time||'')));
+
+if (!recs.length) { history.back(); throw new Error('no records'); }
+
+const first = recs[recs.length - 1];
+const last  = recs[0];
+
+// Заголовок
+document.getElementById('hdr-name').textContent = patientName;
+document.getElementById('p-name').textContent = patientName;
+document.getElementById('p-meta').textContent =
+  [first.gender ? (first.gender === 'М' ? 'Мужской' : 'Женский') : '',
+   first.age ? first.age + ' лет' : '',
+   last.doctor !== session.username && session.role !== 'boss' ? '' : (last.doctorName || '')
+  ].filter(Boolean).join(' · ');
+
+// Статистика
+const totalPoints = recs.reduce((n, r) => n + (r.points||[]).length, 0);
+document.getElementById('ps-visits').textContent  = recs.length;
+document.getElementById('ps-points').textContent  = totalPoints;
+document.getElementById('ps-first').textContent   = new Date(first.date).toLocaleDateString('ru-RU', {day:'numeric',month:'short',year:'numeric'});
+document.getElementById('ps-last').textContent    = new Date(last.date).toLocaleDateString('ru-RU', {day:'numeric',month:'short',year:'numeric'});
+
+// Статус
+const STATUS_CFG = {
+  started:   { label:'Начат',      color:'#0A84FF' },
+  active:    { label:'В процессе', color:'#FFD60A' },
+  completed: { label:'Завершён',   color:'#5AC85A' },
+};
+
+function renderStatus(status) {
+  const s = STATUS_CFG[status];
+  // Бейдж
+  document.getElementById('p-status').innerHTML = s
+    ? `<span style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:10px;background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${s.label}</span>`
+    : '';
+  // Кнопка
+  const btn   = document.getElementById('p-status-btn');
+  const label = document.getElementById('p-status-label');
+  const icon  = document.getElementById('p-status-icon');
+  if (s) {
+    btn.style.borderColor = s.color + '66';
+    btn.style.color       = s.color;
+    btn.style.background  = s.color + '18';
+    label.textContent     = s.label;
+    icon.textContent      = status === 'completed' ? 'check_circle' : status === 'active' ? 'pending' : 'flag';
+  } else {
+    btn.style.borderColor = '#414755';
+    btn.style.color       = '#8b90a0';
+    btn.style.background  = '#1f1f1f';
+    label.textContent     = 'Статус курса';
+    icon.textContent      = 'flag';
+  }
+}
+renderStatus(last.status || '');
+
+window.toggleStatusDrop = (e) => {
+  e.stopPropagation();
+  const drop = document.getElementById('p-status-drop');
+  drop.classList.toggle('hidden');
+};
+document.addEventListener('click', () => {
+  document.getElementById('p-status-drop')?.classList.add('hidden');
+});
+
+window.setPatientStatus = (status) => {
+  // Статус — только локально в UI (нет поля в БД)
+  recs.forEach(r => { r.status = status || undefined; });
+  renderStatus(status);
+  document.getElementById('p-status-drop').classList.add('hidden');
+};
+
+// ── Прогресс-график (SVG) ────────────────────────────────
+const outcomeColor = { positive:'#5AC85A', neutral:'#8b90a0', negative:'#ffb4ab' };
+const outcomeIcon  = { positive:'↑', neutral:'→', negative:'↓' };
+const outcomeVal   = { positive:2, neutral:1, negative:0 };
+
+function renderChart() {
+  const sorted = [...recs].reverse(); // хронологически
+  const n = sorted.length;
+  if (!n) { document.getElementById('p-chart').innerHTML = '<p style="color:#8b90a0;font-size:.8rem">Нет данных</p>'; return; }
+
+  const W = 560, H = 90, PAD = 20;
+  const xStep = n > 1 ? (W - PAD*2) / (n - 1) : 0;
+  const yFor  = v => PAD + (2 - v) * ((H - PAD*2) / 2); // 2→top, 0→bottom
+
+  const pts = sorted.map((r, i) => {
+    const v = outcomeVal[r.outcome] ?? 1;
+    return { x: n > 1 ? PAD + i * xStep : W/2, y: yFor(v), r, v };
+  });
+
+  // polyline points
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
+
+  // trend color — смотрим на последние 3 точки
+  const tail = pts.slice(-3).map(p => p.v);
+  const trendAvg = tail.reduce((a,b)=>a+b,0)/tail.length;
+  const lineColor = trendAvg > 1.3 ? '#5AC85A' : trendAvg < 0.8 ? '#ffb4ab' : '#8b90a0';
+
+  const circles = pts.map(p => {
+    const c = outcomeColor[p.r.outcome] || '#8b90a0';
+    const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    return `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${c}" stroke="#131313" stroke-width="2">
+      <title>${d} · ${outcomeIcon[p.r.outcome]||'→'}</title>
+    </circle>`;
+  }).join('');
+
+  // date labels — показываем только первую, последнюю и среднюю
+  const labelIdx = new Set([0, Math.floor((n-1)/2), n-1]);
+  const labels = pts.filter((_,i)=>labelIdx.has(i)).map(p => {
+    const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    return `<text x="${p.x}" y="${H+2}" text-anchor="middle" font-size="9" fill="#8b90a0">${d}</text>`;
+  }).join('');
+
+  // baseline grid lines
+  const grid = [0,1,2].map(v => {
+    const y = yFor(v);
+    const label = v===2?'↑ Улучш.':v===1?'→ Норма':'↓ Ухудш.';
+    return `<line x1="${PAD-4}" y1="${y}" x2="${W-PAD+4}" y2="${y}" stroke="#2a2a2a" stroke-width="1"/>
+    <text x="${PAD-6}" y="${y+3}" text-anchor="end" font-size="8" fill="#414755">${label}</text>`;
+  }).join('');
+
+  document.getElementById('p-chart').innerHTML = `
+    <svg viewBox="0 0 ${W} ${H+16}" style="width:100%;max-width:${W}px;display:block;overflow:visible">
+      ${grid}
+      <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
+      ${circles}
+      ${labels}
+    </svg>`;
+}
+renderChart();
+
+// Топ точки
+const ptFreq = {};
+recs.forEach(r => (r.points||[]).forEach(p => { ptFreq[p] = (ptFreq[p]||0)+1; }));
+const topPts = Object.entries(ptFreq).sort((a,b)=>b[1]-a[1]).slice(0,15);
+document.getElementById('p-top-points').innerHTML = topPts.length
+  ? topPts.map(([p, n]) => `
+    <a href="atlas.html?code=${p}"
+       class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] hover:border-[#00F2FF]/40 transition-colors">
+      <span class="mer-code font-bold text-[#00F2FF] text-sm">${p}</span>
+      <span class="text-[10px] text-[#8b90a0]">×${n}</span>
+    </a>`).join('')
+  : '<span class="text-sm text-[#8b90a0]">Точки ещё не назначались</span>';
+
+// Timeline визитов
+const tl = document.getElementById('p-timeline');
+tl.innerHTML = recs.map((r, idx) => {
+  const c = outcomeColor[r.outcome] || '#8b90a0';
+  const pts = r.points || [];
+  const timeText = r.time ? ` · ${r.time}` : '';
+  const noteText = r.notes || r.reason || '';
+  const status = STATUS_CFG[r.status];
+  return `
+  <div class="relative pl-12" style="animation:fadeUp 0.3s ease-out ${idx*0.04}s both">
+    <div class="absolute left-3 top-4 w-3 h-3 rounded-full border-2 z-10"
+         style="background:${c};border-color:${c};box-shadow:0 0 8px ${c}44"></div>
+    <div class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all${noteText ? ' cursor-pointer' : ''}"
+         ${noteText ? `onclick="this.querySelector('.vis-notes').classList.toggle('hidden')"` : ''}>
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap mb-0.5">
+            <span class="font-semibold text-[#e2e2e2]">${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</span>
+            ${r.type ? `<span class="text-xs text-[#8b90a0]">${esc(r.type)}</span>` : ''}
+            ${status ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${status.color}18;border:1px solid ${status.color}55;color:${status.color}">${status.label}</span>` : ''}
+          </div>
+          ${noteText ? `<p class="text-xs text-[#c1c6d7] leading-relaxed vis-notes">${esc(noteText)}</p>` : ''}
+        </div>
+        <span class="text-xs font-mono text-[#8b90a0] flex-shrink-0">${pts.length ? pts.length + ' т.' : ''}</span>
+      </div>
+      ${pts.length ? `
+      <div class="flex flex-wrap gap-1 mt-2">
+        ${pts.map(p => `<a href="atlas.html?code=${p}" onclick="event.stopPropagation()"
+          class="text-[10px] mer-code font-bold px-2 py-0.5 rounded bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/10 transition-colors border border-[#414755]">${p}</a>`).join('')}
+      </div>` : ''}
+    </div>
+  </div>`;
+}).join('');
+
+// ── Следующий визит ──────────────────────────────────────
+const SCHED_KEY = 'acutwin_scheduled';
+
+function loadScheduled() {
+  const all = JSON.parse(localStorage.getItem(SCHED_KEY) || '[]');
+  return isBoss ? all : all.filter(s => s.doctor === session.username);
+}
+function saveScheduled(arr) {
+  // Merge: keep other doctors' entries, replace entries for current doctor
+  const existing = JSON.parse(localStorage.getItem(SCHED_KEY) || '[]');
+  const others = isBoss ? [] : existing.filter(s => s.doctor !== session.username);
+  safeSetItem(SCHED_KEY, JSON.stringify([...others, ...arr]));
+}
+
+function renderNextVisit() {
+  const all  = loadScheduled();
+  const item = all.find(s => s.patient === patientName);
+  const disp = document.getElementById('next-visit-display');
+  const btn  = document.getElementById('next-visit-add-btn');
+  if (item) {
+    const d = new Date(item.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
+    const daysLeft = Math.ceil((new Date(item.date) - new Date()) / 86400000);
+    const soon = daysLeft >= 0 && daysLeft <= 3;
+    disp.innerHTML = `
+      <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg"
+           style="background:${soon?'#FFD60A18':'#0A84FF10'};border:1px solid ${soon?'#FFD60A44':'#0A84FF33'}">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined" style="font-size:18px;zoom:1;color:${soon?'#FFD60A':'#0A84FF'}">event</span>
+          <div>
+            <div class="text-sm font-semibold" style="color:${soon?'#FFD60A':'#adc6ff'}">${d}</div>
+            ${item.note ? `<div class="text-xs text-[#8b90a0]">${esc(item.note)}</div>` : ''}
+          </div>
+          ${soon && daysLeft >= 0 ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:#FFD60A18;border:1px solid #FFD60A55;color:#FFD60A">через ${daysLeft} д.</span>` : ''}
+          ${daysLeft < 0 ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:#ffb4ab18;border:1px solid #ffb4ab55;color:#ffb4ab">просрочен</span>` : ''}
+        </div>
+        <button onclick="cancelNextVisit()" title="Отменить"
+                class="text-[#8b90a0] hover:text-[#ffb4ab] transition-colors">
+          <span class="material-symbols-outlined" style="font-size:16px;zoom:1">close</span>
+        </button>
+      </div>`;
+    btn.classList.add('hidden');
+  } else {
+    disp.innerHTML = '<div class="text-xs text-[#414755]">Не запланирован</div>';
+    btn.classList.remove('hidden');
+  }
+}
+renderNextVisit();
+
+window.toggleNextForm = () => {
+  document.getElementById('next-visit-form').classList.toggle('hidden');
+  // дефолт — завтра
+  const t = new Date(); t.setDate(t.getDate()+7);
+  document.getElementById('nv-date').value = t.toISOString().slice(0,10);
+  document.getElementById('nv-note').value = '';
+};
+
+window.saveNextVisit = () => {
+  const date = document.getElementById('nv-date').value;
+  if (!date) return;
+  const today = new Date().toISOString().slice(0, 10);
+  if (date < today) { alert('Дата следующего визита не может быть в прошлом'); return; }
+  const note = document.getElementById('nv-note').value.trim();
+  const all  = loadScheduled().filter(s => s.patient !== patientName);
+  all.push({ patient: patientName, date, note, doctor: session.username });
+  saveScheduled(all);
+  document.getElementById('next-visit-form').classList.add('hidden');
+  renderNextVisit();
+};
+
+window.cancelNextVisit = () => {
+  const all = loadScheduled().filter(s => s.patient !== patientName);
+  saveScheduled(all);
+  renderNextVisit();
+};
+
+// ── Экспорт PDF ──────────────────────────────────────────
+window.exportPDF = () => {
+  const outcomeLabel = { positive:'Улучшение', neutral:'Нейтрально', negative:'Ухудшение' };
+  const outcomeClass = { positive:'outcome-p',  neutral:'outcome-n',  negative:'outcome-neg' };
+  const meta = [
+    last.gender ? (last.gender==='М'?'Мужской':'Женский') : '',
+    last.age ? esc(last.age)+' лет' : '',
+    last.doctorName ? 'Врач: '+esc(last.doctorName) : ''
+  ].filter(Boolean).join(' · ');
+
+  const ptRows = topPts.slice(0,10).map(([p,n])=>`<tr><td class="pts">${p}</td><td>${n}</td></tr>`).join('');
+
+  const visitRows = [...recs].reverse().map(r => {
+    const pts = (r.points||[]).join(', ') || '—';
+    const oc  = outcomeLabel[r.outcome] || '—';
+    const cls = outcomeClass[r.outcome] || '';
+    const note = r.notes || r.reason || '';
+    return `<tr>
+      <td>${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td class="${cls}">${oc}</td>
+      <td class="pts">${esc(pts)}</td>
+      <td>${esc(note)}</td>
+    </tr>`;
+  }).join('');
+
+  const scheduled = loadScheduled().find(s => s.patient === patientName);
+  const nextLine = scheduled
+    ? `<p><b>Следующий визит:</b> ${new Date(scheduled.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${scheduled.note?' — '+esc(scheduled.note):''}</p>`
+    : '';
+
+  document.getElementById('pdf-report').innerHTML = `
+    <h1>${esc(patientName)}</h1>
+    <div class="meta">${meta} &nbsp;·&nbsp; Дата отчёта: ${new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</div>
+    <hr class="sep"/>
+    <h2>Статистика</h2>
+    <table><tr>
+      <th>Визитов</th><th>Первый визит</th><th>Последний визит</th><th>Точек назначено</th>
+    </tr><tr>
+      <td>${recs.length}</td>
+      <td>${new Date(first.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td>${new Date(last.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td>${totalPoints}</td>
+    </tr></table>
+    ${nextLine}
+    <h2>Часто назначаемые точки</h2>
+    <table><tr><th>Точка</th><th>Кол-во назначений</th></tr>${ptRows}</table>
+    <h2>История сессий</h2>
+    <table>
+      <tr><th>Дата</th><th>Динамика</th><th>Точки</th><th>Заметки</th></tr>
+      ${visitRows}
+    </table>
+    <hr class="sep"/>
+    <div style="font-size:9px;color:#aaa;margin-top:6px">AcuTwin · ${new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  `;
+  window.print();
+};
+
+// Кнопка «Назначить рецепт»
+window.openTreatment = () => {
+  sessionStorage.setItem('acutwin_diag_patient', JSON.stringify({
+    patient: patientName, age: last.age||'', gender: last.gender||'', reason: last.reason||''
+  }));
+  location.href = 'treatment.html';
+};
+</script>
+</body>
+</html>

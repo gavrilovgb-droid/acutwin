@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Вход</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface-container':'#1f1f1f',
+  'outline-variant':'#414755','on-surface':'#e2e2e2',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+}}}}
+</script>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen flex items-center justify-center p-4" style="font-family:'Inter',sans-serif">
+
+<!-- Background figure -->
+<div style="position:fixed;right:0;top:0;bottom:0;width:50%;pointer-events:none;z-index:0;overflow:hidden">
+  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.5;filter:saturate(0.4) brightness(1.2)"/>
+  <div style="position:absolute;inset:0;background:linear-gradient(to right,#131313 30%,rgba(19,19,19,.5) 70%,rgba(19,19,19,.1) 100%)"></div>
+</div>
+
+<div class="relative z-10 w-full max-w-sm">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3 mb-8 justify-center">
+    <img src="vitruvian-digital.png" alt="" style="height:3rem;width:3rem;object-fit:cover;border-radius:8px;opacity:0.9"/>
+    <div>
+      <h1 class="text-xl font-bold text-[#00F2FF]" style="font-family:'Hanken Grotesk',sans-serif">AcuTwin</h1>
+      <p class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Иглорефлексотерапия</p>
+    </div>
+  </div>
+
+  <!-- Step indicator -->
+  <div id="step-indicator" class="flex items-center justify-center gap-2 mb-6 hidden">
+    <div id="step-dot-1" class="w-2 h-2 rounded-full bg-[#00F2FF]"></div>
+    <div class="w-8 h-px bg-[#414755]"></div>
+    <div id="step-dot-2" class="w-2 h-2 rounded-full bg-[#414755]"></div>
+    <span id="step-label" class="text-[10px] text-[#8b90a0] ml-2 uppercase tracking-wider">Шаг 1 из 2</span>
+  </div>
+
+  <!-- STEP 1: Clinic setup -->
+  <div id="card-clinic" class="glass-panel rounded-2xl p-6 hidden">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="material-symbols-outlined text-2xl text-[#0A84FF]" style="zoom:1">local_hospital</span>
+      <div>
+        <h3 class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">Настройка клиники</h3>
+        <p class="text-[10px] text-[#8b90a0]">Заполните один раз — данные сохранятся</p>
+      </div>
+    </div>
+
+    <form id="form-clinic" onsubmit="submitClinic(event)" class="space-y-3">
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Название клиники <span class="text-[#ffb4ab]">*</span></label>
+        <input id="c-name" type="text" required placeholder="Клиника восточной медицины «Весна»"
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Адрес</label>
+        <input id="c-address" type="text" placeholder="г. Москва, ул. Ленина, д. 12, офис 301"
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Телефон</label>
+          <input id="c-phone" type="tel" placeholder="+7 (495) 000-00-00"
+                 class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                        placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Email</label>
+          <input id="c-email" type="email" placeholder="info@clinic.ru"
+                 class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                        placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Сайт</label>
+          <input id="c-site" type="url" placeholder="https://clinic.ru"
+                 class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                        placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ИНН / Лицензия</label>
+          <input id="c-inn" type="text" placeholder="7701234567"
+                 class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                        placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
+        </div>
+      </div>
+      <button type="submit"
+        class="w-full py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 border border-[#0A84FF]/40 text-[#0A84FF]
+               rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 mt-1">
+        <span class="material-symbols-outlined text-base" style="zoom:1">arrow_forward</span>
+        Сохранить и продолжить
+      </button>
+    </form>
+  </div>
+
+  <!-- STEP 2: Auth -->
+  <div id="card-auth" class="glass-panel rounded-2xl p-6 hidden">
+
+    <!-- Clinic badge (shown after step 1) -->
+    <div id="clinic-badge" class="hidden flex items-center gap-2 mb-5 px-3 py-2 bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-xl">
+      <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:16px;zoom:1">local_hospital</span>
+      <span id="clinic-badge-name" class="text-xs font-semibold text-[#c1c6d7] truncate flex-1"></span>
+      <button onclick="editClinic()" class="text-[10px] text-[#8b90a0] hover:text-[#0A84FF] transition-colors">изменить</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex mb-6 bg-[#1f1f1f] rounded-xl p-1 gap-1">
+      <button id="tab-login" onclick="showTab('login')"
+        class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all bg-[#00F2FF]/10 text-[#00F2FF]">
+        Вход
+      </button>
+      <button id="tab-reg" onclick="showTab('reg')"
+        class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all text-[#8b90a0] hover:text-[#c1c6d7]">
+        Регистрация
+      </button>
+    </div>
+
+    <!-- Demo hint -->
+    <div id="demo-hint" class="hidden mb-4">
+      <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
+              class="text-[10px] text-[#8b90a0] hover:text-[#c1c6d7] transition-colors w-full text-left mb-1">
+        Демо-аккаунты ▾
+      </button>
+      <div class="hidden bg-[#1f1f1f] rounded-xl p-3 space-y-1.5" id="demo-accounts"></div>
+    </div>
+
+    <!-- Error -->
+    <div id="err-msg" class="hidden mb-4 px-4 py-3 rounded-xl bg-[#ffb4ab]/10 border border-[#ffb4ab]/30 text-[#ffb4ab] text-sm"></div>
+
+    <!-- Login form -->
+    <form id="form-login" onsubmit="submitLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Логин</label>
+        <input id="l-username" type="text" autocomplete="username" required placeholder="doctor"
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пароль</label>
+        <input id="l-password" type="password" autocomplete="current-password" required
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+      </div>
+      <button type="submit"
+        class="w-full py-3 bg-[#00F2FF]/15 hover:bg-[#00F2FF]/25 border border-[#00F2FF]/40 text-[#00F2FF]
+               rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-base" style="zoom:1">login</span>
+        Войти
+      </button>
+    </form>
+
+    <!-- Register form -->
+    <form id="form-reg" onsubmit="submitReg(event)" class="space-y-4 hidden">
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ФИО врача</label>
+        <input id="r-name" type="text" required placeholder="Иванов И.И."
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Логин</label>
+        <input id="r-username" type="text" autocomplete="username" required placeholder="doctor"
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пароль</label>
+        <input id="r-password" type="password" autocomplete="new-password" required minlength="4"
+               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                      focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Роль</label>
+        <select id="r-role"
+                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                       focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all">
+          <option value="doctor" class="bg-[#1f1f1f]">🩺 Врач</option>
+          <option value="boss" class="bg-[#1f1f1f] admin-only-role" style="display:none">👑 Руководитель клиники</option>
+          <option value="admin" class="bg-[#1f1f1f] admin-only-role" style="display:none">⚙️ Администратор</option>
+        </select>
+        <p id="role-hint" class="text-[10px] text-[#414755] mt-1">Роль «Руководитель» назначается администратором системы</p>
+      </div>
+      <button type="submit"
+        class="w-full py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 border border-[#0A84FF]/40 text-[#0A84FF]
+               rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-base" style="zoom:1">person_add</span>
+        Создать аккаунт
+      </button>
+    </form>
+
+  </div>
+</div>
+
+<script type="module">
+import { login, register, getSession } from './auth.js';
+import { apiGetUsers, apiGetClinic, apiSetClinic, getToken } from './api.js';
+import { seedIfEmpty } from './seed.js';
+import { esc } from './shared.js';
+
+async function getClinic() {
+  return apiGetClinic();
+}
+async function saveClinic(data) {
+  return apiSetClinic(data);
+}
+
+function showStep(step) {
+  document.getElementById('card-clinic').classList.toggle('hidden', step !== 1);
+  document.getElementById('card-auth').classList.toggle('hidden', step !== 2);
+  const ind = document.getElementById('step-indicator');
+  if (step === 1) {
+    ind.classList.remove('hidden');
+    document.getElementById('step-dot-1').className = 'w-2 h-2 rounded-full bg-[#0A84FF]';
+    document.getElementById('step-dot-2').className = 'w-2 h-2 rounded-full bg-[#414755]';
+    document.getElementById('step-label').textContent = 'Шаг 1 из 2';
+  } else {
+    ind.classList.add('hidden');
+    const clinic = getClinic();
+    if (clinic) {
+      document.getElementById('clinic-badge-name').textContent = clinic.name;
+      document.getElementById('clinic-badge').classList.remove('hidden');
+    }
+  }
+}
+
+window.editClinic = () => {
+  const clinic = getClinic();
+  if (clinic) {
+    document.getElementById('c-name').value    = clinic.name    || '';
+    document.getElementById('c-address').value = clinic.address || '';
+    document.getElementById('c-phone').value   = clinic.phone   || '';
+    document.getElementById('c-email').value   = clinic.email   || '';
+    document.getElementById('c-site').value    = clinic.site    || '';
+    document.getElementById('c-inn').value     = clinic.inn     || '';
+  }
+  showStep(1);
+};
+
+window.submitClinic = async (e) => {
+  e.preventDefault();
+  await saveClinic({
+    name:    document.getElementById('c-name').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    phone:   document.getElementById('c-phone').value.trim(),
+    email:   document.getElementById('c-email').value.trim(),
+    site:    document.getElementById('c-site').value.trim(),
+    inn:     document.getElementById('c-inn').value.trim(),
+  });
+  showStep(2);
+};
+
+// Проверка secure context (crypto.subtle работает только на HTTPS или localhost)
+if (!window.isSecureContext) {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b33;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-family:Inter,sans-serif';
+  banner.textContent = '⚠️ Сайт открыт через обычный HTTP. Авторизация недоступна — используйте HTTPS или localhost.';
+  document.body.prepend(banner);
+}
+
+await seedIfEmpty();
+
+const _s = getSession();
+if (_s && getToken()) { window.location.href = _s.role === 'admin' ? 'admin.html' : 'index.html'; }
+
+// Если залогинен admin — показываем расширенный выбор ролей в форме регистрации
+if (_s && _s.role === 'admin') {
+  document.querySelectorAll('.admin-only-role').forEach(el => el.style.display = '');
+  const hint = document.getElementById('role-hint');
+  if (hint) hint.style.display = 'none';
+}
+
+// Если в БД уже есть пользователи — сразу форма входа.
+// Если БД пуста (GET /api/users вернул 200) — сначала настройка клиники.
+const _usersCheck = await fetch('/api/users').catch(() => null);
+if (!_usersCheck || _usersCheck.status === 401 || _usersCheck.status === 404) {
+  showStep(2); // пользователи есть (или эндпоинт не поддерживается) → сразу к логину
+} else {
+  const clinic = await getClinic();
+  if (!clinic || !clinic.name) {
+    showStep(1); // первый запуск → настроить клинику
+  } else {
+    showStep(2);
+  }
+}
+
+// Демо-аккаунты — только логины, без паролей в исходнике
+const users = await apiGetUsers();
+if (users.length) {
+  const ROLE_LABEL = { admin:'⚙️ Админ', boss: '👑 Босс', doctor: '🩺 Врач' };
+  const DEMO_LOGINS = ['admin','boss','ivanov','petrov','sidorov','dr_kuznetsova','dr_qi1','dr_akumed1','dr_dao1'];
+  document.getElementById('demo-hint').classList.remove('hidden');
+  document.getElementById('demo-accounts').innerHTML = users
+    .filter(u => DEMO_LOGINS.includes(u.username))
+    .map(u => `
+      <div class="flex items-center justify-between gap-2 cursor-pointer hover:bg-[#2a2a2a] rounded-lg px-2 py-1 transition-colors"
+           onclick="document.getElementById('l-username').value='${u.username}';document.getElementById('l-password').focus()">
+        <span class="text-[#c1c6d7] text-xs truncate flex-1">${esc(u.name)}</span>
+        <span class="font-mono text-[#8b90a0] text-[10px] flex-shrink-0">${u.username}</span>
+        <span class="text-[10px] text-[#8b90a0] flex-shrink-0">${ROLE_LABEL[u.role]||''}</span>
+      </div>`).join('');
+}
+
+function showError(msg) {
+  const el = document.getElementById('err-msg');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideError() {
+  document.getElementById('err-msg').classList.add('hidden');
+}
+
+window.showTab = (tab) => {
+  hideError();
+  const isLogin = tab === 'login';
+  document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+  document.getElementById('form-reg').classList.toggle('hidden', isLogin);
+  document.getElementById('tab-login').className = `flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+    isLogin ? 'bg-[#00F2FF]/10 text-[#00F2FF]' : 'text-[#8b90a0] hover:text-[#c1c6d7]'}`;
+  document.getElementById('tab-reg').className = `flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+    !isLogin ? 'bg-[#0A84FF]/10 text-[#0A84FF]' : 'text-[#8b90a0] hover:text-[#c1c6d7]'}`;
+};
+
+if (!users.length) window.showTab('reg');
+
+window.submitLogin = async (e) => {
+  e.preventDefault();
+  hideError();
+  try {
+    const username = document.getElementById('l-username').value.trim();
+    const password = document.getElementById('l-password').value;
+    const result = await login(username, password);
+    if (result.ok) {
+      await seedIfEmpty(); // сидируем клинику и записи с токеном
+      const s = getSession();
+      window.location.href = s?.role === 'admin' ? 'admin.html' : 'index.html';
+    } else showError(result.error);
+  } catch (err) {
+    showError(err.message || 'Ошибка авторизации. Проверьте подключение.');
+  }
+};
+
+window.submitReg = async (e) => {
+  e.preventDefault();
+  hideError();
+  try {
+    const name     = document.getElementById('r-name').value.trim();
+    const username = document.getElementById('r-username').value.trim();
+    const password = document.getElementById('r-password').value;
+    const role     = document.getElementById('r-role').value;
+    const result = await register(name, username, password, role);
+    if (result.ok) {
+      await login(username, password);
+      const s = getSession();
+      window.location.href = s?.role === 'admin' ? 'admin.html' : 'index.html';
+    } else {
+      showError(result.error);
+    }
+  } catch (err) {
+    showError(err.message || 'Ошибка регистрации. Проверьте подключение.');
+  }
+};
+</script>
+</body>
+</html>

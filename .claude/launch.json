@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "acupuncture",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\\Claude\\acupuncture\\new\\server.js"],
+      "port": 5500
+    }
+  ]
+}

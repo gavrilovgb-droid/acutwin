@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Атлас точек</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313',
+  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
+  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
+  'surface-container-highest':'#353535',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
+  'primary':'#adc6ff','primary-container':'#4b8eff',
+  'outline':'#8b90a0','outline-variant':'#414755',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
+  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
+}}}}
+</script>
+<style>
+#body-bg {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  left: 16rem;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.md\:ml-64 > header, .md\:ml-64 > * { position: relative; z-index: 1; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<!-- Body background -->
+<div id="body-bg">
+  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
+</div>
+
+<div class="md:ml-64 h-screen flex flex-col">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-4 px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Атлас точек</h2>
+    <div class="ml-auto flex items-center gap-3">
+      <span id="pt-count" class="text-xs text-[#8b90a0] font-mono"></span>
+      <div class="relative group">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-base group-focus-within:text-[#00F2FF] transition-colors">search</span>
+        <input id="atlas-search"
+               class="pl-9 pr-4 py-1.5 w-64 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"
+               placeholder="Поиск точки (код, название)..."/>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hidden elements kept for JS compatibility -->
+  <div id="section-tabs" class="hidden"></div>
+  <div id="mer-tabs" class="hidden"></div>
+
+  <!-- Main: two-panel layout (catalog) -->
+  <div id="panel-catalog" class="flex-1 flex overflow-hidden">
+
+    <!-- Left: Point list -->
+    <div class="w-80 flex-shrink-0 border-r border-white/10 flex flex-col overflow-hidden">
+      <div id="point-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+    </div>
+
+    <!-- Right: Point detail -->
+    <div class="flex-1 overflow-y-auto">
+      <div id="point-detail" class="h-full flex items-center justify-center text-[#8b90a0] text-sm">
+        <div class="text-center">
+          <span class="material-symbols-outlined text-5xl text-[#414755] mb-3 block">adjust</span>
+          Выберите точку из списка
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Static section panel (standard/pain/emergency/dangerous) -->
+  <div id="panel-static" class="hidden flex-1 overflow-y-auto p-6">
+    <div id="static-content" class="max-w-4xl mx-auto"></div>
+  </div>
+</div>
+
+<!-- Video modal -->
+<div id="vid-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this) closeVidModal()">
+  <div class="glass-panel rounded-2xl p-5 w-full max-w-lg mx-4 border border-white/20">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span id="vm-code" class="font-bold text-lg text-[#00F2FF]"></span>
+        <span id="vm-name" class="text-sm text-[#8b90a0]"></span>
+      </div>
+      <button onclick="closeVidModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <video id="vm-video" controls class="w-full rounded-xl mb-3 bg-black"
+           controlsList="nodownload noremoteplayback" disablePictureInPicture
+           oncontextmenu="return false"></video>
+    <div id="vm-info" class="text-xs text-[#8b90a0] leading-relaxed"></div>
+  </div>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
+import { requireAuth } from './auth.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('atlas', session);
+initElementClock();
+
+const SPECIAL = [
+  {key:'standard',  icon:'star',      label:'Стандартные точки', color:'#FFD60A'},
+  {key:'pain',      icon:'healing',   label:'Противоболевые',    color:'#00F2FF'},
+  {key:'emergency', icon:'emergency', label:'Скорая помощь',     color:'#ffb4ab'},
+  {key:'dangerous', icon:'warning',   label:'Опасные точки',     color:'#FF9500'},
+];
+
+// Inject atlas sub-nav
+(function() {
+  const atlasLink = document.querySelector('#nav-mount a[href="atlas.html"]');
+  if (!atlasLink) return;
+  window._atlasOpen = false;
+  atlasLink.addEventListener('click', e => {
+    e.preventDefault();
+    const sub = document.getElementById('sidebar-atlas');
+    window._atlasOpen = !window._atlasOpen;
+    if (sub) sub.style.display = window._atlasOpen ? 'flex' : 'none';
+    if (window._atlasOpen && window.setMer) window.setMer('all');
+  });
+
+  const ALL_MERS = [
+    {key:'P',  label:'P',  name:'Лёгкие',           color:'#5a8fa8'},
+    {key:'Gi', label:'GI', name:'Толст. кишечник',   color:'#5a8fa8'},
+    {key:'E',  label:'E',  name:'Желудок',            color:'#c07840'},
+    {key:'RP', label:'RP', name:'Селезёнка',          color:'#c07840'},
+    {key:'C',  label:'C',  name:'Сердце',             color:'#c0392b'},
+    {key:'iG', label:'IG', name:'Тонк. кишечник',    color:'#c0392b'},
+    {key:'V',  label:'V',  name:'Моч. пузырь',       color:'#2471a3'},
+    {key:'R',  label:'R',  name:'Почки',              color:'#2471a3'},
+    {key:'MC', label:'MC', name:'Перикард',           color:'#a0305a'},
+    {key:'TR', label:'TR', name:'Тр. обогреватель',   color:'#a0305a'},
+    {key:'VB', label:'VB', name:'Желчн. пузырь',     color:'#3d8a5c'},
+    {key:'F',  label:'F',  name:'Печень',             color:'#3d8a5c'},
+    {key:'T',  label:'VG', name:'Задне-Средин.',      color:'#8b6db5'},
+    {key:'J',  label:'VC', name:'Пере.-Средин.',      color:'#8b6db5'},
+  ];
+
+  const sub = document.createElement('div');
+  sub.id = 'sidebar-atlas';
+  sub.style.cssText = 'padding:2px 8px 4px 8px;display:none;flex-direction:column;gap:1px';
+  sub.innerHTML = `
+    <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Меридианы</div>
+    ${ALL_MERS.map(m => `
+      <button onclick="setMer('${m.key}')" data-mer="${m.key}"
+        class="atlas-mer-btn flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-lg text-xs font-medium w-full text-left transition-all text-[#8b90a0] hover:bg-white/15 hover:text-[#c1c6d7]">
+        <span style="width:7px;height:7px;border-radius:50%;background:${m.color};flex-shrink:0;display:inline-block"></span>
+        <span class="font-bold w-7" style="color:${m.color}">${m.label}</span>
+        <span class="truncate" style="color:#c1c6d7">${m.name}</span>
+      </button>`).join('')}
+    <div class="px-3 py-1 mt-1 text-[10px] font-bold uppercase tracking-widest text-white">Специальные точки</div>
+    ${SPECIAL.map(s => `
+      <button onclick="setSection('${s.key}')" data-sec="${s.key}"
+        class="atlas-sec-btn flex items-center gap-2.5 pl-6 pr-3 py-2 rounded-lg text-xs font-medium w-full text-left transition-all text-[#c1c6d7] hover:bg-white/15 hover:text-white">
+        <span class="material-symbols-outlined flex-shrink-0" style="font-size:16px;color:${s.color}">${s.icon}</span>
+        <span>${s.label}</span>
+      </button>`).join('')}
+  `;
+  atlasLink.insertAdjacentElement('afterend', sub);
+})();
+
+let points = {};
+let allCodes = [];
+let activeMer = 'all';
+let activeCode = null;
+
+// Check URL params
+const params = new URLSearchParams(location.search);
+const initCode = params.get('code');
+const initMer  = params.get('mer');
+
+fetch('../data/points.json')
+  .then(r => r.json())
+  .then(data => {
+    points = data;
+    allCodes = Object.keys(data).sort((a,b) => {
+      const ma = a.match(/^([A-Za-z]+)(\d+)$/);
+      const mb = b.match(/^([A-Za-z]+)(\d+)$/);
+      if (!ma||!mb) return a.localeCompare(b);
+      const FULL_ORDER = [...MER_ORDER, 'T', 'J'];
+      if (ma[1]!==mb[1]) return FULL_ORDER.indexOf(ma[1]) - FULL_ORDER.indexOf(mb[1]);
+      return parseInt(ma[2]) - parseInt(mb[2]);
+    });
+    document.getElementById('pt-count').textContent = `${allCodes.length} точек`;
+    buildMerTabs();
+    if (initMer) setMer(initMer); else renderList();
+    if (initCode && points[initCode]) setTimeout(() => selectPoint(initCode), 100);
+    // Auto-open sidebar tree on page load
+    const sub = document.getElementById('sidebar-atlas');
+    if (sub) sub.style.display = 'flex';
+    window._atlasOpen = true;
+  })
+  .catch(() => {
+    document.getElementById('point-list').innerHTML =
+      '<div class="p-4 text-sm text-[#8b90a0]">Ошибка загрузки данных</div>';
+  });
+
+function buildMerTabs() {
+  const tabs = document.getElementById('mer-tabs');
+
+  // Paired Zang (Yin) / Fu (Yang) by element
+  const PAIRS = [
+    ['P',  'Gi'],  // Металл: Лёгкие / Толстый кишечник
+    ['C',  'iG'],  // Огонь:  Сердце / Тонкий кишечник
+    ['MC', 'TR'],  // Огонь:  Перикард / Тройной обогреватель
+    ['RP', 'E'],   // Земля:  Селезёнка / Желудок
+    ['R',  'V'],   // Вода:   Почки / Мочевой пузырь
+    ['F',  'VB'],  // Дерево: Печень / Желчный пузырь
+  ];
+  const EXTRA = ['T', 'J'];
+
+  // VG/VC as 7th pair column
+  const ALL_PAIRS = [...PAIRS, ['T', 'J']];
+
+  const SHORT = {
+    P:  'Лёгкие',      Gi: 'Толст. киш.',
+    C:  'Сердце',      iG: 'Тонк. киш.',
+    MC: 'Перикард',    TR: 'Тр. обогрев.',
+    RP: 'Селезёнка',   E:  'Желудок',
+    R:  'Почки',       V:  'Моч. пузырь',
+    F:  'Печень',      VB: 'Желчн. пуз.',
+    T:  'Задне-Средин.',  J: 'Пере.-Средин.',
+  };
+
+  const tabBtn = (m) => {
+    const info = MERIDIANS[m];
+    const label = info.display || m;
+    const color = info.color || '#8b90a0';
+    const isActive = activeMer === m;
+    const activeStyle = `background:${color}22;border-color:${color}55;color:${color}`;
+    return `<button onclick="setMer('${m}')" id="tab_${m}"
+      class="rounded transition-all border text-center w-full"
+      style="padding:3px 4px;${isActive ? activeStyle : 'border-color:transparent;color:#8b90a0'}">
+      <div style="font-size:11px;font-weight:700;line-height:1.2">${label}</div>
+      <div style="font-size:9px;line-height:1.2;opacity:0.7;white-space:nowrap">${SHORT[m] || info.name}</div>
+    </button>`;
+  };
+
+  tabs.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(${ALL_PAIRS.length},1fr);gap:2px;width:100%">
+      ${ALL_PAIRS.map(([z]) => tabBtn(z)).join('')}
+      ${ALL_PAIRS.map(([,f]) => tabBtn(f)).join('')}
+    </div>`;
+}
+
+function updateAtlasSidebar() {
+  document.querySelectorAll('.atlas-mer-btn').forEach(b => {
+    const isA = b.dataset.mer === activeMer;
+    const color = b.querySelector('span[style*="border-radius:50%"]')?.style.background || '#8b90a0';
+    b.style.background = isA ? `${color}20` : '';
+    b.style.color = isA ? color : '';
+  });
+  document.querySelectorAll('.atlas-sec-btn').forEach(b => {
+    const isA = activeSection !== 'catalog' && b.dataset.sec === activeSection;
+    const spec = SPECIAL.find(s => s.key === b.dataset.sec);
+    const c = spec?.color || '#8b90a0';
+    b.style.color = isA ? '#ffffff' : '';
+    b.style.background = isA ? `${c}22` : '';
+    b.style.borderLeft = isA ? `2px solid ${c}` : '2px solid transparent';
+    const icon = b.querySelector('.material-symbols-outlined');
+    if (icon) icon.style.color = c; // всегда цветная
+  });
+}
+
+window.setMer = (mer) => {
+  activeMer = mer;
+  // Always switch to catalog view when picking a meridian
+  if (activeSection !== 'catalog') {
+    activeSection = 'catalog';
+    document.querySelectorAll('#section-tabs button').forEach(b => {
+      b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all text-[#8b90a0] hover:text-white hover:bg-white/5';
+    });
+    document.getElementById('panel-catalog').classList.remove('hidden');
+    document.getElementById('panel-static').classList.add('hidden');
+  }
+  buildMerTabs(); // rebuild to update active colors
+  renderList();
+  updateAtlasSidebar();
+};
+
+function getFilteredCodes(q='') {
+  return allCodes.filter(code => {
+    if (activeMer !== 'all') {
+      const m = code.match(/^([A-Za-z]+)/);
+      if (!m || m[1] !== activeMer) return false;
+    }
+    if (q) {
+      const qLow  = q.toLowerCase();
+      const qNorm = q.replace(/\s+/g, '').toLowerCase();
+      const pt = points[code] || {};
+      const codeLow  = code.toLowerCase();
+      const textSearch = ((pt.cn_name||'') + ' ' + (pt.indica||'') + ' ' + (pt.location||'')).toLowerCase();
+      if (!codeLow.includes(qNorm) && !textSearch.includes(qLow)) return false;
+    }
+    return true;
+  });
+}
+
+function renderList(q='') {
+  const codes = getFilteredCodes(q);
+  const list = document.getElementById('point-list');
+  list.innerHTML = codes.map(code => {
+    const pt = points[code] || {};
+    const m = code.match(/^([A-Za-z]+)/);
+    const mer = m?.[1];
+    const merInfo = MERIDIANS[mer] || {};
+    return `
+      <button onclick="selectPoint('${code}')"
+              id="li_${code}"
+              class="w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center gap-3
+                     ${activeCode===code
+                       ? 'bg-[#00F2FF]/10 border border-[#00F2FF]/30 text-[#e2e2e2]'
+                       : 'hover:bg-white/5 text-[#c1c6d7] border border-transparent'}">
+        <div class="w-1 h-6 rounded-full flex-shrink-0" style="background:${merInfo.color||'#414755'}"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="mer-code font-bold text-sm ${activeCode===code?'text-[#00F2FF]':'text-[#adc6ff]'}">${code}</span>
+            ${pt.cn_name ? `<span class="text-xs text-[#8b90a0] truncate">${pt.cn_name}</span>` : ''}
+          </div>
+          ${pt.location ? `<p class="text-[10px] text-[#8b90a0] truncate mt-0.5">${pt.location}</p>` : ''}
+        </div>
+        <span class="material-symbols-outlined text-sm text-[#414755]">play_circle</span>
+      </button>`;
+  }).join('') || '<div class="p-4 text-sm text-[#8b90a0] text-center">Ничего не найдено</div>';
+}
+
+window.openVidModal = (code) => {
+  const pt = points[code] || {};
+  const src = ptVideoSrc(code);
+  document.getElementById('vm-code').textContent = code;
+  document.getElementById('vm-name').textContent = pt.cn_name || '';
+  document.getElementById('vm-info').textContent = pt.location || '';
+  const vid = document.getElementById('vm-video');
+  vid.src = src;
+  vid.load();
+  const modal = document.getElementById('vid-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeVidModal = () => {
+  const modal = document.getElementById('vid-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  const vid = document.getElementById('vm-video');
+  vid.pause();
+  vid.src = '';
+};
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVidModal(); });
+
+window.selectPoint = (code) => {
+  activeCode = code;
+  const pt = points[code] || {};
+  const m = code.match(/^([A-Za-z]+)(\d+)$/);
+  const mer = m?.[1];
+  const merInfo = MERIDIANS[mer] || {};
+  const vidSrc = ptVideoSrc(code);
+  const merVid = merVideoSrc(mer||'');
+
+  // Update list highlight
+  document.querySelectorAll('#point-list button').forEach(b => {
+    const isActive = b.id === `li_${code}`;
+    b.className = `w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-center gap-3 ${isActive
+      ? 'bg-[#00F2FF]/10 border border-[#00F2FF]/30 text-[#e2e2e2]'
+      : 'hover:bg-white/5 text-[#c1c6d7] border border-transparent'}`;
+    b.querySelector('.mer-code').className = `mer-code font-bold text-sm ${isActive?'text-[#00F2FF]':'text-[#adc6ff]'}`;
+  });
+
+  document.getElementById('point-detail').innerHTML = `
+    <div class="p-6 max-w-2xl mx-auto page-enter">
+
+      <!-- Header -->
+      <div class="glass-panel rounded-2xl p-6 mb-4 glow-cyan">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="flex items-center gap-3 mb-1">
+              <span class="text-3xl font-bold mer-code text-[#00F2FF] meridian-glow-text">${esc(code)}</span>
+              ${pt.cn_name ? `<span class="text-lg text-[#8b90a0]">${esc(pt.cn_name)}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 rounded-full" style="background:${merInfo.color||'#414755'}"></div>
+              <span class="mer-code font-bold text-sm" style="color:${merInfo.color||'#8b90a0'}">${esc(mer||code)}</span>
+              <span class="text-sm font-bold text-[#c1c6d7]">${merInfo.name || mer}</span>
+              <span class="text-xs text-[#8b90a0]">· ${merInfo.element||''}</span>
+            </div>
+          </div>
+          ${pt.yin_yang ? `<span class="text-sm font-bold px-3 py-1 rounded-full bg-[#1f1f1f] border border-white/10 text-[#c1c6d7]">${pt.yin_yang}</span>` : ''}
+        </div>
+
+        <!-- Video -->
+        <div class="vid-wrap mb-4">
+          <video controls class="w-full rounded-xl" src="${vidSrc}"
+                 controlsList="nodownload noremoteplayback" disablePictureInPicture
+                 oncontextmenu="return false"
+                 onerror="this.closest('.vid-wrap').style.display='none'">
+          </video>
+        </div>
+
+        ${pt.location ? `
+        <div class="mb-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Локализация</div>
+          <p class="text-sm text-[#e2e2e2] leading-relaxed">${pt.location}</p>
+        </div>` : ''}
+      </div>
+
+      <!-- Info cards -->
+      <div class="grid grid-cols-1 gap-4 mb-4">
+        ${pt.indica ? `
+        <div class="glass-panel rounded-xl p-4">
+          <div class="text-[10px] text-[#0A84FF] uppercase tracking-widest mb-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">medical_information</span>
+            Показания
+          </div>
+          <p class="text-sm text-[#c1c6d7] leading-relaxed">${pt.indica}</p>
+        </div>` : ''}
+
+        ${pt.technik ? `
+        <div class="glass-panel rounded-xl p-4">
+          <div class="text-[10px] text-[#FFD60A] uppercase tracking-widest mb-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">precision_manufacturing</span>
+            Техника
+          </div>
+          <p class="text-sm text-[#c1c6d7] leading-relaxed">${pt.technik}</p>
+        </div>` : ''}
+      </div>
+
+
+      <!-- Meridian video -->
+      ${mer ? `
+      <div class="glass-panel rounded-xl p-4">
+        <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-3 flex items-center justify-between">
+          <span>Меридиан ${merInfo.name||mer} — обзорное видео</span>
+        </div>
+        <div class="vid-wrap">
+          <video controls class="w-full rounded-lg" src="${merVid}"
+                 controlsList="nodownload noremoteplayback" disablePictureInPicture
+                 oncontextmenu="return false"
+                 onerror="this.closest('.glass-panel').style.display='none'">
+          </video>
+        </div>
+      </div>` : ''}
+    </div>`;
+};
+
+// Section tabs
+const STATIC_SECTIONS = {
+  standard: {
+    title: 'Стандартные точки меридианов',
+    icon: 'star',
+    color: '#FFD60A',
+    content: () => {
+      const rows = [
+        {mer:'P',  tony:'P9',  sedat:'P5',  luo:'P7',  yuan:'P9',  shu:'V13', mu:'P1',  xi:'P6' },
+        {mer:'Gi', tony:'Gi11',sedat:'Gi2', luo:'Gi6', yuan:'Gi4', shu:'V25', mu:'E25', xi:'Gi7' },
+        {mer:'E',  tony:'E41', sedat:'E45', luo:'E40', yuan:'E42', shu:'V21', mu:'VC12',xi:'E34' },
+        {mer:'RP', tony:'RP2', sedat:'RP5', luo:'RP4', yuan:'RP3', shu:'V20', mu:'F13', xi:'RP8' },
+        {mer:'C',  tony:'C9',  sedat:'C7',  luo:'C5',  yuan:'C7',  shu:'V15', mu:'VC14',xi:'C6' },
+        {mer:'iG', tony:'iG3', sedat:'iG8', luo:'iG7', yuan:'iG4', shu:'V27', mu:'VC4', xi:'iG6' },
+        {mer:'V',  tony:'V67', sedat:'V65', luo:'V58', yuan:'V64', shu:'V28', mu:'VC3', xi:'V63' },
+        {mer:'R',  tony:'R7',  sedat:'R1',  luo:'R4',  yuan:'R3',  shu:'V23', mu:'VB25',xi:'R5' },
+        {mer:'MC', tony:'MC9', sedat:'MC7', luo:'MC6', yuan:'MC7', shu:'V14', mu:'VC17',xi:'MC4' },
+        {mer:'TR', tony:'TR3', sedat:'TR10',luo:'TR5', yuan:'TR4', shu:'V22', mu:'VC5', xi:'TR7' },
+        {mer:'VB', tony:'VB43',sedat:'VB38',luo:'VB37',yuan:'VB40',shu:'V19', mu:'VB24',xi:'VB36' },
+        {mer:'F',  tony:'F8',  sedat:'F2',  luo:'F5',  yuan:'F3',  shu:'V18', mu:'F14', xi:'F6' },
+      ];
+      return `
+        <h3 class="text-base font-bold mb-4 text-[#0A84FF]" style="font-family:'Hanken Grotesk',sans-serif">Стандартные точки меридианов</h3>
+        <div class="glass-panel rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-white/10">
+                  <th class="text-left px-4 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Меридиан</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#FFD60A] uppercase tracking-wider font-bold">Тониз.</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#ffb4ab] uppercase tracking-wider font-bold">Седат.</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Ло <span class="normal-case opacity-60">(связующая)</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Юань <span class="normal-case opacity-60">(источник)</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Шу <span class="normal-case opacity-60">(спины)</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Му <span class="normal-case opacity-60">(сигнальная)</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Си <span class="normal-case opacity-60">(щель/противоболевая)</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => {
+                  const m = MERIDIANS[r.mer];
+                  return `<tr class="border-b border-white/5 hover:bg-white/3 transition-colors">
+                    <td class="px-4 py-2.5">
+                      <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full" style="background:${m.color}"></div>
+                        <span class="mer-code font-bold" style="color:${m.color}">${r.mer}</span>
+                        <span class="text-[#c1c6d7] text-xs font-medium">${m.name}</span>
+                      </div>
+                    </td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.tony}" class="font-mono font-bold text-[#FFD60A] hover:underline">${r.tony}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.sedat}" class="font-mono font-bold text-[#ffb4ab] hover:underline">${r.sedat}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.luo}" class="font-mono text-[#adc6ff] hover:underline">${r.luo}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.yuan}" class="font-mono text-[#adc6ff] hover:underline">${r.yuan}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.shu}" class="font-mono text-[#c1c6d7] hover:underline">${r.shu}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.mu}" class="font-mono text-[#c1c6d7] hover:underline">${r.mu}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.xi}" class="font-mono text-[#c1c6d7] hover:underline">${r.xi}</a></td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+  },
+  pain: {
+    title: 'Противоболевые точки',
+    icon: 'healing',
+    color: '#00F2FF',
+    content: () => {
+      const DATA = [
+        { code:'P6',   cn:'кун-цзуй',   mer:'Лёгких',                              type:'blood', he:null,              ind:'кашель, одышка, кровохарканье', tech:'укол прямой, глубина 15 мм' },
+        { code:'Gi7',  cn:'вэнь-лю',    mer:'Толстой кишки',                       type:'pain',  he:['Gi11','E37'],     ind:'запор, понос, вздутие живота', tech:'укол наклонный, глубина 10 мм' },
+        { code:'E34',  cn:'лян-цю',     mer:'Желудка',                             type:'pain',  he:['E36'],            ind:'боль в эпигастральной области, рвота, расстройства пищеварения', tech:'укол прямой, глубина 10–15 мм' },
+        { code:'RP8',  cn:'ди-цзи',     mer:'Селезёнки',                           type:'blood', he:null,              ind:'вздутие живота, боль в подреберье, желтуха', tech:'укол прямой, глубина 15–20 мм' },
+        { code:'C6',   cn:'инь-си',     mer:'Сердца',                              type:'blood', he:null,              ind:'боль в области сердца, эпилепсия, сердцебиение, бессонница', tech:'укол прямой, глубина 10 мм' },
+        { code:'iG6',  cn:'ян-лао',     mer:'Тонкой кишки',                        type:'pain',  he:['iG8','E39'],     ind:'мутная моча, диабет', tech:'укол наклонный, глубина 10 мм' },
+        { code:'V63',  cn:'цзинь-мэнь', mer:'Мочевого пузыря',                     type:'pain',  he:['V40'],           ind:'задержка мочи, частое мочеиспускание, недержание мочи', tech:'укол наклонный, глубина 5–10 мм' },
+        { code:'R5',   cn:'шуй-цюань',  mer:'Почек',                               type:'blood', he:null,              ind:'поллюции, бели, боль в пояснице', tech:'укол горизонтальный, глубина 5–10 мм' },
+        { code:'MC4',  cn:'си-мэнь',    mer:'Перикарда',                           type:'blood', he:null,              ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' },
+        { code:'TR7',  cn:'хуэй-цзун',  mer:'Тройного обогревателя',               type:'pain',  he:['TR10','V39'],    ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' },
+        { code:'VB36', cn:'вай-цю',     mer:'Желчного пузыря',                     type:'pain',  he:['VB34'],          ind:'боль и чувство распирания в подреберье, желтуха', tech:'укол прямой, глубина 10–20 мм' },
+        { code:'F6',   cn:'чжун-ду',    mer:'Печени',                              type:'blood', he:null,              ind:'боль в подреберье, желтуха, смена озноба и лихорадки', tech:'' },
+      ];
+      const ptBtn = (c) => `<button onclick="openVidModal('${c}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/15 border border-[#414755] hover:border-[#00F2FF]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c)}</button>`;
+      return `
+        <p class="text-xs text-[#8b90a0] mb-4">Точки-щели (Си-пункты) — активируются при острой боли и острых состояниях.</p>
+        <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
+          ${DATA.map(d => `
+            <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
+              <div class="flex items-center gap-2 mb-3">
+                ${ptBtn(d.code)}
+                <span class="text-xs text-[#8b90a0]">${d.cn}</span>
+                <span class="flex-1 text-xs text-[#8b90a0] text-right">Меридиан ${d.mer}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${d.type === 'pain' ? 'bg-[#00F2FF]/10 text-[#00F2FF]' : 'bg-[#ffb4ab]/10 text-[#ffb4ab]'}">${d.type === 'pain' ? 'Противоболевая' : 'Лечение крови'}</span>
+              </div>
+              <div class="text-xs text-[#c1c6d7] mb-2 flex-1">${d.ind}</div>
+              <div class="mt-auto">
+                ${d.he ? `<div class="flex items-center gap-2 mb-2"><span class="text-[10px] text-[#8b90a0] uppercase tracking-wide">Хэ-точки</span>${d.he.map(ptBtn).join('')}</div>` : ''}
+                ${d.tech ? `<div class="text-[11px] text-[#6b7080]">${d.tech}</div>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }
+  },
+  emergency: {
+    title: 'Точки скорой помощи',
+    icon: 'emergency',
+    color: '#ffb4ab',
+    content: () => {
+      const DATA = [
+        { title:'Астматический криз',       pts:['E40','V13','J12','J17','J22'] },
+        { title:'Обморок',                  pts:['T26','E36','RP4','C9','R7','V15','V65'],          note:'Точки E36 и T20 рекомендуется прижигать' },
+        { title:'Коллапс, шок',             pts:['E14','E37','V23','R1','VB39'] },
+        { title:'Предынсультное состояние', pts:['Gi11','Gi15','E36','TR22','VB20','VB39','T20'],   note:'Для профилактики инсульта — прижигание E36 «горячей иглой»' },
+        { title:'Стенокардия',              pts:['Gi11','C4','V15','V17','R23','MC6','TR1'] },
+        { title:'Тепловой удар',            pts:['P5','Gi11','V60','V62','VB38','VB41','F8'],       note:'При потере сознания добавить: P7, E41, R1, VB39, J16' },
+        { title:'Люмбаго, ишиас',           pts:['VB30','V32','V40','V60','R27','T4','T26'] },
+        { title:'Почечная колика',          pts:['RP9','V60','R4','TR10','VB25','VB40'] },
+        { title:'Ожог',                     pts:['P7','J16'] },
+        { title:'Отёк Квинке',              pts:['E13','E15','V13','V40','V60'] },
+      ];
+      const ptBtn = (c) => `<button onclick="openVidModal('${c}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#ffb4ab] hover:bg-[#ffb4ab]/15 border border-[#414755] hover:border-[#ffb4ab]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c)}</button>`;
+      return `
+        <p class="text-xs text-[#8b90a0] mb-4">Точки первой помощи при неотложных состояниях</p>
+        <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
+          ${DATA.map(d => `
+            <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-base text-[#ffb4ab]">emergency</span>
+                <span class="font-bold text-sm text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">${d.title}</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 flex-1">${d.pts.map(ptBtn).join('')}</div>
+              ${d.note ? `<div class="text-[11px] text-[#8b90a0] mt-auto pt-2 italic">${d.note}</div>` : ''}
+            </div>`).join('')}
+        </div>`;
+    }
+  },
+  dangerous: {
+    title: 'Опасные точки',
+    icon: 'warning',
+    color: '#FF9500',
+    content: () => {
+      const DATA = [
+        { mer:'Лёгких (P)',                         needle:'',                                                                                    moxa:'P3, P8, P10, P11' },
+        { mer:'Толстой кишки (Gi)',                 needle:'Gi13',                                                                                moxa:'Gi18, Gi19, Gi20' },
+        { mer:'Желудка (E)',                        needle:'E1, E17, E30',                                                                        moxa:'E1, E7, E8, E9, E17, E30, E31, E32, E33, E35, E38' },
+        { mer:'Селезёнки (RP)',                     needle:'RP10, RP11',                                                                          moxa:'RP1, RP7, RP9, RP11, RP20' },
+        { mer:'Сердца (C)',                         needle:'C2, C9',                                                                              moxa:'' },
+        { mer:'Тонкой кишки (iG)',                  needle:'',                                                                                    moxa:'iG9, iG18' },
+        { mer:'Мочевого пузыря (V)',                needle:'V8, V9, V37, V43, V47, V56',                                                          moxa:'V1, V2, V6, V10, V15, V30, V36, V37, V40, V62' },
+        { mer:'Почек (R)',                          needle:'R11, R24',                                                                            moxa:'' },
+        { mer:'Перикарда и Тр. обогревателя (MC,TR)',needle:'TR8, TR19, TR20',                                                                   moxa:'MC9, TR4, TR16, TR21, TR23' },
+        { mer:'Желчного пузыря (VB)',               needle:'VB3, VB18, VB21',                                                                     moxa:'VB1, VB15, VB22, VB42' },
+        { mer:'Печени (F)',                         needle:'F12',                                                                                 moxa:'' },
+        { mer:'Задне-Срединный (VG/T)',             needle:'T1, T10, T11, T15, T17, T22, T23, T24, T25',                                         moxa:'T3, T6, T15, T16, T25' },
+        { mer:'Передне-Срединный (VC/J)',           needle:'J1, J8, J9, J14, J15, J17',                                                          moxa:'J5, J15' },
+      ];
+      const ptBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#ffb4ab] hover:bg-[#ffb4ab]/15 border border-[#414755] hover:border-[#ffb4ab]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c.trim())}</button>`;
+      const moxaBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#FFD60A] hover:bg-[#FFD60A]/15 border border-[#414755] hover:border-[#FFD60A]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${c.trim()}</button>`;
+      const renderPts = (str, fn) => str ? str.split(',').map(fn).join('') : '<span class="text-xs text-[#414755]">—</span>';
+      return `
+        <p class="text-xs text-[#8b90a0] mb-4">Точки, не рекомендуемые для иглоукалывания и прижигания</p>
+        <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
+          ${DATA.map(d => `
+            <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
+              <div class="font-bold text-sm text-[#e2e2e2] mb-3" style="font-family:'Hanken Grotesk',sans-serif">${d.mer}</div>
+              <div class="grid grid-cols-2 gap-4 flex-1">
+                <div>
+                  <div class="text-[10px] text-[#8b90a0] uppercase tracking-wide mb-2">🚫 Не колоть</div>
+                  <div class="flex flex-wrap gap-1">${renderPts(d.needle, ptBtn)}</div>
+                </div>
+                <div>
+                  <div class="text-[10px] text-[#FFD60A] uppercase tracking-wide mb-2">🔥 Не прижигать</div>
+                  <div class="flex flex-wrap gap-1">${renderPts(d.moxa, moxaBtn)}</div>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }
+  },
+};
+
+let activeSection = 'catalog';
+
+window.setSection = (sec) => {
+  activeSection = sec;
+  document.querySelectorAll('#section-tabs button').forEach(b => {
+    const isA = b.id === `stab_${sec}`;
+    b.className = `px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${isA
+      ? 'bg-[#00F2FF]/15 text-[#00F2FF] border border-[#00F2FF]/30'
+      : 'text-[#8b90a0] hover:text-white hover:bg-white/5'}`;
+  });
+  updateAtlasSidebar();
+  if (sec === 'catalog') {
+    document.getElementById('panel-catalog').classList.remove('hidden');
+    document.getElementById('panel-static').classList.add('hidden');
+  } else {
+    document.getElementById('panel-catalog').classList.add('hidden');
+    document.getElementById('panel-static').classList.remove('hidden');
+    document.getElementById('panel-static').classList.add('flex');
+    const s = STATIC_SECTIONS[sec];
+    document.getElementById('static-content').innerHTML = `
+      <div class="flex items-center gap-3 mb-5 pb-4 border-b border-white/10">
+        <span class="material-symbols-outlined" style="font-size:28px;color:${s.color};filter:drop-shadow(0 0 8px ${s.color}66)">${s.icon}</span>
+        <h2 class="text-xl font-bold" style="font-family:'Hanken Grotesk',sans-serif;color:${s.color}">${s.title}</h2>
+      </div>
+    ` + s.content();
+    const equalizeCards = () => {
+      // Only target cards directly inside a grid (skips standard section's single panel)
+      const cards = [...document.querySelectorAll('#static-content .grid > .glass-panel')];
+      if (cards.length < 2) return;
+      // Reset first so re-measurements are accurate
+      cards.forEach(c => { c.style.height = ''; c.style.minHeight = ''; });
+      // Measure after reset reflow
+      requestAnimationFrame(() => {
+        const maxH = Math.max(...cards.map(c => c.getBoundingClientRect().height));
+        cards.forEach(c => { c.style.height = maxH + 'px'; c.style.boxSizing = 'border-box'; });
+      });
+    };
+    // First pass — immediate layout
+    requestAnimationFrame(equalizeCards);
+    // Second pass — after fonts settle
+    document.fonts.ready.then(() => setTimeout(equalizeCards, 30));
+  }
+};
+
+// Search handler — always switch to catalog view when typing
+document.getElementById('atlas-search').addEventListener('input', e => {
+  const q = e.target.value;
+  if (activeSection !== 'catalog') {
+    activeSection = 'catalog';
+    activeMer = 'all';
+    document.getElementById('panel-catalog').classList.remove('hidden');
+    document.getElementById('panel-static').classList.add('hidden');
+    document.querySelectorAll('#section-tabs button').forEach(b => {
+      b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all text-[#8b90a0] hover:text-white hover:bg-white/5';
+    });
+    updateAtlasSidebar();
+  }
+  renderList(q);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key==='/' && e.target.tagName!=='INPUT') {
+    e.preventDefault();
+    document.getElementById('atlas-search').focus();
+  }
+});
+</script>
+</body>
+</html>

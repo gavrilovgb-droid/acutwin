@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Запись</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313',
+  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
+  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
+  'surface-container-highest':'#353535',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
+  'primary':'#adc6ff','primary-container':'#4b8eff',
+  'outline':'#8b90a0','outline-variant':'#414755',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
+  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
+}}}}
+</script>
+<style>
+#body-bg { position:fixed; top:0; right:0; bottom:0; left:16rem; pointer-events:none; z-index:0; overflow:hidden; }
+.md\:ml-64 > * { position:relative; z-index:1; }
+.complaint-chip {
+  font-size:.7rem; font-weight:600; padding:3px 10px;
+  border-radius:20px; border:1px solid #41475588;
+  background:#1f1f1f; color:#8b90a0;
+  cursor:pointer; transition:all .15s;
+}
+.complaint-chip:hover { border-color:#00F2FF88; color:#00F2FF; background:rgba(0,242,255,.08); }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+<div id="body-bg">
+  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
+</div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Запись пациента</h2>
+  </header>
+
+  <main class="flex-1 p-6 page-enter">
+    <div class="max-w-2xl mx-auto">
+
+      <!-- Form card -->
+      <div class="glass-panel rounded-2xl p-6 mb-4">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="material-symbols-outlined text-2xl text-[#00F2FF]">person_add</span>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Новый приём</h3>
+        </div>
+
+        <form id="intake-form" class="space-y-5">
+
+          <!-- Row: date + time -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Дата</label>
+              <input id="f-date" type="date"
+                     class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                            focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Время</label>
+              <input id="f-time" type="time"
+                     class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                            focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            </div>
+          </div>
+
+          <!-- FIO -->
+          <div class="relative">
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ФИО пациента</label>
+            <input id="f-fio" type="text" placeholder="Иванов Иван Иванович" autocomplete="off"
+                   oninput="fioSuggest(this.value)"
+                   onblur="setTimeout(()=>document.getElementById('fio-drop').classList.add('hidden'),150)"
+                   class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                          placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            <div id="fio-drop"
+                 class="hidden absolute left-0 right-0 top-full mt-1 z-50 rounded-xl border border-[#414755] bg-[#1f1f1f] shadow-xl overflow-hidden">
+            </div>
+          </div>
+
+          <!-- Row: age + sex -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Возраст</label>
+              <input id="f-age" type="number" min="5" max="80" value="35"
+                     class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                            placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пол</label>
+              <select id="f-sex"
+                      class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                             focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all">
+                <option value="" class="bg-[#1f1f1f]">— выбрать —</option>
+                <option value="М" class="bg-[#1f1f1f]">Мужской</option>
+                <option value="Ж" class="bg-[#1f1f1f]">Женский</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Doctor -->
+          <div>
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Лечащий врач</label>
+            <input id="f-doctor" type="text" placeholder="Фамилия И.О."
+                   class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                          placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+          </div>
+
+          <!-- Reason -->
+          <div>
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Причина приёма / жалобы</label>
+            <!-- Шаблоны жалоб -->
+            <div id="complaint-chips" class="flex flex-wrap gap-1.5 mb-2"></div>
+            <textarea id="f-reason" rows="3" placeholder="Опишите основные жалобы пациента..."
+                      class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                             placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all resize-none leading-relaxed"></textarea>
+          </div>
+
+          <!-- Submit -->
+          <div class="flex gap-3 pt-1">
+            <button type="button" onclick="goToTreatment()"
+               class="w-full flex items-center justify-center gap-2 py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25
+                      text-[#0A84FF] border border-[#0A84FF]/40 rounded-xl font-bold text-sm transition-colors">
+              <span class="material-symbols-outlined text-base">arrow_forward</span>
+              К тактике лечения
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Success toast (hidden) -->
+      <div id="toast" class="hidden glass-panel rounded-xl p-4 flex items-center gap-3 border border-[#00F2FF]/30 mb-4">
+        <span class="material-symbols-outlined text-[#00F2FF]">check_circle</span>
+        <span class="text-sm text-[#e2e2e2]">Запись сохранена</span>
+      </div>
+
+      <!-- Recent appointments -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider">Последние записи</h3>
+          <a href="history.html" class="text-xs text-[#0A84FF] hover:text-[#adc6ff] transition-colors">Вся история →</a>
+        </div>
+        <!-- Поиск пациента -->
+        <div class="relative mb-3">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0]" style="font-size:16px;zoom:1">search</span>
+          <input id="recent-search" type="text" placeholder="Найти пациента..."
+                 oninput="renderRecent(this.value)"
+                 class="w-full pl-9 pr-4 py-2 bg-[#1a1a1a] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
+                        placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] transition-all"/>
+        </div>
+        <div id="recent-list" class="space-y-2"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc, uniqueId } from './shared.js';
+import { requireAuth } from './auth.js';
+import { apiGetRecords, apiAddRecord } from './api.js';
+
+const session = await requireAuth();
+if (!session) throw new Error('redirect');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('index', session);
+initElementClock();
+
+const now = new Date();
+document.getElementById('f-date').value = now.toISOString().slice(0,10);
+document.getElementById('f-time').value = now.toTimeString().slice(0,5);
+document.getElementById('f-doctor').value = session.name;
+
+// ── Records helpers ──────────────────────────────────────
+let _cachedRecords = [];
+async function loadRecords() {
+  _cachedRecords = await apiGetRecords();
+}
+function allRecords() { return _cachedRecords; }
+function myRecords()  { return _cachedRecords.filter(r => r.doctor === session.username); }
+async function saveRecord(rec) { await apiAddRecord(rec); _cachedRecords.unshift(rec); }
+
+await loadRecords();
+
+// ── Шаблоны жалоб ────────────────────────────────────────
+const DEFAULT_COMPLAINTS = [
+  { label: 'Боль в спине',    full: 'Боль в спине' },
+  { label: 'Головная боль',   full: 'Головная боль' },
+  { label: 'Бессонница',      full: 'Бессонница' },
+  { label: 'Давление',        full: 'Повышенное давление' },
+  { label: 'Усталость',       full: 'Усталость, упадок сил' },
+  { label: 'Суставы',         full: 'Боли в суставах' },
+  { label: 'Желудок',         full: 'Нарушение пищеварения, вздутие' },
+  { label: 'Стресс',          full: 'Тревожность, стресс' },
+  { label: 'Остеохондроз',    full: 'Остеохондроз' },
+  { label: 'Онемение',        full: 'Онемение конечностей' },
+];
+const HISTORY_THRESHOLD = 10; // при скольких посещениях переключаться на динамику
+
+function renderComplaintChips() {
+  const wrap = document.getElementById('complaint-chips');
+  if (!wrap) return;
+  const recs = isBoss ? allRecords() : myRecords();
+  let chips;
+
+  if (recs.length >= HISTORY_THRESHOLD) {
+    // Считаем частоту жалоб из истории
+    const freq = {};
+    recs.forEach(r => {
+      if (!r.reason) return;
+      r.reason.split(',').forEach(part => {
+        const t = part.trim();
+        if (t.length > 2) freq[t] = (freq[t] || 0) + 1;
+      });
+    });
+    const top = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([text, cnt]) => ({ label: text, full: text, cnt }));
+    chips = top.length ? top : DEFAULT_COMPLAINTS;
+  } else {
+    chips = DEFAULT_COMPLAINTS;
+  }
+
+  wrap.innerHTML =
+    `<span class="text-[10px] text-[#8b90a0] self-center mr-1">Быстрый выбор:</span>` +
+    chips.map(c =>
+      `<button type="button" onclick='addComplaint(${JSON.stringify(c.full).replace(/'/g,"&#39;")})' class="complaint-chip">${esc(c.label)}</button>`
+    ).join('');
+}
+
+// ── Переход к тактике лечения с данными пациента ─────────
+let _navigating = false;
+window.goToTreatment = () => {
+  if (_navigating) return;
+  const patient = document.getElementById('f-fio').value.trim();
+  if (!patient) { alert('Введите ФИО пациента'); return; }
+  const ageVal = +document.getElementById('f-age').value;
+  if (document.getElementById('f-age').value !== '' && (ageVal < 5 || ageVal > 80 || !Number.isInteger(ageVal))) {
+    alert('Возраст должен быть от 5 до 80 лет'); return;
+  }
+  _navigating = true;
+  const data = {
+    patient,
+    age:    document.getElementById('f-age').value || '',
+    gender: document.getElementById('f-sex').value || '',
+    reason: document.getElementById('f-reason').value.trim() || '',
+  };
+  sessionStorage.setItem('acutwin_diag_patient', JSON.stringify(data));
+  location.href = 'treatment.html';
+};
+
+// ── Автозаполнение ФИО ───────────────────────────────────
+window.fioSuggest = (q) => {
+  const drop = document.getElementById('fio-drop');
+  if (!q.trim()) { drop.classList.add('hidden'); return; }
+  const rawAll = allRecords();
+  const all = isBoss ? rawAll : rawAll.filter(r => r.doctor === session.username);
+  // Уникальные пациенты, последняя запись для каждого
+  const map = {};
+  all.forEach(r => { if (!map[r.patient] || r.date > map[r.patient].date) map[r.patient] = r; });
+  const matches = Object.values(map)
+    .filter(r => r.patient.toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b) => b.date.localeCompare(a.date))
+    .slice(0, 6);
+  if (!matches.length) { drop.classList.add('hidden'); return; }
+  drop.innerHTML = matches.map(r => {
+    const meta = [r.gender ? (r.gender === 'М' ? '♂' : '♀') : '', r.age ? r.age + ' лет' : ''].filter(Boolean).join(' ');
+    const safeR = JSON.stringify(r).replace(/'/g,"&#39;");
+    return `<button type="button" onmousedown='fillPatient(${safeR})'
+      class="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-[#00F2FF]/10 transition-colors text-left min-w-0">
+      <span class="text-sm text-[#e2e2e2] font-semibold truncate max-w-[220px]">${esc(r.patient)}</span>
+      <span class="text-[10px] text-[#8b90a0] flex-shrink-0">${esc(meta)}</span>
+    </button>`;
+  }).join('<div class="border-t border-[#2a2a2a]"></div>');
+  drop.classList.remove('hidden');
+};
+
+window.fillPatient = (r) => {
+  document.getElementById('f-fio').value   = r.patient;
+  document.getElementById('f-age').value   = r.age   || '';
+  document.getElementById('f-sex').value   = r.gender || '';
+  document.getElementById('fio-drop').classList.add('hidden');
+};
+
+window.addComplaint = (text) => {
+  const ta = document.getElementById('f-reason');
+  ta.value = ta.value ? ta.value.trimEnd() + ', ' + text : text;
+  ta.focus();
+};
+
+// ── Статус лечения ────────────────────────────────────────
+const STATUS_MAP = {
+  started:   { label: 'Начат',       color: '#0A84FF' },
+  active:    { label: 'В процессе',  color: '#FFD60A' },
+  completed: { label: 'Завершён',    color: '#5AC85A' },
+};
+function statusBadge(status) {
+  const s = STATUS_MAP[status];
+  if (!s) return '';
+  return `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;
+    background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${s.label}</span>`;
+}
+
+// ── Последние записи ─────────────────────────────────────
+const isBoss = session.role === 'boss';
+function renderRecent(query = '') {
+  const list = document.getElementById('recent-list');
+  let recs = (isBoss ? allRecords() : myRecords());
+  if (query) recs = recs.filter(r => r.patient?.toLowerCase().includes(query.toLowerCase()));
+  recs = recs.slice(0, 10);
+  if (!recs.length) {
+    list.innerHTML = `<div class="text-sm text-[#8b90a0] text-center py-4">${query ? 'Пациент не найден' : 'Записей пока нет'}</div>`;
+    return;
+  }
+  list.innerHTML = recs.map((r) => {
+    const recJson = JSON.stringify({ patient: r.patient, age: r.age||'', gender: r.gender||'', reason: '' });
+    return `
+    <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#1f1f1f]">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-0.5">
+          <button onclick='sessionStorage.setItem("acutwin_patient_view",${JSON.stringify(r.patient)});location.href="patient.html"'
+                  class="text-sm font-semibold text-[#e2e2e2] hover:text-[#00F2FF] transition-colors text-left truncate max-w-[200px]">${esc(r.patient)}</button>
+          ${statusBadge(r.status)}
+        </div>
+        <div class="text-[10px] text-[#8b90a0]">${r.date} · ${esc(r.reason || '—')}</div>
+      </div>
+      ${isBoss && r.doctorName ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#0A84FF]/10 text-[#0A84FF]">${esc(r.doctorName)}</span>` : `<span class="text-[10px] font-mono text-[#8b90a0]">${esc(r.gender || '')}</span>`}
+      <button onclick='sessionStorage.setItem("acutwin_diag_patient",${JSON.stringify(recJson)});location.href="treatment.html"'
+              title="К тактике лечения"
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors text-[10px] font-bold flex-shrink-0">
+        <span class="material-symbols-outlined" style="font-size:13px;zoom:1">medical_services</span>
+        Рецепт
+      </button>
+    </div>`;
+  }).join('');
+}
+renderRecent();
+renderComplaintChips();
+
+// ── Submit (Enter в форме = переход к лечению) ───────────
+document.getElementById('intake-form').addEventListener('submit', e => {
+  e.preventDefault();
+  goToTreatment();
+});
+</script>
+</body>
+</html>

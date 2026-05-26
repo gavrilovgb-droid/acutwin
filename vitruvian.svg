@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Circle -->
+  <circle cx="50" cy="52" r="44" stroke="#00F2FF" stroke-width="2"/>
+  <!-- Square -->
+  <rect x="8" y="8" width="84" height="84" stroke="#00F2FF" stroke-width="2"/>
+  <!-- Head -->
+  <circle cx="50" cy="22" r="9" stroke="#00F2FF" stroke-width="2"/>
+  <!-- Torso -->
+  <line x1="50" y1="31" x2="50" y2="74" stroke="#00F2FF" stroke-width="2"/>
+  <!-- T-arms horizontal -->
+  <line x1="14" y1="48" x2="86" y2="48" stroke="#00F2FF" stroke-width="2"/>
+  <!-- X-arms raised, dashed -->
+  <line x1="50" y1="48" x2="14" y2="26" stroke="#00F2FF" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <line x1="50" y1="48" x2="86" y2="26" stroke="#00F2FF" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <!-- Straight legs -->
+  <line x1="50" y1="74" x2="36" y2="96" stroke="#00F2FF" stroke-width="2"/>
+  <line x1="50" y1="74" x2="64" y2="96" stroke="#00F2FF" stroke-width="2"/>
+  <!-- Spread legs dashed -->
+  <line x1="50" y1="74" x2="14" y2="96" stroke="#00F2FF" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <line x1="50" y1="74" x2="86" y2="96" stroke="#00F2FF" stroke-width="1.5" stroke-dasharray="3,2"/>
+</svg>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<title>AcuTwin — Схема</title>
+<script type="module">
+  import { requireAdmin } from './auth.js';
+  await requireAdmin();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0e0e0e;color:#e2e2e2;font-family:Inter,system-ui,sans-serif;padding:40px 48px;min-height:100vh}
+h1{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#8b90a0;margin-bottom:36px}
+
+/* Grid layout */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}
+
+/* Node card */
+.card{border-radius:16px;padding:20px 22px;border:1.5px solid;position:relative}
+.card-name{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;opacity:.7}
+.card-title{font-size:1rem;font-weight:800;margin-bottom:10px;font-family:'Hanken Grotesk',Inter,sans-serif}
+.card-desc{font-size:.75rem;color:#8b90a0;line-height:1.6;margin-bottom:12px}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pill{font-size:.65rem;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid;white-space:nowrap}
+
+/* Colors */
+.blue{border-color:#0A84FF55;background:#0A84FF0d}
+.blue .card-title{color:#0A84FF}
+.blue .pill{border-color:#0A84FF44;color:#0A84FF;background:#0A84FF12}
+
+.cyan{border-color:#00F2FF55;background:#00F2FF0a}
+.cyan .card-title{color:#00F2FF}
+.cyan .pill{border-color:#00F2FF44;color:#00F2FF;background:#00F2FF10}
+
+.green{border-color:#3d8a5c66;background:#3d8a5c0d}
+.green .card-title{color:#5AC85A}
+.green .pill{border-color:#5AC85A44;color:#5AC85A;background:#5AC85A10}
+
+.amber{border-color:#FFD60A55;background:#FFD60A0a}
+.amber .card-title{color:#FFD60A}
+.amber .pill{border-color:#FFD60A44;color:#FFD60A;background:#FFD60A10}
+
+.purple{border-color:#BF5AF255;background:#BF5AF20a}
+.purple .card-title{color:#BF5AF2}
+.purple .pill{border-color:#BF5AF244;color:#BF5AF2;background:#BF5AF210}
+
+.gray{border-color:#41475588;background:#1a1a1a}
+.gray .card-title{color:#c1c6d7}
+.gray .pill{border-color:#41475566;color:#8b90a0;background:#2a2a2a}
+
+/* Arrows section */
+.arrows{max-width:1100px;margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.arrow-row{display:flex;align-items:center;gap:10px;background:#1a1a1a;border-radius:10px;padding:10px 14px}
+.arrow-from{font-size:.72rem;font-weight:700;min-width:130px}
+.arrow-line{flex:1;display:flex;align-items:center;gap:6px}
+.line{flex:1;height:1px;background:currentColor;opacity:.4}
+.arrow-label{font-size:.65rem;color:#8b90a0;white-space:nowrap;padding:2px 8px;border-radius:6px;background:#131313;border:1px solid #2a2a2a}
+.arrowhead{font-size:.8rem}
+.arrow-to{font-size:.72rem;font-weight:700;min-width:130px;text-align:right}
+
+/* Storage */
+.storage-section{max-width:1100px;margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.store{background:#131313;border:1px dashed #414755;border-radius:12px;padding:16px 20px}
+.store-title{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8b90a0;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.store-item{font-size:.72rem;color:#414755;line-height:2;font-family:'JetBrains Mono',monospace}
+.store-item b{color:#8b90a0}
+
+.section-label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:#414755;margin-top:28px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<h1>AcuTwin — Схема страниц и переходов</h1>
+
+<!-- Pages -->
+<div class="grid">
+
+  <div class="card blue">
+    <div class="card-name">login.html</div>
+    <div class="card-title">Авторизация</div>
+    <div class="card-desc">Двухшаговый вход: сначала настройка клиники, затем логин по паролю</div>
+    <div class="pills">
+      <span class="pill">Шаг 1: Клиника</span>
+      <span class="pill">Шаг 2: Логин</span>
+      <span class="pill">Демо-аккаунты</span>
+      <span class="pill">ivanov / petrov / sidorov / boss</span>
+    </div>
+  </div>
+
+  <div class="card cyan">
+    <div class="card-name">index.html</div>
+    <div class="card-title">Новый приём</div>
+    <div class="card-desc">Форма записи пациента. Список последних 8 записей с кнопкой запуска диагностики</div>
+    <div class="pills">
+      <span class="pill">Форма: ФИО / возраст / пол / жалобы</span>
+      <span class="pill">Последние записи (8 шт.)</span>
+      <span class="pill">🔬 Начать диагностику</span>
+      <span class="pill">boss видит всех врачей</span>
+    </div>
+  </div>
+
+  <div class="card green">
+    <div class="card-name">treatment.html</div>
+    <div class="card-title">Тактика лечения</div>
+    <div class="card-desc">4 вкладки подбора рецептов. При переходе через 🔬 показывает баннер пациента</div>
+    <div class="pills">
+      <span class="pill">📘 Общий рецепт (677 болезней)</span>
+      <span class="pill">📙 Рецепты ТКМ</span>
+      <span class="pill">🔬 Мерид. диагностика</span>
+      <span class="pill">🌸 Подбор У-Син</span>
+      <span class="pill">Баннер пациента</span>
+      <span class="pill">Записать сессию</span>
+      <span class="pill">Курс вручную (по дням)</span>
+    </div>
+  </div>
+
+  <div class="card amber">
+    <div class="card-name">history.html</div>
+    <div class="card-title">История приёмов</div>
+    <div class="card-desc">Хронология всех сессий с фильтрами и статистикой</div>
+    <div class="pills">
+      <span class="pill">Фильтр: врач / пациент / дата</span>
+      <span class="pill">Статистика: сессии / точки / пациенты</span>
+      <span class="pill">🔬 Начать диагностику</span>
+      <span class="pill">Клик → разворачивает заметки</span>
+      <span class="pill">boss видит всех врачей</span>
+    </div>
+  </div>
+
+  <div class="card purple">
+    <div class="card-name">atlas.html</div>
+    <div class="card-title">Атлас точек</div>
+    <div class="card-desc">Справочник акупунктурных точек. Открывается по клику на код точки из рецепта</div>
+    <div class="pills">
+      <span class="pill">Поиск по коду (E36, V25…)</span>
+      <span class="pill">Меридиан, описание, показания</span>
+      <span class="pill">Видео / иллюстрация</span>
+    </div>
+  </div>
+
+  <div class="card gray">
+    <div class="card-name">shared.js / auth.js / seed.js</div>
+    <div class="card-title">Общие модули</div>
+    <div class="card-desc">Подключаются на каждой странице через ES-модули</div>
+    <div class="pills">
+      <span class="pill">buildSidebar() — навбар</span>
+      <span class="pill">requireAuth() — защита</span>
+      <span class="pill">seedIfEmpty() — демо-данные</span>
+      <span class="pill">login() / logout()</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Arrows -->
+<div class="section-label">Переходы между страницами</div>
+<div class="arrows">
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#0A84FF">login.html</span>
+    <div class="arrow-line" style="color:#0A84FF">
+      <div class="line"></div>
+      <span class="arrow-label">после входа (redirect)</span>
+      <div class="line"></div>
+      <span class="arrowhead">→</span>
+    </div>
+    <span class="arrow-to" style="color:#00F2FF">index.html</span>
+  </div>
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#00F2FF">index.html</span>
+    <div class="arrow-line" style="color:#5AC85A">
+      <div class="line"></div>
+      <span class="arrow-label">🔬 + sessionStorage[patient]</span>
+      <div class="line"></div>
+      <span class="arrowhead">→</span>
+    </div>
+    <span class="arrow-to" style="color:#5AC85A">treatment.html</span>
+  </div>
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#00F2FF">index.html</span>
+    <div class="arrow-line" style="color:#FFD60A">
+      <div class="line"></div>
+      <span class="arrow-label">«Вся история →»</span>
+      <div class="line"></div>
+      <span class="arrowhead">→</span>
+    </div>
+    <span class="arrow-to" style="color:#FFD60A">history.html</span>
+  </div>
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#FFD60A">history.html</span>
+    <div class="arrow-line" style="color:#5AC85A">
+      <div class="line"></div>
+      <span class="arrow-label">🔬 + sessionStorage[patient]</span>
+      <div class="line"></div>
+      <span class="arrowhead">→</span>
+    </div>
+    <span class="arrow-to" style="color:#5AC85A">treatment.html</span>
+  </div>
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#5AC85A">treatment.html</span>
+    <div class="arrow-line" style="color:#BF5AF2">
+      <div class="line"></div>
+      <span class="arrow-label">клик по коду точки (E36…)</span>
+      <div class="line"></div>
+      <span class="arrowhead">→</span>
+    </div>
+    <span class="arrow-to" style="color:#BF5AF2">atlas.html</span>
+  </div>
+
+  <div class="arrow-row">
+    <span class="arrow-from" style="color:#c1c6d7">Все страницы</span>
+    <div class="arrow-line" style="color:#8b90a0">
+      <div class="line"></div>
+      <span class="arrow-label">сайдбар — навигация между разделами</span>
+      <div class="line"></div>
+      <span class="arrowhead">↔</span>
+    </div>
+    <span class="arrow-to" style="color:#c1c6d7">Все страницы</span>
+  </div>
+
+</div>
+
+<!-- Storage -->
+<div class="section-label">Хранилища данных</div>
+<div class="storage-section">
+
+  <div class="store">
+    <div class="store-title">💾 localStorage — постоянные данные</div>
+    <div class="store-item"><b>acutwin_clinic</b>    — название, адрес, телефон клиники</div>
+    <div class="store-item"><b>acutwin_users</b>     — список пользователей (bcrypt)</div>
+    <div class="store-item"><b>acutwin_session</b>   — текущий залогиненный пользователь</div>
+    <div class="store-item"><b>acutwin_records</b>   — все записи пациентов и сессии</div>
+    <div class="store-item"><b>acunote_{key}</b>     — заметки врача по рецепту</div>
+    <div class="store-item"><b>manual_{key}</b>      — ручной курс по дням</div>
+  </div>
+
+  <div class="store">
+    <div class="store-title">⚡ sessionStorage — временная передача</div>
+    <div class="store-item"><b>acutwin_diag_patient</b></div>
+    <div class="store-item" style="color:#5AC85A;margin-top:8px">
+      Записывается при нажатии 🔬<br>
+      на index.html или history.html.<br>
+      Читается при загрузке treatment.html<br>
+      → показывает баннер пациента<br>
+      → удаляется сразу после прочтения
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

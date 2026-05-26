@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Диагностика</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script src="html2canvas.min.js"></script>
+<script src="jspdf.umd.min.js"></script>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313','surface-dim':'#131313',
+  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
+  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
+  'surface-container-highest':'#353535','surface-variant':'#353535',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7','on-background':'#e2e2e2',
+  'primary':'#adc6ff','primary-container':'#4b8eff','on-primary':'#002e69',
+  'secondary':'#ddfcff','secondary-container':'#00f1fe','on-secondary':'#00363a',
+  'outline':'#8b90a0','outline-variant':'#414755',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
+  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
+}}}}
+</script>
+<style>
+.step-tab { display:none; }
+.step-tab.active { display:flex; flex-direction:column; flex:1; }
+.recipe-box { display:none; }
+.recipe-box.open { display:block; }
+.mer-row { cursor:pointer; }
+.mer-row:hover { background:rgba(255,255,255,0.04); }
+.vid-panel { display:none; }
+.vid-panel.open { display:block; }
+
+/* Point chip (Step 2) */
+.pt-chip { display:inline-flex; align-items:center; border-radius:8px; border:1px solid rgba(10,132,255,0.3); overflow:hidden; transition:all 0.15s; background:rgba(10,132,255,0.06); }
+.pt-chip.pt-selected { border-color:#00F2FF; background:rgba(0,242,255,0.13); }
+.pt-chip .pt-select-btn { padding:5px 9px; font-size:11px; font-family:'JetBrains Mono',monospace; font-weight:700; color:#0A84FF; display:flex; align-items:center; gap:5px; background:transparent; border:none; cursor:pointer; transition:color 0.15s; }
+.pt-chip.pt-selected .pt-select-btn { color:#00F2FF; }
+.pt-chip .pt-video-btn { padding:5px 6px; border-left:1px solid rgba(65,71,85,0.5); background:transparent; border-top:none; border-right:none; border-bottom:none; color:#8b90a0; cursor:pointer; transition:color 0.15s; display:flex; align-items:center; }
+.pt-chip .pt-video-btn:hover { color:#0A84FF; }
+
+/* Point card (Step 3) */
+.pt-card { background:#1f1f1f; border-radius:12px; padding:12px; cursor:pointer; transition:all 0.15s; border:1px solid transparent; }
+.pt-card:hover { background:#2a2a2a; }
+.pt-card.pt-selected { border-color:#00F2FF; background:rgba(0,242,255,0.07); }
+
+/* Print */
+#diag-print-sheet { display:none; }
+@media print {
+  body > * { display:none !important; }
+  #diag-print-sheet { display:block !important; font-family:Arial,sans-serif; color:#111; background:#fff; padding:24px; }
+}
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2]" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center justify-between px-6">
+    <div class="flex items-center gap-6">
+      <h2 class="text-lg font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">Диагностика меридианов</h2>
+      <!-- Step indicator -->
+      <div class="hidden md:flex items-center gap-2">
+        <div class="step-circle active" id="sc1">1</div>
+        <div class="step-line" id="sl1"></div>
+        <div class="step-circle" id="sc2">2</div>
+        <div class="step-line" id="sl2"></div>
+        <div class="step-circle" id="sc3">3</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="sel-badge" class="text-xs font-mono text-[#8b90a0] bg-[#1f1f1f] px-3 py-1 rounded-full border border-white/10">
+        Выбрано: <span id="sel-num" class="text-[#0A84FF] font-bold">0</span> симптомов
+      </span>
+    </div>
+  </header>
+
+  <!-- Steps container -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- STEP 1: Symptom Selection -->
+    <div id="step1" class="step-tab active overflow-y-auto">
+      <div class="p-6 pb-32 max-w-4xl mx-auto w-full page-enter">
+
+        <div class="mb-6">
+          <h1 class="text-2xl font-bold mb-1" style="font-family:'Hanken Grotesk',sans-serif">Шаг 1: Выбор симптомов</h1>
+          <p class="text-[#8b90a0] text-sm">Отметьте все актуальные симптомы пациента</p>
+        </div>
+
+        <!-- Search -->
+        <div class="relative mb-6 group">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#8b90a0] group-focus-within:text-[#00F2FF] transition-colors">search</span>
+          <input id="sym-search"
+                 class="w-full pl-12 pr-4 py-3.5 bg-[#1f1f1f]/60 backdrop-blur border border-[#414755] rounded-xl text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all placeholder-[#8b90a0] text-sm"
+                 placeholder="Поиск симптомов..."/>
+        </div>
+
+        <!-- Symptom groups -->
+        <div id="sym-groups" class="space-y-6"></div>
+      </div>
+
+      <!-- Sticky bottom bar -->
+      <div class="fixed bottom-0 left-0 md:left-64 right-0 z-30 bg-[#0e0e0e]/90 backdrop-blur-xl border-t border-white/10 px-6 py-4 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 text-sm text-[#8b90a0] hover:text-white transition-colors">
+          <span class="material-symbols-outlined text-base">arrow_back</span>
+          Назад
+        </a>
+        <button id="btn-analyze"
+                onclick="showStep2()"
+                disabled
+                class="flex items-center gap-2 px-6 py-2.5 bg-[#0A84FF] text-white rounded-lg font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#0A84FF]/80">
+          Анализировать
+          <span class="material-symbols-outlined text-base">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Meridian Analysis -->
+    <div id="step2" class="step-tab overflow-y-auto">
+      <div class="p-6 pb-6 max-w-5xl mx-auto w-full page-enter">
+
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold mb-1" style="font-family:'Hanken Grotesk',sans-serif">Шаг 2: Состояние меридианов</h1>
+            <p class="text-[#8b90a0] text-sm">Процент совпадения симптомов · нажмите строку для просмотра рецепта</p>
+          </div>
+          <button onclick="showStep1()" class="flex items-center gap-1 text-sm text-[#8b90a0] hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            Изменить
+          </button>
+        </div>
+
+        <div id="results-list" class="space-y-3"></div>
+
+        <div class="mt-6 flex justify-end">
+          <button onclick="showStep3()" id="btn-plan" class="flex items-center gap-2 px-6 py-2.5 bg-[#00F2FF]/20 hover:bg-[#00F2FF]/30 text-[#00F2FF] border border-[#00F2FF]/50 rounded-lg font-bold text-sm transition-colors">
+            <span class="material-symbols-outlined text-base">assignment</span>
+            План лечения
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Treatment Plan -->
+    <div id="step3" class="step-tab overflow-y-auto">
+      <div class="p-6 pb-6 max-w-5xl mx-auto w-full page-enter">
+
+        <div class="mb-6 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold mb-1" style="font-family:'Hanken Grotesk',sans-serif">Шаг 3: План лечения</h1>
+            <p id="plan-subtitle" class="text-[#8b90a0] text-sm">Рецепты по выбранным меридианам</p>
+          </div>
+          <button onclick="showStep2()" class="flex items-center gap-1 text-sm text-[#8b90a0] hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            К анализу
+          </button>
+        </div>
+
+        <div id="plan-content" class="space-y-6"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Basket bar (steps 2 & 3) -->
+  <div id="diag-basket-bar" class="hidden fixed bottom-0 left-0 md:left-64 right-0 z-30 bg-[#0e0e0e]/95 backdrop-blur-xl border-t border-[#00F2FF]/30 px-6 py-3">
+    <div class="flex items-center gap-3 max-w-5xl mx-auto">
+      <span class="text-sm font-bold text-[#00F2FF] flex-shrink-0">Рецепт: <span id="basket-count">0</span> т.</span>
+      <div id="basket-chips" class="flex flex-wrap gap-1.5 flex-1 min-w-0 overflow-hidden max-h-10 overflow-y-hidden"></div>
+      <button onclick="clearBasket()" class="text-xs text-[#8b90a0] hover:text-[#ffb4ab] px-2 py-1 flex-shrink-0 transition-colors">Очистить</button>
+      <button onclick="printDiagRecipe()" class="flex items-center gap-1.5 px-4 py-2 bg-[#00F2FF]/15 hover:bg-[#00F2FF]/25 text-[#00F2FF] border border-[#00F2FF]/40 rounded-lg font-bold text-sm transition-colors flex-shrink-0">
+        <span class="material-symbols-outlined text-base" style="font-size:16px">print</span>
+        Печать
+      </button>
+      <button onclick="downloadDiagRecipePdf()" class="flex items-center gap-1.5 px-4 py-2 bg-[#00F2FF]/15 hover:bg-[#00F2FF]/25 text-[#00F2FF] border border-[#00F2FF]/40 rounded-lg font-bold text-sm transition-colors flex-shrink-0">
+        <span class="material-symbols-outlined text-base" style="font-size:16px">picture_as_pdf</span>
+        PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="diag-print-sheet"></div>
+
+<script type="module">
+import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, parseSyms, extractPoints, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
+import { requireAuth } from './auth.js';
+import { apiGetClinic } from './api.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+let _clinicName = '';
+apiGetClinic().then(c => { _clinicName = c.name || ''; });
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('diagnostics', session);
+initElementClock();
+
+// Build symptom data
+const SYM_DATA = {};
+MER_ORDER.forEach(mer => {
+  SYM_DATA[mer] = {
+    excess: parseSyms(MER_SIGNS[mer].excess),
+    defic:  parseSyms(MER_SIGNS[mer].defic),
+  };
+});
+
+let points = null;
+let merSyndromes = {};
+
+fetch('../data/points.json')
+  .then(r => r.json())
+  .then(data => {
+    points = data;
+    buildMerSyndromes();
+    buildSymGroups();
+  })
+  .catch(() => buildSymGroups()); // show UI even without data
+
+function buildMerSyndromes() {
+  for (const code in points) {
+    const p = points[code];
+    const m = p.meridian;
+    if (!m || merSyndromes[m]) continue;
+    const te = p.treat_excess, td = p.treat_defic;
+    if (!te && !td) continue;
+    const aIsDefic = te && te.startsWith('Тониз');
+    merSyndromes[m] = {
+      excess: { text: aIsDefic ? p.syndrome_defic : p.syndrome_excess, treat: aIsDefic ? td : te },
+      defic:  { text: aIsDefic ? p.syndrome_excess : p.syndrome_defic, treat: aIsDefic ? te : td },
+    };
+  }
+}
+
+function buildSymGroups() {
+  const container = document.getElementById('sym-groups');
+  const html = MER_ORDER.map(mer => {
+    const m = MERIDIANS[mer];
+    const all = [
+      ...SYM_DATA[mer].excess.map((s,i) => ({ id:`s_${mer}_e_${i}`, text:s, type:'excess' })),
+      ...SYM_DATA[mer].defic.map((s,i) =>  ({ id:`s_${mer}_d_${i}`, text:s, type:'defic'  })),
+    ];
+    return `
+      <section class="sym-group" data-mer="${mer}">
+        <div class="flex items-center justify-between mb-3 border-b border-white/10 pb-2 gap-4">
+          <h2 class="text-xs font-bold text-[#8b90a0] uppercase tracking-widest flex items-center gap-2 flex-shrink-0">
+            <span class="w-2 h-2 rounded-full" style="background:${m.color}"></span>
+            ${m.name} (${mer}) &mdash; ${m.nameFr}
+          </h2>
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] text-[#ffb4ab] font-bold flex-shrink-0">↑ Избыток</span>
+              <div class="w-24 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden flex-shrink-0">
+                <div id="bar_${mer}_e" class="h-full bg-[#ffb4ab] rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+              <span id="pct_${mer}_e" class="text-[10px] font-mono text-[#ffb4ab] w-7 text-right flex-shrink-0">0%</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] text-[#0A84FF] font-bold flex-shrink-0">↓ Недостаток</span>
+              <div class="w-24 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden flex-shrink-0">
+                <div id="bar_${mer}_d" class="h-full bg-[#0A84FF] rounded-full transition-all duration-300" style="width:0%"></div>
+              </div>
+              <span id="pct_${mer}_d" class="text-[10px] font-mono text-[#0A84FF] w-7 text-right flex-shrink-0">0%</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+          ${all.map(s => `
+            <div class="sym-check-wrap flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-[#414755] transition-all">
+              <input type="checkbox" id="${s.id}" onchange="updateCount()"/>
+              <label for="${s.id}" class="text-sm text-[#e2e2e2] leading-snug flex-1">
+                ${s.text}
+                <span class="text-[10px] ml-1 ${s.type==='excess'?'text-[#ffb4ab]':'text-[#FFD60A]'}">${s.type==='excess'?'↑':'↓'}</span>
+              </label>
+            </div>`).join('')}
+        </div>
+      </section>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+// Search
+document.getElementById('sym-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.sym-check-wrap').forEach(el => {
+    const text = el.querySelector('label')?.textContent.toLowerCase() || '';
+    el.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+  document.querySelectorAll('.sym-group').forEach(g => {
+    const visible = [...g.querySelectorAll('.sym-check-wrap')].some(el => el.style.display !== 'none');
+    g.style.display = visible ? '' : 'none';
+  });
+});
+
+window.updateCount = () => {
+  let total = 0;
+  MER_ORDER.forEach(mer => {
+    let eHits = 0, dHits = 0;
+    SYM_DATA[mer].excess.forEach((_,i) => { if (document.getElementById(`s_${mer}_e_${i}`)?.checked) { eHits++; total++; } });
+    SYM_DATA[mer].defic.forEach((_,i)  => { if (document.getElementById(`s_${mer}_d_${i}`)?.checked) { dHits++; total++; } });
+
+    const ePct = SYM_DATA[mer].excess.length ? Math.round(eHits / SYM_DATA[mer].excess.length * 100) : 0;
+    const dPct = SYM_DATA[mer].defic.length  ? Math.round(dHits / SYM_DATA[mer].defic.length  * 100) : 0;
+
+    const barE = document.getElementById(`bar_${mer}_e`);
+    const barD = document.getElementById(`bar_${mer}_d`);
+    const pctE = document.getElementById(`pct_${mer}_e`);
+    const pctD = document.getElementById(`pct_${mer}_d`);
+    if (barE) barE.style.width = ePct + '%';
+    if (barD) barD.style.width = dPct + '%';
+    if (pctE) pctE.textContent = ePct + '%';
+    if (pctD) pctD.textContent = dPct + '%';
+  });
+  document.getElementById('sel-num').textContent = total;
+  document.getElementById('btn-analyze').disabled = total === 0;
+};
+
+function calcResults() {
+  return MER_ORDER.map(mer => {
+    const d = SYM_DATA[mer];
+    let eHits=0, dHits=0;
+    d.excess.forEach((_,i) => { if (document.getElementById(`s_${mer}_e_${i}`)?.checked) eHits++; });
+    d.defic.forEach((_,i)  => { if (document.getElementById(`s_${mer}_d_${i}`)?.checked) dHits++; });
+    const ePct = d.excess.length ? Math.round(eHits/d.excess.length*100) : 0;
+    const dPct = d.defic.length  ? Math.round(dHits/d.defic.length*100)  : 0;
+    return { mer, eHits, dHits, ePct, dPct, total: eHits+dHits };
+  }).sort((a,b) => b.total - a.total);
+}
+
+function stepCircle(n) {
+  [1,2,3].forEach(i => {
+    const c = document.getElementById(`sc${i}`);
+    const l = document.getElementById(`sl${i}`);
+    c.className = 'step-circle ' + (i<n?'done':i===n?'active':'');
+    if (l) l.className = 'step-line ' + (i<n?'done':'');
+  });
+}
+
+function showTab(n) {
+  document.querySelectorAll('.step-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`step${n}`).classList.add('active');
+  stepCircle(n);
+}
+
+window.showStep1 = () => showTab(1);
+
+window.showStep2 = () => {
+  const res = calcResults();
+  const hasAny = res.some(r => r.total > 0);
+  const list = document.getElementById('results-list');
+
+  list.innerHTML = res.map((r,idx) => {
+    const m = MERIDIANS[r.mer];
+    const hasMatch = r.total > 0;
+    const dominant = r.ePct >= r.dPct ? 'excess' : 'defic';
+    const syn = merSyndromes[r.mer];
+    const treatText = syn?.[dominant]?.treat || '';
+    const pts = extractPoints(treatText);
+
+    return `
+      <div class="glass-panel rounded-xl overflow-hidden ${!hasMatch?'opacity-40':''}">
+        <div class="mer-row p-4 flex items-center gap-4" onclick="toggleRecipe('${r.mer}')">
+          <div class="w-2 h-10 rounded-full flex-shrink-0" style="background:${m.color}"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-[#e2e2e2]">${m.name}</span>
+              <span class="text-xs font-mono text-[#8b90a0]">(${r.mer})</span>
+              <span class="text-[10px] text-[#8b90a0]">${m.element}</span>
+            </div>
+            <div class="flex gap-4">
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[#8b90a0]">Избыток</span>
+                  <span class="text-[#ffb4ab] font-mono">${r.ePct}%</span>
+                </div>
+                <div class="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                  <div class="h-full bg-[#ffb4ab] rounded-full bar-animate" style="width:${r.ePct}%;animation-delay:${idx*0.05}s"></div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-[#8b90a0]">Недостаток</span>
+                  <span class="text-[#FFD60A] font-mono">${r.dPct}%</span>
+                </div>
+                <div class="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                  <div class="h-full bg-[#FFD60A] rounded-full bar-animate" style="width:${r.dPct}%;animation-delay:${idx*0.05+0.03}s"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          ${hasMatch ? `
+          <div class="text-right flex-shrink-0">
+            <div class="text-xs ${dominant==='excess'?'text-[#ffb4ab]':'text-[#FFD60A]'} font-bold">${dominant==='excess'?'Избыток':'Недостаток'}</div>
+            <div class="text-[10px] text-[#8b90a0]">${r.total} совп.</div>
+          </div>
+          <span class="material-symbols-outlined text-[#8b90a0] text-lg transition-transform" id="chev_${r.mer}">expand_more</span>
+          ` : ''}
+        </div>
+
+        ${hasMatch ? `
+        <div class="recipe-box" id="rec_${r.mer}">
+          <div class="border-t border-white/10 p-4 bg-[#1b1b1b]/50">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full ${dominant==='excess'?'bg-[#ffb4ab]/10 text-[#ffb4ab]':'bg-[#FFD60A]/10 text-[#FFD60A]'}">${dominant==='excess'?'Полнота (избыток)':'Пустота (недостаток)'}</span>
+              <a href="atlas.html?mer=${r.mer}" class="text-xs text-[#0A84FF] hover:underline ml-auto flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">open_in_new</span>
+                Меридиан в атласе
+              </a>
+            </div>
+            ${syn?.[dominant]?.text ? `<p class="text-xs text-[#c1c6d7] mb-3 leading-relaxed">${syn[dominant].text}</p>` : ''}
+            ${treatText ? `<p class="text-xs text-[#8b90a0] mb-3"><strong class="text-[#e2e2e2]">Рецепт:</strong> ${treatText}</p>` : ''}
+            ${pts.length ? `
+            <div class="flex flex-wrap gap-2">
+              ${pts.map(code => `
+                <div class="pt-chip" data-pt-code="${code}">
+                  <button class="pt-select-btn" onclick="togglePoint('${code}','${r.mer}','${dominant}')">
+                    <span class="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0"></span>
+                    ${code}
+                  </button>
+                  <button class="pt-video-btn" onclick="openPointVideo('${code}','${r.mer}')">
+                    <span class="material-symbols-outlined" style="font-size:13px">play_circle</span>
+                  </button>
+                </div>`).join('')}
+            </div>` : ''}
+          </div>
+        </div>
+        ` : ''}
+      </div>`;
+  }).join('');
+
+  document.getElementById('btn-plan').style.display = hasAny ? '' : 'none';
+  showTab(2);
+};
+
+window.toggleRecipe = (mer) => {
+  const box = document.getElementById(`rec_${mer}`);
+  const chev = document.getElementById(`chev_${mer}`);
+  if (!box) return;
+  const open = box.classList.toggle('open');
+  if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+};
+
+// Point video modal
+let videoModal = null;
+window.openPointVideo = (code, mer) => {
+  const src = ptVideoSrc(code);
+  const m = code.match(/^([A-Za-z]+)(\d+)$/);
+  const merCode = m ? m[1] : mer;
+  const ptInfo = points?.[code] || {};
+
+  if (!videoModal) {
+    videoModal = document.createElement('div');
+    videoModal.className = 'fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4';
+    videoModal.onclick = e => { if (e.target===videoModal) closeModal(); };
+    document.body.appendChild(videoModal);
+  }
+
+  videoModal.innerHTML = `
+    <div class="bg-[#1b1b1b] border border-white/15 rounded-2xl overflow-hidden w-full max-w-lg shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+        <div>
+          <h3 class="font-bold text-[#e2e2e2] flex items-center gap-2" style="font-family:'Hanken Grotesk',sans-serif">
+            <span class="text-[#00F2FF] font-mono">${code}</span>
+            ${ptInfo.cn_name ? `<span class="text-[#8b90a0] text-sm">${ptInfo.cn_name}</span>` : ''}
+          </h3>
+          ${ptInfo.location ? `<p class="text-xs text-[#8b90a0] mt-0.5">${ptInfo.location}</p>` : ''}
+        </div>
+        <button onclick="closeModal()" class="p-2 rounded-full hover:bg-white/10 text-[#8b90a0] hover:text-white transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="vid-wrap mx-4 mt-4">
+        <video controls autoplay class="w-full rounded-lg" src="${src}"
+               controlsList="nodownload noremoteplayback" disablePictureInPicture
+               oncontextmenu="return false"
+               onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-full text-[#8b90a0] text-sm p-8 text-center\'>Видео не найдено<br><span class=\'text-xs mt-2 block font-mono\'>${src}</span></div>'">
+        </video>
+      </div>
+      ${ptInfo.indica ? `
+      <div class="px-4 py-4">
+        <div class="text-xs text-[#8b90a0] uppercase tracking-wider mb-1">Показания</div>
+        <p class="text-sm text-[#e2e2e2] leading-relaxed">${ptInfo.indica}</p>
+      </div>` : ''}
+      ${ptInfo.technik ? `
+      <div class="px-4 pb-4">
+        <div class="text-xs text-[#8b90a0] uppercase tracking-wider mb-1">Техника</div>
+        <p class="text-sm text-[#c1c6d7] leading-relaxed">${ptInfo.technik}</p>
+      </div>` : ''}
+      <div class="px-4 pb-4 flex gap-2">
+        <a href="atlas.html?code=${code}" class="flex-1 text-center py-2 text-xs font-bold text-[#0A84FF] bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 rounded-lg transition-colors">
+          Открыть в атласе
+        </a>
+      </div>
+    </div>`;
+  videoModal.style.display = 'flex';
+};
+
+window.closeModal = () => {
+  if (videoModal) {
+    videoModal.style.display = 'none';
+    videoModal.querySelectorAll('video').forEach(v => v.pause());
+  }
+};
+
+window.showStep3 = () => {
+  const res = calcResults().filter(r => r.total > 0);
+  if (!res.length) return;
+
+  const topMers = res.slice(0, 3);
+  document.getElementById('plan-subtitle').textContent =
+    `Топ меридианы: ${topMers.map(r => r.mer).join(', ')}`;
+
+  const content = document.getElementById('plan-content');
+  content.innerHTML = topMers.map(r => {
+    const m = MERIDIANS[r.mer];
+    const dominant = r.ePct >= r.dPct ? 'excess' : 'defic';
+    const syn = merSyndromes[r.mer];
+    const treatText = syn?.[dominant]?.treat || '';
+    const pts = extractPoints(treatText);
+
+    return `
+      <div class="glass-panel rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-white/10 flex items-center gap-3">
+          <div class="w-3 h-8 rounded-full" style="background:${m.color}"></div>
+          <div>
+            <h3 class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">${m.name} (${r.mer})</h3>
+            <p class="text-xs ${dominant==='excess'?'text-[#ffb4ab]':'text-[#FFD60A]'}">${dominant==='excess'?'Полнота — Седативный рецепт':'Пустота — Тонизирующий рецепт'}</p>
+          </div>
+          <div class="ml-auto text-right">
+            <div class="text-xl font-bold font-mono text-[#00F2FF]">${Math.max(r.ePct,r.dPct)}%</div>
+            <div class="text-[10px] text-[#8b90a0]">совпадение</div>
+          </div>
+        </div>
+        ${treatText ? `<div class="px-6 py-3 bg-[#1b1b1b]/30 border-b border-white/10">
+          <span class="text-xs text-[#8b90a0]">Рецепт:</span>
+          <span class="text-xs text-[#e2e2e2] ml-2">${treatText}</span>
+        </div>` : ''}
+        <div class="p-5">
+          ${pts.length ? `
+          <div class="text-xs text-[#8b90a0] uppercase tracking-wider mb-3">Точки воздействия</div>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+            ${pts.map(code => {
+              const pt = points?.[code] || {};
+              return `
+                <div class="pt-card" data-pt-code="${code}" onclick="togglePoint('${code}','${r.mer}','${dominant}')">
+                  <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-[#00F2FF] font-mono font-bold text-sm">${code}</span>
+                    ${pt.cn_name ? `<span class="text-[10px] text-[#8b90a0]">${pt.cn_name}</span>` : ''}
+                    <button class="ml-auto p-0.5 rounded hover:bg-white/10 text-[#8b90a0] hover:text-[#0A84FF] flex items-center transition-colors"
+                            onclick="event.stopPropagation();openPointVideo('${code}','${r.mer}')">
+                      <span class="material-symbols-outlined" style="font-size:16px">play_circle</span>
+                    </button>
+                  </div>
+                  ${pt.location ? `<p class="text-[10px] text-[#c1c6d7] leading-snug line-clamp-2">${pt.location}</p>` : ''}
+                </div>`;
+            }).join('')}
+          </div>` : '<p class="text-sm text-[#8b90a0]">Нет данных о точках</p>'}
+        </div>
+      </div>`;
+  }).join('');
+
+  showTab(3);
+};
+
+// ─── Point selection & basket ────────────────────────────────────────────────
+const selectedPoints = new Set();
+const selectedPointsMeta = {};
+
+window.togglePoint = (code, mer, dominant) => {
+  if (selectedPoints.has(code)) {
+    selectedPoints.delete(code);
+    delete selectedPointsMeta[code];
+  } else {
+    selectedPoints.add(code);
+    const pt = points?.[code] || {};
+    selectedPointsMeta[code] = { mer, dominant, name: pt.cn_name || '' };
+  }
+  updatePointButtons();
+  updateBasket();
+};
+
+function updatePointButtons() {
+  document.querySelectorAll('[data-pt-code]').forEach(el => {
+    el.classList.toggle('pt-selected', selectedPoints.has(el.dataset.ptCode));
+  });
+}
+
+function updateBasket() {
+  const bar = document.getElementById('diag-basket-bar');
+  if (selectedPoints.size === 0) { bar.classList.add('hidden'); return; }
+  bar.classList.remove('hidden');
+  document.getElementById('basket-count').textContent = selectedPoints.size;
+  const chips = document.getElementById('basket-chips');
+  chips.innerHTML = [...selectedPoints].map(code => {
+    const meta = selectedPointsMeta[code] || {};
+    const color = meta.dominant === 'excess' ? '#ffb4ab' : '#FFD60A';
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-bold border"
+                  style="color:${color};border-color:${color}40;background:${color}12">
+      ${code}
+      <button onclick="event.stopPropagation();togglePoint('${code}','${meta.mer}','${meta.dominant}')"
+              style="opacity:0.6;cursor:pointer;background:none;border:none;color:inherit;padding:0;line-height:1;font-size:10px">✕</button>
+    </span>`;
+  }).join('');
+}
+
+window.clearBasket = () => {
+  selectedPoints.clear();
+  for (const k in selectedPointsMeta) delete selectedPointsMeta[k];
+  updatePointButtons();
+  updateBasket();
+};
+
+// ─── PDF export ──────────────────────────────────────────
+let _pdfIntercept = null;
+(function() {
+  const _orig = window.print.bind(window);
+  window.print = function() {
+    if (_pdfIntercept) {
+      const cfg = _pdfIntercept; _pdfIntercept = null;
+      _downloadPdfFromSheet(cfg.sheetId, cfg.filename).catch(e => {
+        console.error('[PDF]', e); alert('Ошибка генерации PDF');
+      });
+    } else { _orig(); }
+  };
+})();
+
+async function _downloadPdfFromSheet(sheetId, filename) {
+  const sheet = document.getElementById(sheetId);
+  if (!sheet?.innerHTML.trim()) { alert('Сначала сформируйте рецепт'); return; }
+  const saved = sheet.getAttribute('style') || '';
+  sheet.style.cssText = 'display:block!important;position:fixed;top:-9999px;left:0;width:680px;padding:28px 32px;box-sizing:border-box;background:#fff;color:#111;font-family:Arial,sans-serif';
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const canvas = await html2canvas(sheet, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+  sheet.setAttribute('style', saved);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = pdf.internal.pageSize.getWidth();
+  const H = pdf.internal.pageSize.getHeight();
+  const imgH = (canvas.height * W) / canvas.width;
+  if (imgH <= H) {
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, W, imgH);
+  } else {
+    const rows = Math.ceil(imgH / H);
+    for (let i = 0; i < rows; i++) {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, -i * H, W, imgH);
+    }
+  }
+  pdf.save(filename + '.pdf');
+}
+
+function _clinicHeader() {
+  return _clinicName
+    ? `<div style="text-align:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ddd">
+         <div style="font-size:11pt;font-weight:700;letter-spacing:.02em">${esc(_clinicName)}</div>
+       </div>`
+    : '';
+}
+
+window.downloadDiagRecipePdf = () => {
+  _pdfIntercept = { sheetId: 'diag-print-sheet', filename: 'меридианная-диагностика' };
+  printDiagRecipe();
+};
+
+window.printDiagRecipe = () => {
+  if (selectedPoints.size === 0) return;
+
+  const byMer = {};
+  [...selectedPoints].forEach(code => {
+    const meta = selectedPointsMeta[code] || {};
+    const mer = meta.mer || '?';
+    if (!byMer[mer]) byMer[mer] = { points: [], dominant: meta.dominant };
+    byMer[mer].points.push(code);
+  });
+
+  const today      = new Date().toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const doctorName = session.name || '';
+
+  const merGroups = Object.entries(byMer).map(([mer, grp]) => {
+    const m       = MERIDIANS[mer] || {};
+    const action  = grp.dominant === 'excess' ? 'сед' : 'тон';
+    const actColor = action === 'тон' ? '#1a6ea8' : '#c0392b';
+    const chips = grp.points.map(code =>
+      `<span style="display:inline-flex;align-items:baseline;border:2px solid #222;border-radius:6px;padding:5px 14px;font-size:13pt;font-weight:700;font-family:'Courier New',monospace">${displayCode(code)}<span style="font-size:8pt;font-weight:normal;color:${actColor};margin-left:4px">${action}</span></span>`
+    ).join('');
+    return `
+      <div style="margin-bottom:14px">
+        <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">
+          ${esc(m.name || mer)}${m.name ? ' · ' + mer : ''} — ${grp.dominant === 'excess' ? 'Избыток → Седатирование' : 'Дефицит → Тонизирование'}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">${chips}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('diag-print-sheet').innerHTML = `
+    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:28px 32px">
+      ${_clinicHeader()}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;border-bottom:2px solid #222;padding-bottom:12px">
+        <div>
+          <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Пациент</div>
+          <div style="font-size:13pt;font-weight:700">______________________________</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Дата</div>
+          <div style="font-size:12pt;font-weight:700">${today}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Раздел</div>
+        <div style="font-size:15pt;font-weight:700">Меридиональная диагностика</div>
+      </div>
+
+      <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Акупунктурные точки (${selectedPoints.size})</div>
+      ${merGroups}
+
+      <div style="margin-top:28px;padding-top:12px;border-top:1px solid #ccc">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+          <div style="flex:1">
+            <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Врач</div>
+            <div style="border-bottom:1px solid #999;padding-bottom:2px;font-size:10pt">${esc(doctorName) || ''}</div>
+            <div style="font-size:8pt;color:#999;margin-top:3px">ФИО, подпись</div>
+          </div>
+          <div style="flex:1;text-align:right">
+            <div style="font-size:8pt;color:#888;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Печать</div>
+            <div style="border-bottom:1px solid #999;padding-bottom:2px;min-width:100px;display:inline-block;width:100px"></div>
+            <div style="font-size:8pt;color:#999;margin-top:3px">М.П.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>`;
+
+  window.print();
+};
+</script>
+</body>
+</html>

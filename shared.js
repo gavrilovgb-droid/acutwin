@@ -1,0 +1,516 @@
+// Защита видео от скачивания
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) e.preventDefault();
+});
+document.addEventListener('dragstart', e => {
+  if (e.target.tagName === 'VIDEO') e.preventDefault();
+});
+
+// Скорость воспроизведения 1.25× для всех видео
+document.addEventListener('play', e => {
+  if (e.target.tagName === 'VIDEO') e.target.playbackRate = 1.25;
+}, true);
+
+export const MER_ORDER = ['P','Gi','E','RP','C','iG','V','R','MC','TR','VB','F'];
+
+export const MERIDIANS = {
+  P:  { name:'Лёгкие',               nameFr:'Poumon',              element:'Металл', code:'LU', color:'#5a8fa8' },
+  Gi: { name:'Толстый кишечник',      nameFr:'Gros Intestin',       element:'Металл', code:'LI', color:'#5a8fa8' },
+  E:  { name:'Желудок',              nameFr:'Estomac',             element:'Земля',  code:'ST', color:'#c07840' },
+  RP: { name:'Селезёнка',            nameFr:'Rate-Pancréas',       element:'Земля',  code:'SP', color:'#c07840' },
+  C:  { name:'Сердце',               nameFr:'Cœur',                element:'Огонь',  code:'HT', color:'#c0392b' },
+  iG: { name:'Тонкий кишечник',      nameFr:'Intestin Grêle',      element:'Огонь',  code:'SI', color:'#c0392b' },
+  V:  { name:'Мочевой пузырь',       nameFr:'Vessie',              element:'Вода',   code:'BL', color:'#2471a3' },
+  R:  { name:'Почки',                nameFr:'Rein',                element:'Вода',   code:'KI', color:'#2471a3' },
+  MC: { name:'Перикард',             nameFr:'Maître du Cœur',      element:'Огонь',  code:'PC', color:'#a0305a' },
+  TR: { name:'Тройной обогреватель', nameFr:'Triple Réchauffeur',  element:'Огонь',  code:'TE', color:'#a0305a' },
+  VB: { name:'Желчный пузырь',       nameFr:'Vésicule Biliaire',   element:'Дерево', code:'GB', color:'#3d8a5c' },
+  F:  { name:'Печень',               nameFr:'Foie',                element:'Дерево', code:'LR', color:'#3d8a5c' },
+  T:  { name:'Задне-Срединный',      nameFr:'Vaisseau Gouverneur', element:'Чудесный', code:'DU', display:'VG', color:'#8b6db5' },
+  J:  { name:'Передне-Срединный',    nameFr:'Vaisseau Conception', element:'Чудесный', code:'RN', display:'VC', color:'#8b6db5' },
+};
+
+export const MER_SIGNS = {
+  P:  {
+    excess:'Повышенная температура тела,Потливость,Горячая на ощупь ладонь,Звонкий кашель с болью,Обилие мокроты,Астма,Прилив крови к голове,Боль в области спины и плеча,Напряжение мышц плеча',
+    defic: 'Озноб,Холодный пот,Насморк,Хриплый кашель,Сухость в горле,Головокружение,Боль в области ключицы и грудной клетки,Чувство онемения и похолодания верхних конечностей,Кожный зуд,Бессонница',
+  },
+  Gi: {
+    excess:'Запор,Боль и вздутие живота,Головная боль,Боль в плече и предплечье,Боль в пальцах рук,Тело горячее,Сухость во рту,Состояние ухудшается в тепле',
+    defic: 'Понос,Урчание в животе,Расстройства функции кишечника,Головокружение,Слабость верхних конечностей,Тело холодное,Сыпь и зуд,Небольшой кашель,Покраснение задней стенки глотки,Состояние улучшается в тепле',
+  },
+  E:  {
+    excess:'Возбуждение,Высокая температура тела,Вздутие живота,Отрыжка,Запор,Повышенный аппетит,Боль спазматического характера в желудке,Повышенная кислотность,Трещины слизистой оболочки губ,Боль и судороги мышц ног,Сыпь',
+    defic: 'Урчание в животе,Понос,Рвота после еды,Потеря аппетита,Замедленное пищеварение,Чувство переполнения в желудке,Пониженная кислотность,Вялость,Депрессивное состояние,Набухание слизистой оболочки горла,Слабость нижних конечностей',
+  },
+  RP: {
+    excess:'Неустойчивый аппетит,Чувство переполнения в животе,Запор,Боль и ощущение тяжести в подреберье,Тошнота,Отрыжка воздухом,Пищевая интоксикация,Боль в суставах ног,Ограничение движения I пальца стопы,Тяжёлый сон',
+    defic: 'Плохое пищеварение,Газы в желудке,Большое количество испражнений,Боль в надчревной области,Рвота,Слабость и онемение ног,Венозный застой в ногах,Кожные расстройства,Сонливость в течение дня',
+  },
+  C:  {
+    excess:'Боль в области сердца,Боль в плече и предплечье,Гиперемированное лицо,Повышенная возбудимость,Ощущение тяжести в конечностях и груди,Повышение температуры тела,Сухость во рту',
+    defic: 'Сердцебиение,Одышка при физической нагрузке,Бледное лицо,Чувство подавленности и тоски,Чувство страха,Онемение внутренней поверхности плеча,Головокружение из-за недостаточности кровообращения',
+  },
+  iG: {
+    excess:'Боль в шее и затылке,Боль в висках,Звон в ушах,Боль в нижней части живота,Запор,Боль по задней стороне плеча и предплечья',
+    defic: 'Отёчность в области нижней челюсти и шеи,Шум в ушах,Снижение слуха,Уменьшение массы тела,Тошнота,Рвота,Понос,Слабость конечностей,Ощущение холода в конечностях',
+  },
+  V:  {
+    excess:'Частое мочеиспускание,Болезненные спазмы со стороны мочеполовых органов,Боль и напряжение мышц спины,Боль в позвоночнике,Боль и спазмы мышц нижних конечностей,Головная боль в лобной и затылочной областях,Избыточное слезотечение,Боль в глазах,Кровотечение из носа',
+    defic: 'Редкое обильное мочеиспускание,Отёчность в области половых органов,Гипотония мышц затылка и позвоночника,Неподвижность бедра,Ощущение тяжести и слабости нижних конечностей,Головокружение,Слабость мышц спины,Геморрой',
+  },
+  R:  {
+    excess:'Редкое мочеиспускание,Моча тёмного цвета,Сухость во рту,Тошнота,Ощущение тяжести и жара в ногах,Ступня горячая на ощупь,Боль в крестце и пояснице,Боль во внутренней части бедра,Необычный прилив энергии,Повышение сексуальной потенции',
+    defic: 'Учащённое мочеиспускание,Обильное потоотделение,Ощущение холода в ногах,Ступня холодная на ощупь,Онемение и слабость нижних конечностей,Слабость и вялость,Чувство страха и нерешительности,Снижение сексуальной потенции',
+  },
+  MC: {
+    excess:'Раздражительность,Боль в грудной клетке,Нарушения функции сердечно-сосудистой системы,Головная боль с ощущением приливов,Боль в верхних конечностях,Неглубокий сон,Покраснение склер,Запор',
+    defic: 'Депрессия,Утомляемость,Учащённое сердцебиение,Головокружения,Одышка,Боязнь высоты,Слабость верхних конечностей,Боль в животе,Желтушность склер,Понос,Глубокий сон с большим количеством сновидений',
+  },
+  TR: {
+    excess:'Боль в верхних конечностях,Боль в лопатке и шее,Звон в ушах,Гиперемированное лицо,Непереносимость жары,Отсутствие аппетита,Обильное мочеиспускание,Бессонница,Раздражительность',
+    defic: 'Онемение и слабость конечностей,Онемение и слабость в шее,Бледное лицо,Поверхностное дыхание,Озноб,Непереносимость холода,Пониженное мочеиспускание,Психическая и физическая усталость,Грусть,Вялость,Ослабление слуха',
+  },
+  VB: {
+    excess:'Чувство полноты в желудке,Горечь во рту,Тошнота,Припухлость щёк и шеи,Заболевания горла,Бессонница,Головная боль,Боль и судороги в бедре и голени,Горячая на ощупь стопа',
+    defic: 'Слабость и отсутствие сил,Припухлость в подколенной ямке и стопе,Отёчность суставов нижних конечностей,Заболевания глаз,Желтушность склер,Рвота желчью,Сонливость,Ночная потливость,Тяжёлые и глубокие вздохи',
+  },
+  F:  {
+    excess:'Головная боль,Желтушность кожи,Боль в пояснице и половых органах,Затруднённое мочеиспускание,Нарушения менструального цикла,Чувство гнева,Раздражительность,Лёгкая возбудимость,Импульсивность',
+    defic: 'Головокружение,Бледный цвет кожи,Расстройства кишечника,Половая холодность,Боль в бедре и малом тазу,Слабость нижних конечностей,Быстрая утомляемость,Ухудшение зрения,Депрессия,Чувство страха',
+  },
+};
+
+// Собственная точка меридиана: s=седатирование (избыток), n=тонизирование (недостаток)
+export const OWN = {
+  C:  { s:{pt:'C7',   t:'11–13 ч', tech:'укол прямой, глубина до 10 мм (либо под сухожилие лок. сгибателя запястья); термопунктура — обычная'},
+        n:{pt:'C9',   t:'13–15 ч', tech:'укол наклонный или почти горизонтальный, глубина 3 мм; дистантное воздействие до 5 мин'} },
+  E:  { s:{pt:'E45',  t:'7–9 ч',   tech:'укол наклонный, глубина 3 мм; дистантное воздействие до 5 мин'},
+        n:{pt:'E41',  t:'9–11 ч',  tech:'укол наклонный, по направлению к пятке, глубина 10–15 мм; дистантное воздействие до 10 мин'} },
+  F:  { s:{pt:'F2',   t:'1–3 ч',   tech:'укол прямой, глубина 10 мм; дистантное воздействие до 10 мин'},
+        n:{pt:'F8',   t:'3–5 ч',   tech:'укол прямой (ногу предварительно несколько разогнуть), глубина 10–15 мм; дистантное воздействие до 10 мин'} },
+  Gi: { s:{pt:'Gi2',  t:'5–7 ч',   tech:'укол прямой, глубина 5–10 мм; дистантное воздействие до 5 мин'},
+        n:{pt:'Gi11', t:'7–9 ч',   tech:'укол прямой, при слегка согнутой руке, глубина 15–25 мм; термопунктура — обычная'} },
+  iG: { s:{pt:'iG8',  t:'13–15 ч', tech:'укол наклонный, по ходу локтевой бороздки, глубина ~5 мм; дистантное воздействие до 10 мин'},
+        n:{pt:'iG3',  t:'15–17 ч', tech:'укол наклонный, глубина 5–10 мм; дистантное воздействие до 10 мин'} },
+  MC: { s:{pt:'MC7',  t:'19–21 ч', tech:'укол прямой, глубина 10 мм; дистантное воздействие до 5 мин'},
+        n:{pt:'MC9',  t:'19–21 ч', tech:'укол наклонный или горизонтальный, глубина 3 мм; дистантное воздействие до 5 мин'} },
+  P:  { s:{pt:'P5',   t:'3–5 ч',   tech:'рука несколько согнута в локтевом суставе, укол прямой, глубина ~10 мм; дистантное воздействие до 5 мин'},
+        n:{pt:'P9',   t:'5–7 ч',   tech:'укол наклонный, в обход артерии, глубина ~5 мм; дистантное воздействие 1–3 мин'} },
+  R:  { s:{pt:'R1',   t:'17–19 ч', tech:'укол прямой, глубина 10–15 мм; термопунктура до 5 мин'},
+        n:{pt:'R7',   t:'19–21 ч', tech:'укол прямой, глубина 10 мм; термопунктура до 10 мин'} },
+  RP: { s:{pt:'RP5',  t:'9–11 ч',  tech:'укол наклонный, глубина 10 мм; дистантное воздействие до 10 мин'},
+        n:{pt:'RP2',  t:'11–13 ч', tech:'укол наклонный, глубина 10 мм; дистантное воздействие до 10 мин'} },
+  TR: { s:{pt:'TR10', t:'21–23 ч', tech:'укол прямой, глубина 10–15 мм; термопунктура — обычная'},
+        n:{pt:'TR3',  t:'23–1 ч',  tech:'укол прямой, глубина ~10 мм; дистантное воздействие до 10 мин'} },
+  V:  { s:{pt:'V65',  t:'15–17 ч', tech:'укол наклонный, глубина 5–10 мм; дистантное воздействие до 10 мин'},
+        n:{pt:'V67',  t:'17–19 ч', tech:'укол наклонный, глубина 3 мм; дистантное воздействие до 5 мин'} },
+  VB: { s:{pt:'VB38', t:'23–1 ч',  tech:'укол прямой, глубина 10–15 мм; термопунктура — обычная'},
+        n:{pt:'VB43', t:'1–3 ч',   tech:'укол наклонный, глубина 10 мм; дистантное воздействие до 5 мин'} },
+};
+
+// Энергетический баланс: ex=избыток(седатируем), def=недостаток(тонизируем)
+export const EB = {
+  C:{
+    ex:{ ms_d:'Сед RP5 (9–11 ч), тон iG3 (15–17 ч)', ms_y:'Сед F2 (1–3 ч), тон iG3 (15–17 ч)', big:'Сед C5 (ло-пункт), тон iG4 (т-пособник)', hw:'Тон R7', nm:'Тон VB43', ushu:'Тон C9, сед C8', usin:'Сед C7, RP3; тон C3, R10', via:'Сед F8 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон RP2 (11–13 ч), сед iG8 (13–15 ч)', ms_y:'Тон F8 (3–5 ч), сед iG8 (13–15 ч)', big:'Сед iG7 (ло-пункт), тон C7 (т-пособник)', hw:'Сед R1, R2', nm:'Сед VB38', ushu:'Сед C9, тон C8', usin:'Тон C9, F1; сед C3, R10', via:'Тон RP5 в час активности мер.' }
+  },
+  E:{
+    ex:{ ms_d:'Сед Gi2 (5–7 ч), тон RP2 (11–13 ч)', ms_y:'Сед iG8 (13–15 ч), тон RP2 (11–13 ч)', big:'Сед E40 (ло-пункт), тон RP3 (т-пособник)', hw:'Тон VB43', nm:'Тон MC9', ushu:'Тон E36, сед E45', usin:'Сед E45, Gi1; тон E43, VB41', via:'Сед iG3 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон Gi11 (7–9 ч), сед RP5 (9–11 ч)', ms_y:'Тон iG3 (15–17 ч), сед RP5 (9–11 ч)', big:'Сед RP4 (ло-пункт), тон E42 (т-пособник)', hw:'Сед VB38', nm:'Сед MC7', ushu:'Сед E36, тон E45', usin:'Тон E41, iG5; сед E43, VB41', via:'Тон Gi2 в час активности мер.' }
+  },
+  F:{
+    ex:{ ms_d:'Сед VB38 (23–1 ч), тон P9 (5–7 ч)', ms_y:'Сед VB38 (23–1 ч), тон C9 (13–15 ч)', big:'Сед F5 (ло-пункт), тон VB40 (т-пособник)', hw:'Тон P9', nm:'Тон iG3', ushu:'Тон F1, сед F2', usin:'Сед F2, C8; тон F4, P8', via:'Сед R7 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон VB43 (1–3 ч), сед P5 (3–5 ч)', ms_y:'Тон VB43 (1–3 ч), сед C7 (11–13 ч)', big:'Сед VB37 (ло-пункт), тон F3 (т-пособник)', hw:'Сед P5', nm:'Сед iG8', ushu:'Сед F1, тон F2', usin:'Тон F8, R10; сед F4, P8', via:'Тон C7 в час активности мер.' }
+  },
+  Gi:{
+    ex:{ ms_d:'Сед P5 (3–5 ч), тон E41 (9–11 ч)', ms_y:'Сед P5 (3–5 ч), тон V67 (17–19 ч)', big:'Сед Gi6 (ло-пункт), тон P9 (т-пособник)', hw:'Тон iG3 или TR3', nm:'Тон R7', ushu:'Тон Gi2, сед Gi11', usin:'Сед Gi2, V66; тон Gi5, iG5', via:'Сед E41 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон P9 (5–7 ч), сед E45 (7–9 ч)', ms_y:'Тон P9 (5–7 ч), сед V65 (15–17 ч)', big:'Сед P7 (ло-пункт), тон Gi4 (т-пособник)', hw:'Сед iG8 или TR10', nm:'Сед R1', ushu:'Сед Gi2, тон Gi11', usin:'Тон Gi11, E36; сед Gi5, iG5', via:'Тон V65 в час активности мер.' }
+  },
+  iG:{
+    ex:{ ms_d:'Сед C7 (11–13 ч), тон V67 (17–19 ч)', ms_y:'Сед C7 (11–13 ч), тон E41 (9–11 ч)', big:'Сед iG7 (ло-пункт), тон C7 (т-пособник)', hw:'Тон V67', nm:'Тон F8', ushu:'Тон iG8, сед iG1', usin:'Сед iG8, E36; тон iG2, V66', via:'Сед VB43 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон C9 (13–15 ч), сед V65 (15–17 ч)', ms_y:'Тон C9 (13–15 ч), сед E45 (7–9 ч)', big:'Сед C5 (ло-пункт), тон iG4 (т-пособник)', hw:'Сед V65', nm:'Сед F2', ushu:'Сед iG8, тон iG1', usin:'Тон iG3, VB41; сед iG2, V66', via:'Тон E45 в час активности мер.' }
+  },
+  MC:{
+    ex:{ ms_d:'Сед R1, R2 (17–19 ч), тон TR3 (23–1 ч)', ms_y:'Сед F2 (1–3 ч), тон TR3 (23–1 ч)', big:'Сед MC6 (ло-пункт), тон TR4 (т-пособник)', hw:'Тон R7', nm:'Тон E41', ushu:'Тон MC3, сед MC8', usin:'Сед MC7, RP3; тон MC3, R10', via:'Сед F8 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон R7 (19–21 ч), сед TR10 (21–23 ч)', ms_y:'Тон F8 (3–5 ч), сед TR10 (21–23 ч)', big:'Сед TR5 (ло-пункт), тон MC7 (т-пособник)', hw:'Сед R1, R2', nm:'Сед E45', ushu:'Сед MC3, тон MC8', usin:'Тон MC9, F1; сед MC3, R10', via:'Тон RP5 в час активности мер.' }
+  },
+  P:{
+    ex:{ ms_d:'Сед F2 (1–3 ч), тон Gi11 (7–9 ч)', ms_y:'Сед RP5 (9–11 ч), тон Gi11 (7–9 ч)', big:'Сед P7 (ло-пункт), тон Gi4 (т-пособник)', hw:'Тон C9 или MC9', nm:'Тон V67', ushu:'Тон P5, сед P9', usin:'Сед P5, R10; тон P10, C8', via:'Сед RP2 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон F8 (3–5 ч), сед Gi2 (5–7 ч)', ms_y:'Тон RP2 (11–13 ч), сед Gi2 (5–7 ч)', big:'Сед Gi6 (ло-пункт), тон P9 (т-пособник)', hw:'Сед C7 или MC7', nm:'Сед V65', ushu:'Сед P5, тон P9', usin:'Тон P9, RP3; сед P10, C8', via:'Тон R1 в час активности мер.' }
+  },
+  R:{
+    ex:{ ms_d:'Сед V65 (15–17 ч), тон MC9 (21–23 ч)', ms_y:'Сед P5 (3–5 ч), тон MC9 (21–23 ч)', big:'Сед R4 (ло-пункт), тон V64 (т-пособник)', hw:'Тон RP2', nm:'Тон Gi11', ushu:'Тон R10, сед R2', usin:'Сед R1, F1; тон R5, RP3', via:'Сед P9 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон V67 (17–19 ч), сед MC7 (19–21 ч)', ms_y:'Тон P9 (5–7 ч), сед MC7 (19–21 ч)', big:'Сед V58 (ло-пункт), тон R3 (т-пособник)', hw:'Сед RP5', nm:'Сед Gi2', ushu:'Сед R10, тон R2', usin:'Тон R7, P8; сед RP3, R5', via:'Тон F2 в час активности мер.' }
+  },
+  RP:{
+    ex:{ ms_d:'Сед E45 (7–9 ч), тон C9 (13–15 ч)', ms_y:'Сед E45 (7–9 ч), тон P9 (5–7 ч)', big:'Сед RP4 (ло-пункт), тон E42 (т-пособник)', hw:'Тон F8', nm:'Тон TR3', ushu:'Тон RP3, сед RP5', usin:'Сед RP5, P8; тон RP1, F1', via:'Сед C9 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон E41 (9–11 ч), сед C7 (11–13 ч)', ms_y:'Тон E41 (9–11 ч), сед P5 (3–5 ч)', big:'Сед E40 (ло-пункт), тон RP3 (т-пособник)', hw:'Сед F2', nm:'Сед TR10', ushu:'Сед RP3, тон RP5', usin:'Тон RP2, C8; сед RP1, F1', via:'Тон P5 в час активности мер.' }
+  },
+  TR:{
+    ex:{ ms_d:'Сед MC7 (19–21 ч), тон VB43 (1–3 ч)', ms_y:'Сед F2 (1–3 ч), тон VB43 (1–3 ч)', big:'Сед TR5 (ло-пункт), тон MC7 (т-пособник)', hw:'Тон V67', nm:'Тон RP2', ushu:'Тон TR10, сед TR6', usin:'Сед TR10, E36; тон TR2, V66', via:'Сед VB43 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон MC9 (21–23 ч), сед VB38 (23–1 ч)', ms_y:'Тон F8 (3–5 ч), сед VB38 (23–1 ч)', big:'Сед MC6 (ло-пункт), тон TR4 (т-пособник)', hw:'Сед V65', nm:'Сед RP5', ushu:'Сед TR10, тон TR6', usin:'Тон TR3, VB41; сед TR2, V66', via:'Тон E45 в час активности мер.' }
+  },
+  V:{
+    ex:{ ms_d:'Сед iG8 (13–15 ч), тон R7 (19–21 ч)', ms_y:'Сед Gi2 (5–7 ч), тон R7 (19–21 ч)', big:'Сед V58 (ло-пункт), тон R3 (т-пособник)', hw:'Тон E41', nm:'Тон P9', ushu:'Тон V66, сед V65', usin:'Сед V65, VB41; тон V40, E36', via:'Сед Gi11 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон iG3 (15–17 ч), сед R1, R2 (17–19 ч)', ms_y:'Тон Gi11 (7–9 ч), сед R1, R2 (17–19 ч)', big:'Сед R4 (ло-пункт), тон V64 (т-пособник)', hw:'Сед E45', nm:'Сед P5', ushu:'Сед V66, тон V65', usin:'Тон V67, Gi1; сед E36, V40', via:'Тон VB43 в час активности мер.' }
+  },
+  VB:{
+    ex:{ ms_d:'Сед TR10 (21–23 ч), тон F8 (3–5 ч)', ms_y:'Сед V65 (15–17 ч), тон F8 (3–5 ч)', big:'Сед VB37 (ло-пункт), тон F3 (т-пособник)', hw:'Тон Gi11', nm:'Тон C9', ushu:'Тон VB34, сед VB38', usin:'Сед VB38, iG5; тон VB44, Gi1', via:'Сед V67 в следующие 2 ч активности мер.' },
+    def:{ ms_d:'Тон TR3 (23–1 ч), сед F2 (1–3 ч)', ms_y:'Тон V67 (17–19 ч), сед F2 (1–3 ч)', big:'Сед F5 (ло-пункт), тон VB40 (т-пособник)', hw:'Сед Gi2, Gi3', nm:'Сед C7', ushu:'Сед VB34, тон VB38', usin:'Тон VB43, V66; сед VB44, Gi1', via:'Тон iG8 в час активности мер.' }
+  },
+};
+
+// Дистальные точки: ex=избыток, def=недостаток; m=местные, tz=точечные
+export const DIST = {
+  C:{  ex:{ m:'(C7, RP5) — сед, iG3 — тон',           tz:'(C7, C4, V15) — сед, VC14 — тон' },
+       def:{ m:'(C9, C7, F8, RP2) — тон, iG8 — сед',   tz:'(C9, C7, C3, VC14) — тон, V15 — сед' } },
+  E:{  ex:{ m:'(E45, E42, Gi2) — сед, RP2 — тон',       tz:'(E45, E42, E44, V21) — сед, VC12 — тон' },
+       def:{ m:'(E41, E42, TR3, Gi11) — тон, RP5 — сед', tz:'(E41, E42, E43, VC12) — тон, V21 — сед' } },
+  F:{  ex:{ m:'(F2, F3, C7, VB38) — сед, P9 — тон',     tz:'(F2, F3, V18) — сед, F14 — тон' },
+       def:{ m:'(F8, F3, R7, VB43) — тон, P5 — сед',    tz:'(F8, F3, F4, F14) — тон, V18 — сед' } },
+  Gi:{ ex:{ m:'(Gi2, Gi4, V65, P5) — сед, E41 — тон',   tz:'(Gi2, Gi4, Gi3, V25) — сед, E25 — тон' },
+       def:{ m:'(Gi11, Gi4, E41, P9) — тон, E45 — сед',  tz:'(Gi11, Gi4, Gi5, E25) — тон, V25 — сед' } },
+  iG:{ ex:{ m:'(iG8, iG4, E45, C7) — сед, V67 — тон',   tz:'(iG8, iG4, iG1, V27) — сед, VC4 — тон' },
+       def:{ m:'(iG3, iG4, VB43, C9) — тон, V65 — сед',  tz:'(iG3, iG4, iG2, VC4) — тон, V27 — сед' } },
+  MC:{ ex:{ m:'(MC7, RP5, R1) — сед, TR3 — тон',         tz:'(MC7, MC5, V14) — сед, MC1 — тон' },
+       def:{ m:'(MC9, MC7, F8, R7) — тон, TR10 — сед',   tz:'(MC9, MC7, MC3, MC1) — тон, V14 — сед' } },
+  P:{  ex:{ m:'(P5, P9, R1, F2) — сед, Gi11 — тон',      tz:'(P5, P9, P11, V13) — сед, P1 — тон' },
+       def:{ m:'(P9, RP2, F8) — тон, Gi2 — сед',          tz:'(P9, P10, P1) — тон, V13 — сед' } },
+  R:{  ex:{ m:'(R1, R3, F2, V65) — сед, MC9 — тон',      tz:'(R1, R2, R3, V23) — сед, VB25 — тон' },
+       def:{ m:'(R7, R3, P9, V67) — тон, MC7 — сед',     tz:'(R7, R3, VB25) — тон, V23 — сед' } },
+  RP:{ ex:{ m:'(RP5, RP3, P5, E45) — сед, C9 — тон',     tz:'(RP5, RP3, RP9, V20) — сед, F13 — тон' },
+       def:{ m:'(RP2, RP3, MC9, E41) — тон, C7 — сед',   tz:'(RP2, RP3, RP1, F13) — тон, V20 — сед' } },
+  TR:{ ex:{ m:'(TR10, TR4, E45, MC7) — сед, VB43 — тон',  tz:'(TR10, TR4, TR1, V22) — сед, VC5 — тон' },
+       def:{ m:'(TR3, TR4, VB43, MC9) — тон, MC7 — сед', tz:'(TR3, TR4, TR2, VC5) — тон, V22 — сед' } },
+  V:{  ex:{ m:'(V65, V64, VB38, iG8) — сед, R7 — тон',   tz:'(V65, V64, V60, V28) — сед, VC3 — тон' },
+       def:{ m:'(V67, V64, Gi11, iG3) — тон, R1 — сед',   tz:'(V67, V64, V40, VC3) — тон, V28 — сед' } },
+  VB:{ ex:{ m:'(VB38, VB40, iG8, TR10) — сед, F8 — тон',  tz:'(VB38, VB40, VB34, V19) — сед, VB24 — тон' },
+       def:{ m:'(VB43, VB40, V67, TR3) — тон, F2 — сед',   tz:'(VB43, VB40, VB44, VB24) — тон, V19 — сед' } },
+};
+
+export function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+let _idSeq = 0;
+export function uniqueId() {
+  // Date.now()*1000 + counter: уникален внутри сессии, не коллидирует даже при одновременных вызовах
+  return Date.now() * 1000 + (_idSeq++ % 1000);
+}
+
+export function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    if (e.name === 'QuotaExceededError' || e.code === 22) {
+      alert('Хранилище браузера переполнено. Удалите старые записи или очистите кэш.');
+    }
+    return false;
+  }
+}
+
+export function safeGetRecords() {
+  try { return JSON.parse(localStorage.getItem('acutwin_records')) || []; } catch { return []; }
+}
+
+export function parseSyms(text) {
+  return text.split(',').map(s => s.trim()).filter(s => s.length > 2);
+}
+
+export function ptVideoSrc(code) {
+  const m = code.match(/^([A-Za-z]+)(\d+)$/);
+  if (!m) return '';
+  return `../media/pts/${m[1]}/${m[1]}${m[2]}.mp4`;
+}
+
+export function merVideoSrc(mer) {
+  return `../media/mer/mer_${mer}.mp4`;
+}
+
+export function extractPoints(text) {
+  return (text || '').match(/[A-Za-z]{1,4}\d{1,3}/g) || [];
+}
+
+// Конвертирует внутренние коды → французская нотация для отображения
+// Gi→GI, iG→IG, T→VG, J→VC
+export function displayCode(code) {
+  if (!code) return code;
+  return code
+    .replace(/^Gi(\d)/, 'GI$1')
+    .replace(/^iG(\d)/, 'IG$1')
+    .replace(/^T(\d)/,  'VG$1')
+    .replace(/^J(\d)/,  'VC$1');
+}
+
+export function buildSidebar(activePage, session) {
+  const isAdmin = session && session.role === 'admin';
+  const items = isAdmin ? [
+    { id:'admin', href:'admin.html', icon:'admin_panel_settings', label:'Клиенты и оплата' },
+  ] : [
+    { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' },
+    { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' },
+    { id:'atlas',     href:'atlas.html',      icon:'menu_book',        label:'Атлас точек' },
+    { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' },
+  ];
+  const doctorBlock = session ? `
+    <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2">
+      <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:18px;zoom:1">stethoscope</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-semibold text-[#e2e2e2] truncate">${esc(session.name)}</div>
+        <div class="text-[10px] text-[#8b90a0]">${esc(session.username)}</div>
+      </div>
+      <button onclick="if(confirm('Выйти из системы?')){sessionStorage.clear();location.href='login.html'}"
+        class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#8b90a0] hover:text-[#ffb4ab] hover:bg-[#ffb4ab]/10 transition-colors text-xs font-medium" title="Выйти">
+        <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
+        Выйти
+      </button>
+    </div>` : '';
+  return `
+    <aside id="sidebar"
+      class="fixed left-0 top-0 h-screen w-64 flex flex-col z-50
+             bg-[#0e0e0e]/95 backdrop-blur-2xl border-r border-white/10">
+      <div class="px-4 py-3 flex items-center justify-between border-b border-white/10"
+           onclick="window._showAbout && window._showAbout()"
+           style="cursor:pointer;transition:background 0.18s"
+           onmouseenter="this.style.background='rgba(0,242,255,0.06)'"
+           onmouseleave="this.style.background=''">
+        <div class="flex items-center gap-2">
+          <div>
+            <h1 class="text-base font-bold text-[#00F2FF] tracking-tight leading-tight"
+                style="font-family:'Hanken Grotesk',sans-serif">AcuTwin</h1>
+            <p class="text-[10px] text-[#c1c6d7] uppercase tracking-wider">для практикующего рефлексотерапевта</p>
+          </div>
+        </div>
+        <img src="vitruvian-digital.png" alt="Digital Twin"
+             style="height:5rem;width:5rem;object-fit:cover;border-radius:8px;opacity:0.9;flex-shrink:0"/>
+      </div>
+      <nav class="flex-1 flex flex-col py-3 px-2 gap-0.5 overflow-y-auto min-h-0">
+        ${items.map(i => `
+          <a href="${i.href}"
+             class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200
+                    ${activePage===i.id
+                      ? 'bg-[#00F2FF]/10 text-[#00F2FF] border-r-2 border-[#00F2FF]'
+                      : 'text-[#c1c6d7] hover:bg-white/15 hover:text-white'}"
+          >
+            <span class="material-symbols-outlined text-xl">${i.icon}</span>
+            <span style="font-family:'Inter',sans-serif;font-weight:600">${i.label}</span>
+          </a>`).join('')}
+      </nav>
+      <div style="padding:10px 16px 6px;display:flex;justify-content:center;flex-shrink:0">
+        <img src="wuxing.png" alt="У-Син"
+             style="width:210px;height:210px;object-fit:cover;border-radius:50%;
+                    opacity:0.95;
+                    filter:saturate(1.3) brightness(1.13) contrast(1.1);
+                    box-shadow:0 0 32px rgba(0,242,255,0.2)"/>
+      </div>
+      <div style="padding:0 10px 10px;flex-shrink:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+          <div id="ec-metal"  style="border-radius:8px;border:1px solid #5a8fa855;background:#5a8fa810;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#5a8fa8;line-height:1.3">Металл</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">P · Gi</div>
+            <div style="font-size:7.5px;color:#90c8e0;line-height:1.3">3–5 · 5–7</div>
+          </div>
+          <div id="ec-earth"  style="border-radius:8px;border:1px solid #c0784055;background:#c0784010;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#c07840;line-height:1.3">Земля</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">E · RP</div>
+            <div style="font-size:7.5px;color:#f0a060;line-height:1.3">7–9 · 9–11</div>
+          </div>
+          <div id="ec-fire"   style="border-radius:8px;border:1px solid #c0392b55;background:#c0392b10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#c0392b;line-height:1.3">Огонь</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">C · iG</div>
+            <div style="font-size:7.5px;color:#f07060;line-height:1.3">11–13 · 13–15</div>
+          </div>
+          <div id="ec-water"  style="border-radius:8px;border:1px solid #2471a355;background:#2471a310;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#2471a3;line-height:1.3">Вода</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">V · R</div>
+            <div style="font-size:7.5px;color:#50a0d8;line-height:1.3">15–17 · 17–19</div>
+          </div>
+          <div id="ec-fire2"  style="border-radius:8px;border:1px solid #a0305a55;background:#a0305a10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#a0305a;line-height:1.3">Огонь²</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">MC · TR</div>
+            <div style="font-size:7.5px;color:#d06090;line-height:1.3">19–21 · 21–23</div>
+          </div>
+          <div id="ec-wood"   style="border-radius:8px;border:1px solid #3d8a5c55;background:#3d8a5c10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
+            <div style="font-size:10px;font-weight:700;color:#3d8a5c;line-height:1.3">Дерево</div>
+            <div style="font-size:9px;color:#8b90a0;line-height:1.4">VB · F</div>
+            <div style="font-size:7.5px;color:#60c080;line-height:1.3">23–1 · 1–3</div>
+          </div>
+        </div>
+      </div>
+      ${doctorBlock}
+      <div style="padding:8px 14px 14px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px">
+        <p style="font-size:8.5px;color:#555a6a;line-height:1.5;text-align:center">
+          Только для специалистов с медицинским образованием. Не заменяет консультацию врача и не является основанием для самолечения. Применение методов рефлексотерапии должно осуществляться в соответствии с действующими клиническими протоколами.
+        </p>
+      </div>
+    </aside>`;
+}
+
+const _EC = {
+  metal: { hours:[3,4,5,6],    color:'#5a8fa8' },
+  earth: { hours:[7,8,9,10],   color:'#c07840' },
+  fire:  { hours:[11,12,13,14],color:'#c0392b' },
+  water: { hours:[15,16,17,18],color:'#2471a3' },
+  fire2: { hours:[19,20,21,22],color:'#a0305a' },
+  wood:  { hours:[23,0,1,2],   color:'#3d8a5c' },
+};
+
+// ── Модальное окно «О программе» ──────────────────────────
+window._showAbout = function() {
+  if (document.getElementById('about-modal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'about-modal';
+
+  let clinicName = '';
+  try {
+    const token = sessionStorage.getItem('acutwin_token');
+    if (token) {
+      const b64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      const bin = atob(b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '='));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      const payload = JSON.parse(new TextDecoder().decode(bytes));
+      clinicName = payload.clinicName || '';
+    }
+  } catch {}
+
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.72);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  `;
+
+  const TAB_ACTIVE = 'background:#00F2FF15;color:#00F2FF;border-color:#00F2FF';
+  const TAB_IDLE   = 'background:none;color:#8b90a0;border-color:transparent';
+
+  const litItems = [
+    { group: 'Серия «Китайская чжэньцзю-терапия»', books: [
+      'Теоретические основы китайской медицины',
+      'Методы и техники чжэньцзю-терапии',
+      'Система каналов и коллатералей китайской медицины',
+      'Акупунктурные точки китайской чжэньцзю-терапии',
+      'Лечение болезней методами чжэньцзю-терапии',
+    ]},
+    { group: 'Классические трактаты', books: [
+      'Трактат Жёлтого Императора о внутреннем: Ось Духа',
+      'Су Вэнь, Нэй Цзин — трактат по традиционной китайской медицине',
+    ]},
+    { group: 'Авторские издания', books: [
+      'Д.М. Табеева — Практическое руководство по иглорефлексотерапии',
+      'Д.М. Табеева — Иглотерапия: интегративный подход',
+      'Жорж Сулье де Моран — Китайская акупунктура: Энергия, манипуляция, физиология',
+      'Жорж Сулье де Моран — Китайская акупунктура: Болезни и их лечение',
+      'Жорж Сулье де Моран — Китайская акупунктура: Меридианы, точки и их эффекты',
+      'В.Д. Молостов — Практическое руководство по лечению заболеваний',
+      'Гаваа Лувсан — Традиционные и современные аспекты восточной рефлексотерапии',
+      'Клаус К. Шнорренбергер — Терапия акупунктурой. Том 1',
+      'Клаус К. Шнорренбергер — Терапия акупунктурой. Том 2',
+      'Клаус Шнорренбергер — Учебник китайской медицины для западных врачей',
+    ]},
+  ];
+
+  const litHtml = litItems.map(g => `
+    <div style="font-size:0.72rem;color:#cbd5e1;text-transform:uppercase;
+                letter-spacing:.06em;margin:14px 0 8px">${g.group}</div>
+    ${g.books.map((b, i) => `
+      <div style="color:#94a3b8;font-size:0.82rem;padding:4px 0 4px 12px;
+                  border-left:2px solid rgba(0,242,255,0.25);margin-bottom:3px;
+                  line-height:1.4">${b}</div>
+    `).join('')}
+  `).join('');
+
+  modal.innerHTML = `
+    <div style="background:#111827;border:1px solid rgba(0,242,255,0.2);border-radius:18px;
+                max-width:520px;width:100%;padding:28px 32px;position:relative;
+                box-shadow:0 0 60px rgba(0,242,255,0.08)">
+      <button onclick="document.getElementById('about-modal').remove()"
+              style="position:absolute;top:16px;right:18px;background:none;border:none;
+                     color:#8b90a0;font-size:22px;cursor:pointer;line-height:1">×</button>
+
+      <!-- Шапка -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <img src="vitruvian-digital.png" style="width:46px;height:46px;border-radius:10px;opacity:0.9"/>
+        <div>
+          <div style="font-size:1.2rem;font-weight:800;color:#00F2FF;
+                      font-family:'Hanken Grotesk',sans-serif">AcuTwin</div>
+          <div style="font-size:0.72rem;color:#8b90a0;text-transform:uppercase;
+                      letter-spacing:.08em">Цифровой помощник рефлексотерапевта</div>
+          ${clinicName ? `<div style="margin-top:5px;font-size:0.82rem;color:#e2e8f0;font-weight:600">${clinicName}</div>` : ''}
+        </div>
+      </div>
+
+      <!-- Вкладки -->
+      <div style="display:flex;gap:6px;margin-bottom:20px">
+        <button id="tab-features" onclick="
+          document.getElementById('pane-features').style.display='block';
+          document.getElementById('pane-lit').style.display='none';
+          document.getElementById('tab-features').style.cssText+=';${TAB_ACTIVE}';
+          document.getElementById('tab-lit').style.cssText+=';${TAB_IDLE}';
+        " style="flex:1;padding:7px 0;border-radius:8px;border:1px solid;cursor:pointer;
+                 font-size:0.82rem;font-family:inherit;transition:all .18s;${TAB_ACTIVE}">
+          Возможности
+        </button>
+        <button id="tab-lit" onclick="
+          document.getElementById('pane-features').style.display='none';
+          document.getElementById('pane-lit').style.display='block';
+          document.getElementById('tab-lit').style.cssText+=';${TAB_ACTIVE}';
+          document.getElementById('tab-features').style.cssText+=';${TAB_IDLE}';
+        " style="flex:1;padding:7px 0;border-radius:8px;border:1px solid;cursor:pointer;
+                 font-size:0.82rem;font-family:inherit;transition:all .18s;${TAB_IDLE}">
+          📚 Литература
+        </button>
+      </div>
+
+      <!-- Вкладка: Возможности -->
+      <div id="pane-features">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          ${[
+            ['🧭','Меридиональная диагностика','Введите симптомы — система за секунды определяет поражённые меридианы и предлагает тактику лечения.'],
+            ['☯️','У-Синь диагностика','Учитывает пол, время суток и сезон. Рекомендации по всем канонам традиционной китайской медицины.'],
+            ['📋','Готовые рецепты по диагнозу','Протокол с точками и техникой введения. Видео по каждой точке и меридиану. Печать бланка в один клик.'],
+            ['🗂️','Карточка пациента','Все приёмы и назначения в одном месте. Доступно с любого устройства в любой момент.'],
+            ['🎬','Атлас точек с видео','Справочник всех акупунктурных точек с описаниями, показаниями и обучающими видео.'],
+          ].map(([icon,title,desc]) => `
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <span style="font-size:1.2rem;flex-shrink:0">${icon}</span>
+              <div>
+                <div style="color:#e2e8f0;font-weight:700;font-size:0.9rem;margin-bottom:2px">${title}</div>
+                <div style="color:#8b90a0;font-size:0.8rem;line-height:1.5">${desc}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.07);
+                    text-align:center;color:#c8d8f0;font-size:0.76rem;line-height:1.6">
+          Аналогов на русском языке не существует.<br>
+          Первый в мире диагностический инструмент для рефлексотерапевта.
+        </div>
+      </div>
+
+      <!-- Вкладка: Литература -->
+      <div id="pane-lit" style="display:none">
+        ${litHtml}
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+};
+
+export function initElementClock() {
+  function tick() {
+    const h = new Date().getHours();
+    Object.entries(_EC).forEach(([id, cfg]) => {
+      const el = document.getElementById('ec-' + id);
+      if (!el) return;
+      const active = cfg.hours.includes(h);
+      el.style.opacity     = active ? '1'              : '0.5';
+      el.style.borderColor = active ? cfg.color + 'cc' : cfg.color + '55';
+      el.style.background  = active ? cfg.color + '25' : cfg.color + '10';
+      el.style.boxShadow   = active ? '0 0 8px ' + cfg.color + '60' : 'none';
+    });
+  }
+  tick();
+  setInterval(tick, 60000);
+}

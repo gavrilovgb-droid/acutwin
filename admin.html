@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — Администрирование</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hanken+Grotesk:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313',
+  'surface-container-low':'#1b1b1b','surface-container':'#1f1f1f',
+  'surface-container-high':'#2a2a2a','surface-container-highest':'#353535',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
+  'primary':'#adc6ff','outline':'#8b90a0','outline-variant':'#414755',
+}}}}
+</script>
+<style>
+.material-symbols-outlined { zoom: 1.5; }
+.status-active   { background:rgba(52,199,89,.15);  color:#34C759; border:1px solid rgba(52,199,89,.4); }
+.status-trial    { background:rgba(255,214,10,.12); color:#FFD60A; border:1px solid rgba(255,214,10,.4); }
+.status-expired  { background:rgba(255,180,171,.12);color:#ff6b6b; border:1px solid rgba(255,100,100,.4); }
+.status-suspended{ background:rgba(139,144,160,.12);color:#8b90a0; border:1px solid rgba(139,144,160,.4); }
+.plan-trial    { color:#8b90a0; }
+.plan-basic    { color:#0A84FF; }
+.plan-pro      { color:#BF5AF2; }
+.stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; }
+.glass-input { background:#1f1f1f; border:1px solid #414755; border-radius:10px; padding:8px 12px;
+               color:#e2e2e2; font-size:.85rem; outline:none; width:100%; transition:border-color .15s; }
+.glass-input:focus { border-color:rgba(0,242,255,.5); }
+select.glass-input option { background:#1f1f1f; }
+.tenant-row { border-bottom:1px solid rgba(255,255,255,.06); transition:background .15s; cursor:pointer; }
+.tenant-row:hover { background:rgba(255,255,255,.04); }
+.tenant-row.selected { background:rgba(0,242,255,.06); }
+.pay-pill { display:inline-flex; align-items:center; gap:4px; padding:2px 8px;
+            border-radius:20px; font-size:.65rem; font-weight:700; }
+.days-ok  { color:#34C759; }
+.days-warn{ color:#FFD60A; }
+.days-over{ color:#ff6b6b; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+  <header class="sticky top-0 z-30 border-b border-white/10 bg-[#131313]/95 backdrop-blur-xl px-6 py-3 flex items-center gap-4">
+    <div class="flex gap-1">
+      <button id="tab-clients" onclick="switchTab('clients')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/40">
+        <span class="material-symbols-outlined" style="font-size:13px;zoom:1;vertical-align:-2px">group</span>
+        Клиенты
+      </button>
+      <button id="tab-doctors" onclick="switchTab('doctors')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10">
+        <span class="material-symbols-outlined" style="font-size:13px;zoom:1;vertical-align:-2px">stethoscope</span>
+        Врачи
+      </button>
+    </div>
+    <div class="ml-auto flex items-center gap-2">
+      <div id="mrr-badge" class="text-xs font-mono px-3 py-1 rounded-lg bg-[#34C759]/10 border border-[#34C759]/30 text-[#34C759]"></div>
+      <button id="btn-add-client" onclick="openTenantModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 text-[#0A84FF] border border-[#0A84FF]/40 text-xs font-bold transition-colors">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">add</span>
+        Добавить клиента
+      </button>
+      <button id="btn-add-doctor" onclick="openUserModal()" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#34C759]/15 hover:bg-[#34C759]/25 text-[#34C759] border border-[#34C759]/40 text-xs font-bold transition-colors">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">person_add</span>
+        Добавить врача
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 p-6 space-y-6">
+
+    <!-- Сводка -->
+    <div id="stats-row" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+
+    <!-- Основная таблица + детали -->
+    <div id="section-clients-wrap" class="flex gap-4 min-h-0">
+
+      <!-- Таблица арендаторов -->
+      <div class="flex-1 min-w-0 glass-panel rounded-2xl overflow-hidden flex flex-col">
+        <div class="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+          <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:16px;zoom:1">group</span>
+          <span class="text-sm font-semibold">Клиенты</span>
+          <div class="ml-auto flex gap-2">
+            <input id="filter-name" oninput="renderTable()" placeholder="Поиск по имени…"
+                   class="glass-input" style="width:140px;padding:4px 8px;font-size:.75rem"/>
+            <select id="filter-status" onchange="renderTable()" class="glass-input" style="width:auto;padding:4px 8px;font-size:.75rem">
+              <option value="">Все статусы</option>
+              <option value="active">Активные</option>
+              <option value="trial">Пробный</option>
+              <option value="expired">Просрочен</option>
+              <option value="suspended">Приостановлен</option>
+            </select>
+            <select id="filter-plan" onchange="renderTable()" class="glass-input" style="width:auto;padding:4px 8px;font-size:.75rem">
+              <option value="">Все тарифы</option>
+              <option value="trial">Пробный</option>
+              <option value="solo">ИП / Один врач</option>
+              <option value="basic">Базовый</option>
+              <option value="pro">Клиника Pro</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto flex-1">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-white/10 text-[#8b90a0] text-[11px] uppercase tracking-wider">
+                <th class="px-4 py-2.5 text-left font-semibold">Клиент</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Тариф</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Статус</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Оплачен до</th>
+                <th class="px-3 py-2.5 text-right font-semibold">Визитов</th>
+                <th class="px-3 py-2.5 text-right font-semibold">Цена/мес</th>
+              </tr>
+            </thead>
+            <tbody id="tenant-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Панель деталей -->
+      <div id="detail-panel" class="hidden w-80 flex-shrink-0 glass-panel rounded-2xl flex flex-col overflow-hidden" style="max-height:70vh">
+        <div id="detail-content" class="flex-1 overflow-y-auto"></div>
+      </div>
+
+    </div>
+
+    <!-- Ближайшие платежи -->
+    <div id="section-upcoming" class="glass-panel rounded-2xl p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-[#FFD60A]" style="font-size:16px;zoom:1">event</span>
+        <span class="text-sm font-semibold">Ближайшие платежи (30 дней)</span>
+      </div>
+      <div id="upcoming-payments" class="space-y-2"></div>
+    </div>
+
+    <!-- Панель врачей (скрыта по умолчанию) -->
+    <div id="section-doctors" class="hidden glass-panel rounded-2xl overflow-hidden">
+      <table class="w-full text-xs">
+        <thead>
+          <tr class="border-b border-white/10 text-[#8b90a0]">
+            <th class="px-4 py-3 text-left font-semibold">Логин</th>
+            <th class="px-4 py-3 text-left font-semibold">ФИО</th>
+            <th class="px-4 py-3 text-left font-semibold">Роль</th>
+            <th class="px-4 py-3 text-left font-semibold">Создан</th>
+            <th class="px-4 py-3 text-right font-semibold"></th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── МОДАЛ: Добавить врача ── -->
+<div id="user-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this)closeUserModal()">
+  <div class="glass-panel rounded-2xl w-full max-w-sm mx-4 flex flex-col">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10">
+      <span class="font-bold text-[#34C759]">Новый пользователь</span>
+      <button onclick="closeUserModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;zoom:1">close</span>
+      </button>
+    </div>
+    <div class="overflow-y-auto p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">ФИО</label>
+        <input id="u-name" type="text" placeholder="Иванов И.И." class="glass-input w-full"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Логин</label>
+        <input id="u-username" type="text" placeholder="ivanov" class="glass-input w-full" autocomplete="off"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Пароль</label>
+        <input id="u-password" type="text" placeholder="минимум 4 символа" class="glass-input w-full" autocomplete="off"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Роль</label>
+        <select id="u-role" class="glass-input w-full">
+          <option value="doctor">🩺 Врач</option>
+          <option value="boss">👑 Руководитель клиники</option>
+          <option value="admin">⚙️ Администратор</option>
+        </select>
+      </div>
+      <div id="u-error" class="hidden text-xs text-[#ff6b6b] bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 rounded-lg px-3 py-2"></div>
+    </div>
+    <div class="flex gap-3 px-5 pb-5">
+      <button onclick="closeUserModal()" class="flex-1 py-2.5 rounded-xl border border-white/10 text-[#8b90a0] hover:text-white text-xs font-bold transition-colors">Отмена</button>
+      <button onclick="saveUser()" class="flex-1 py-2.5 rounded-xl bg-[#34C759]/15 hover:bg-[#34C759]/25 border border-[#34C759]/40 text-[#34C759] text-xs font-bold transition-colors">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── МОДАЛ: Добавить/редактировать клиента ── -->
+<div id="tenant-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this)closeTenantModal()">
+  <div class="glass-panel rounded-2xl w-full max-w-lg mx-4 flex flex-col" style="max-height:90vh">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 flex-shrink-0">
+      <span id="modal-title" class="font-bold text-[#00F2FF]">Новый клиент</span>
+      <button onclick="closeTenantModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;zoom:1">close</span>
+      </button>
+    </div>
+    <div class="overflow-y-auto flex-1 p-5 space-y-4">
+      <input type="hidden" id="m-id"/>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Название *</label>
+          <input id="m-name" class="glass-input" placeholder="Клиника / ФИО врача"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Тип</label>
+          <select id="m-type" class="glass-input">
+            <option value="clinic">Клиника</option>
+            <option value="individual">Врач (частный)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Тариф</label>
+          <select id="m-plan" onchange="updatePlanPrice()" class="glass-input">
+            <option value="trial">Пробный (30 дней)</option>
+            <option value="solo">ИП / Один врач — 1 500 ₽/мес</option>
+            <option value="basic">Базовый — до 3 врачей — 2 500 ₽/мес</option>
+            <option value="pro">Клиника Pro — без лимита — 5 000 ₽/мес</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Цена/мес, ₽</label>
+          <input id="m-price" type="number" min="0" max="1000000" class="glass-input" placeholder="0"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Статус</label>
+          <select id="m-status" class="glass-input">
+            <option value="trial">Пробный период</option>
+            <option value="active">Активен</option>
+            <option value="suspended">Приостановлен</option>
+            <option value="expired">Просрочен</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Оплачен до</label>
+          <input id="m-paid-until" type="date" class="glass-input"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Контактное лицо</label>
+          <input id="m-contact" class="glass-input" placeholder="ФИО"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Телефон</label>
+          <input id="m-phone" class="glass-input" placeholder="+7..."/>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Email</label>
+          <input id="m-email" class="glass-input" placeholder="email@clinic.ru"/>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Логины врачей (через запятую)</label>
+          <input id="m-logins" class="glass-input" placeholder="dr_petrov, dr_ivanova"/>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Заметки</label>
+          <textarea id="m-notes" rows="2" class="glass-input resize-none" placeholder="Любая дополнительная информация..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 pb-5 flex gap-3 flex-shrink-0">
+      <button onclick="closeTenantModal()" class="flex-1 py-2 rounded-xl border border-white/20 text-[#8b90a0] text-xs font-bold hover:text-white hover:border-white/40 transition-all">Отмена</button>
+      <button onclick="saveTenant()" class="flex-1 py-2 rounded-xl bg-[#0A84FF]/15 border border-[#0A84FF]/40 text-[#0A84FF] text-xs font-bold hover:bg-[#0A84FF]/25 transition-all">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── МОДАЛ: Зарегистрировать оплату ── -->
+<div id="pay-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this)closePayModal()">
+  <div class="glass-panel rounded-2xl w-full max-w-sm mx-4">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10">
+      <span class="font-bold text-[#34C759]">Зарегистрировать оплату</span>
+      <button onclick="closePayModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;zoom:1">close</span>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="pay-tenant-id"/>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Клиент</label>
+        <div id="pay-tenant-name" class="text-sm font-semibold text-[#e2e2e2]"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Сумма, ₽</label>
+          <input id="pay-amount" type="number" min="0" max="1000000" class="glass-input" placeholder="3000"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Дата</label>
+          <input id="pay-date" type="date" class="glass-input"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Оплачен до</label>
+          <input id="pay-until" type="date" class="glass-input"/>
+        </div>
+        <div>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Способ</label>
+          <select id="pay-method" class="glass-input">
+            <option>Перевод</option>
+            <option>Наличные</option>
+            <option>Карта</option>
+            <option>Счёт</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Комментарий</label>
+        <input id="pay-comment" class="glass-input" placeholder="Необязательно"/>
+      </div>
+    </div>
+    <div class="px-5 pb-5 flex gap-3">
+      <button onclick="closePayModal()" class="flex-1 py-2 rounded-xl border border-white/20 text-[#8b90a0] text-xs font-bold hover:text-white hover:border-white/40 transition-all">Отмена</button>
+      <button onclick="savePayment()" class="flex-1 py-2 rounded-xl bg-[#34C759]/15 border border-[#34C759]/40 text-[#34C759] text-xs font-bold hover:bg-[#34C759]/25 transition-all">
+        <span class="material-symbols-outlined" style="font-size:13px;zoom:1">payments</span>
+        Подтвердить
+      </button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc } from './shared.js';
+import { requireAdmin } from './auth.js';
+import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser } from './api.js';
+
+const session = await requireAdmin();
+if (!session) throw new Error('redirect');
+document.getElementById('nav-mount').innerHTML = buildSidebar('admin', session);
+initElementClock();
+
+// ─── Локальный кэш (обновляется при refresh) ──────────────
+let _tenants = [];
+let _records = [];
+
+async function loadData() {
+  [_tenants, _records] = await Promise.all([apiGetTenants(), apiGetRecords()]);
+  _tenants = _tenants.map(t => ({ ...t, name: t.name || t.clinic || '' }));
+}
+
+function getTenants() { return _tenants; }
+function getRecords()  { return _records; }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// ─── Тарифы ──────────────────────────────────────────────
+const PLANS = {
+  trial:    { label: 'Пробный',      price: 0,    color: '#8b90a0' },
+  solo:     { label: 'ИП / Один врач', price: 1500, color: '#34C759' },
+  basic:    { label: 'Базовый',      price: 2500, color: '#0A84FF' },
+  pro:      { label: 'Клиника Pro',  price: 5000, color: '#BF5AF2' },
+};
+
+const STATUS_LABELS = {
+  active:    { label: 'Активен',        cls: 'status-active' },
+  trial:     { label: 'Пробный период', cls: 'status-trial' },
+  expired:   { label: 'Просрочен',      cls: 'status-expired' },
+  suspended: { label: 'Приостановлен',  cls: 'status-suspended' },
+};
+
+// ─── Утилиты ─────────────────────────────────────────────
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const diff = Math.round((new Date(dateStr) - new Date()) / 86400000);
+  return diff;
+}
+
+function daysLabel(days) {
+  if (days === null) return '—';
+  if (days < 0)  return `<span class="days-over">просрочен ${Math.abs(days)} дн.</span>`;
+  if (days <= 7) return `<span class="days-warn">${days} дн.</span>`;
+  return `<span class="days-ok">${days} дн.</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+function usageCount(tenant) {
+  if (!tenant.doctorLogins || !tenant.doctorLogins.length) return 0;
+  const recs = getRecords();
+  return recs.filter(r => tenant.doctorLogins.includes(r.doctor)).length;
+}
+
+// ─── Статистика вверху ────────────────────────────────────
+function renderStats() {
+  const tenants = getTenants();
+  const active    = tenants.filter(t => t.status === 'active').length;
+  const trial     = tenants.filter(t => t.status === 'trial').length;
+  const expired   = tenants.filter(t => t.status === 'expired').length;
+  const suspended = tenants.filter(t => t.status === 'suspended').length;
+  const mrr       = tenants.filter(t => t.status === 'active').reduce((s, t) => s + (t.price || 0), 0);
+  const totalVisits = tenants.reduce((s, t) => s + usageCount(t), 0);
+
+  document.getElementById('mrr-badge').textContent = `MRR: ${mrr.toLocaleString('ru-RU')} ₽`;
+
+  const cards = [
+    { label: 'Всего клиентов', value: tenants.length,    color: '#00F2FF' },
+    { label: 'Активных',       value: active,            color: '#34C759' },
+    { label: 'Пробный период', value: trial,             color: '#FFD60A' },
+    { label: 'Просрочено',     value: expired,           color: '#ff6b6b' },
+    { label: 'MRR',            value: mrr.toLocaleString('ru-RU') + ' ₽', color: '#BF5AF2' },
+    { label: 'Всего визитов',  value: totalVisits,       color: '#0A84FF' },
+  ];
+
+  document.getElementById('stats-row').innerHTML = cards.map(c => `
+    <div class="stat-card">
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">${c.label}</div>
+      <div class="text-2xl font-bold" style="color:${c.color};font-family:'JetBrains Mono',monospace">${c.value}</div>
+    </div>
+  `).join('');
+}
+
+// ─── Таблица арендаторов ──────────────────────────────────
+let selectedId = null;
+
+window.renderTable = function() {
+  const filterStatus = document.getElementById('filter-status').value;
+  const filterPlan   = document.getElementById('filter-plan').value;
+  const filterName   = (document.getElementById('filter-name')?.value || '').toLowerCase().trim();
+  let tenants = getTenants();
+  if (filterStatus) tenants = tenants.filter(t => t.status === filterStatus);
+  if (filterPlan)   tenants = tenants.filter(t => t.plan === filterPlan);
+  if (filterName)   tenants = tenants.filter(t => (t.name||'').toLowerCase().includes(filterName));
+
+  // Сортировка: сначала просроченные, потом по дате оплаты
+  tenants.sort((a, b) => {
+    const order = { expired:0, suspended:1, trial:2, active:3 };
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    const da = a.paidUntil || '9999', db = b.paidUntil || '9999';
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+
+  const tbody = document.getElementById('tenant-tbody');
+  if (!tenants.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-[#8b90a0] py-12 text-sm">
+      Нет клиентов. <button onclick="openTenantModal()" class="text-[#0A84FF] hover:underline">Добавить первого →</button>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = tenants.map(t => {
+    const plan   = PLANS[t.plan] || PLANS.trial;
+    const st     = STATUS_LABELS[t.status] || STATUS_LABELS.suspended;
+    const days   = daysUntil(t.paidUntil);
+    const visits = usageCount(t);
+    return `
+    <tr class="tenant-row${selectedId === t.id ? ' selected' : ''}" onclick="selectTenant('${t.id}')">
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:14px;zoom:1">${t.type === 'clinic' ? 'local_hospital' : 'person'}</span>
+          <div>
+            <div class="font-semibold text-[#e2e2e2] text-xs">${esc(t.name)}</div>
+            <div class="text-[10px] text-[#8b90a0]">${esc(t.contact || '—')}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-3 py-3">
+        <span class="text-xs font-bold" style="color:${plan.color}">${plan.label}</span>
+      </td>
+      <td class="px-3 py-3">
+        <span class="pay-pill ${st.cls}">${st.label}</span>
+      </td>
+      <td class="px-3 py-3">
+        <div class="text-xs">${fmtDate(t.paidUntil)}</div>
+        <div class="text-[10px] mt-0.5">${daysLabel(days)}</div>
+      </td>
+      <td class="px-3 py-3 text-right font-mono text-xs text-[#c1c6d7]">${visits}</td>
+      <td class="px-3 py-3 text-right font-mono text-xs text-[#c1c6d7]">${t.price ? t.price.toLocaleString('ru-RU') + ' ₽' : '—'}</td>
+    </tr>`;
+  }).join('');
+};
+
+// ─── Детальная панель ─────────────────────────────────────
+window.selectTenant = function(id) {
+  selectedId = id;
+  renderTable();
+  const t = getTenants().find(x => x.id === id);
+  if (!t) return;
+  const panel = document.getElementById('detail-panel');
+  const plan  = PLANS[t.plan] || PLANS.trial;
+  const st    = STATUS_LABELS[t.status] || STATUS_LABELS.suspended;
+  const visits = usageCount(t);
+
+  const paymentsHtml = (t.payments || []).length
+    ? [...(t.payments || [])].reverse().map(p => `
+      <div class="flex items-center gap-2 py-2 border-b border-white/5">
+        <span class="material-symbols-outlined text-[#34C759]" style="font-size:12px;zoom:1">payments</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold">${p.amount.toLocaleString('ru-RU')} ₽</div>
+          <div class="text-[10px] text-[#8b90a0]">${fmtDate(p.date)} · ${esc(p.method || '—')}</div>
+          ${p.comment ? `<div class="text-[10px] text-[#8b90a0] italic">${esc(p.comment)}</div>` : ''}
+        </div>
+        <div class="text-[10px] text-[#8b90a0]">до ${fmtDate(p.until)}</div>
+      </div>`).join('')
+    : '<div class="text-[10px] text-[#8b90a0] py-3">Платежей нет</div>';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="p-4 border-b border-white/10">
+      <div class="flex items-start justify-between mb-1">
+        <div class="text-sm font-bold text-[#e2e2e2]">${esc(t.name)}</div>
+        <span class="pay-pill ${st.cls} text-[10px]">${st.label}</span>
+      </div>
+      <div class="text-[10px] text-[#8b90a0] mb-3">${t.type === 'clinic' ? 'Клиника' : 'Частный врач'} · создан ${fmtDate(t.createdAt)}</div>
+      <div class="space-y-1 text-xs">
+        ${t.contact ? `<div class="flex gap-2"><span class="text-[#8b90a0] w-16 flex-shrink-0">Контакт</span><span>${esc(t.contact)}</span></div>` : ''}
+        ${t.phone   ? `<div class="flex gap-2"><span class="text-[#8b90a0] w-16 flex-shrink-0">Телефон</span><span class="font-mono">${esc(t.phone)}</span></div>` : ''}
+        ${t.email   ? `<div class="flex gap-2"><span class="text-[#8b90a0] w-16 flex-shrink-0">Email</span><span>${esc(t.email)}</span></div>` : ''}
+      </div>
+    </div>
+
+    <div class="p-4 border-b border-white/10">
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2">Тариф и оплата</div>
+      <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+        <div><span class="text-[#8b90a0] block text-[10px]">Тариф</span><span class="font-bold" style="color:${plan.color}">${plan.label}</span></div>
+        <div><span class="text-[#8b90a0] block text-[10px]">Цена/мес</span><span class="font-mono">${t.price ? t.price.toLocaleString('ru-RU') + ' ₽' : '—'}</span></div>
+        <div><span class="text-[#8b90a0] block text-[10px]">Оплачен до</span><span>${fmtDate(t.paidUntil)}</span></div>
+        <div><span class="text-[#8b90a0] block text-[10px]">Визитов</span><span class="font-mono text-[#0A84FF]">${visits}</span></div>
+      </div>
+      <button onclick="openPayModal('${t.id}')"
+        class="w-full py-1.5 rounded-lg bg-[#34C759]/10 border border-[#34C759]/30 text-[#34C759] text-xs font-bold hover:bg-[#34C759]/20 transition-all flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined" style="font-size:12px;zoom:1">payments</span>
+        Зарегистрировать оплату
+      </button>
+    </div>
+
+    <div class="p-4 border-b border-white/10">
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2">Врачи</div>
+      <div class="flex flex-wrap gap-1.5">
+        ${(t.doctorLogins || []).length
+          ? t.doctorLogins.map(l => `<span class="text-[10px] px-2 py-0.5 rounded-lg bg-[#1f1f1f] border border-[#414755] font-mono text-[#c1c6d7]">${l}</span>`).join('')
+          : '<span class="text-[10px] text-[#8b90a0]">Не указаны</span>'}
+      </div>
+    </div>
+
+    <div class="p-4 border-b border-white/10">
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2">История платежей</div>
+      ${paymentsHtml}
+    </div>
+
+    ${t.notes ? `<div class="p-4 border-b border-white/10"><div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Заметки</div><div class="text-xs text-[#c1c6d7]">${t.notes}</div></div>` : ''}
+
+    <div class="p-4 flex flex-col gap-2">
+      <div class="flex gap-2">
+        <button onclick="openTenantModal('${t.id}')"
+          class="flex-1 py-1.5 rounded-lg border border-[#0A84FF]/40 text-[#0A84FF] text-xs font-bold hover:bg-[#0A84FF]/10 transition-all">
+          Редактировать
+        </button>
+        <button onclick="toggleSuspend('${t.id}')"
+          class="flex-1 py-1.5 rounded-lg border ${t.status === 'suspended' ? 'border-[#34C759]/40 text-[#34C759] hover:bg-[#34C759]/10' : 'border-[#ff6b6b]/40 text-[#ff6b6b] hover:bg-[#ff6b6b]/10'} text-xs font-bold transition-all">
+          ${t.status === 'suspended' ? 'Восстановить' : 'Приостановить'}
+        </button>
+      </div>
+      <button onclick="deleteTenant('${t.id}')"
+        class="w-full py-1.5 rounded-lg border border-[#ff6b6b]/20 text-[#8b90a0] hover:text-[#ff6b6b] hover:border-[#ff6b6b]/40 text-xs font-bold transition-all">
+        Удалить клиента
+      </button>
+    </div>
+  `;
+
+  panel.classList.remove('hidden');
+};
+
+window.toggleSuspend = async function(id) {
+  const t = getTenants().find(x => x.id === id);
+  if (!t) return;
+  if (t.status === 'suspended') {
+    const today = new Date().toISOString().slice(0, 10);
+    t.status = (t.paidUntil && t.paidUntil < today) ? 'expired' : 'active';
+  } else {
+    t.status = 'suspended';
+  }
+  await apiUpdateTenant(t);
+  await refresh();
+  selectTenant(id);
+};
+
+window.deleteTenant = async function(id) {
+  const t = getTenants().find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Удалить клиента «${t.name}»?\nДействие нельзя отменить.`)) return;
+  await apiDeleteTenant(id);
+  document.getElementById('detail-panel').classList.add('hidden');
+  selectedId = null;
+  await refresh();
+};
+
+// ─── Платежи ─────────────────────────────────────────────
+window.openPayModal = function(id) {
+  const t = getTenants().find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('pay-tenant-id').value  = id;
+  document.getElementById('pay-tenant-name').textContent = t.name;
+  document.getElementById('pay-date').value   = new Date().toISOString().slice(0, 10);
+  document.getElementById('pay-amount').value = t.price || '';
+  // По умолчанию: оплачен до + 1 месяц
+  const base = t.paidUntil && new Date(t.paidUntil) > new Date()
+    ? new Date(t.paidUntil) : new Date();
+  const nextMonth = new Date(base.getFullYear(), base.getMonth() + 1, base.getDate());
+  document.getElementById('pay-until').value = nextMonth.toISOString().slice(0, 10);
+  document.getElementById('pay-comment').value = '';
+  document.getElementById('pay-modal').classList.remove('hidden');
+};
+
+window.closePayModal = function() {
+  document.getElementById('pay-modal').classList.add('hidden');
+};
+
+window.savePayment = async function() {
+  const id     = document.getElementById('pay-tenant-id').value;
+  const amount = +document.getElementById('pay-amount').value;
+  const date   = document.getElementById('pay-date').value;
+  const until  = document.getElementById('pay-until').value;
+  const method = document.getElementById('pay-method').value;
+  const comment= document.getElementById('pay-comment').value.trim();
+  if (!date || !until) { alert('Заполните дату и оплачен до'); return; }
+  if (amount <= 0 || amount > 1000000) { alert('Сумма оплаты должна быть от 1 до 1 000 000 ₽'); return; }
+
+  const t = getTenants().find(x => x.id === id);
+  if (!t) return;
+  if (!t.payments) t.payments = [];
+  t.payments.push({ date, amount, until, method, comment });
+  t.paidUntil = until;
+  const today = new Date().toISOString().slice(0, 10);
+  if (t.status !== 'suspended') {
+    t.status = until >= today ? 'active' : 'expired';
+  }
+  await apiUpdateTenant(t);
+  closePayModal();
+  await refresh();
+  selectTenant(id);
+};
+
+// ─── Добавление/редактирование арендатора ────────────────
+window.openTenantModal = function(id) {
+  const t = id ? getTenants().find(x => x.id === id) : null;
+  document.getElementById('modal-title').textContent = t ? 'Редактировать клиента' : 'Новый клиент';
+  document.getElementById('m-id').value         = t ? t.id : '';
+  document.getElementById('m-name').value        = t ? (t.clinic || t.name || '') : '';
+  document.getElementById('m-type').value        = t ? t.type : 'clinic';
+  document.getElementById('m-plan').value        = t ? t.plan : 'trial';
+  document.getElementById('m-price').value       = t ? (t.price || '') : '';
+  document.getElementById('m-status').value      = t ? t.status : 'trial';
+  document.getElementById('m-paid-until').value  = t ? (t.paidUntil || '') : '';
+  document.getElementById('m-contact').value     = t ? (t.contact || '') : '';
+  document.getElementById('m-phone').value       = t ? (t.phone || '') : '';
+  document.getElementById('m-email').value       = t ? (t.email || '') : '';
+  document.getElementById('m-logins').value      = t ? (t.doctorLogins || []).join(', ') : '';
+  document.getElementById('m-notes').value       = t ? (t.notes || '') : '';
+  if (!t) updatePlanPrice();
+  document.getElementById('tenant-modal').classList.remove('hidden');
+};
+
+window.closeTenantModal = function() {
+  document.getElementById('tenant-modal').classList.add('hidden');
+};
+
+window.updatePlanPrice = function() {
+  const plan = document.getElementById('m-plan').value;
+  const priceInput = document.getElementById('m-price');
+  if (!priceInput.value || priceInput.value === '0') {
+    priceInput.value = PLANS[plan]?.price || 0;
+  }
+};
+
+window.saveTenant = async function() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Укажите название'); return; }
+  const id = document.getElementById('m-id').value;
+  const logins = document.getElementById('m-logins').value.split(',').map(s => s.trim()).filter(Boolean);
+  const fields = {
+    clinic:       name,
+    name,
+    type:         document.getElementById('m-type').value,
+    plan:         document.getElementById('m-plan').value,
+    price:        +document.getElementById('m-price').value || 0,
+    status:       document.getElementById('m-status').value,
+    paidUntil:    document.getElementById('m-paid-until').value || null,
+    contact:      document.getElementById('m-contact').value.trim(),
+    phone:        document.getElementById('m-phone').value.trim(),
+    email:        document.getElementById('m-email').value.trim(),
+    doctorLogins: logins,
+    notes:        document.getElementById('m-notes').value.trim(),
+  };
+
+  if (id) {
+    const existing = getTenants().find(x => x.id === id);
+    await apiUpdateTenant({ ...existing, ...fields });
+  } else {
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 30);
+    await apiAddTenant({
+      ...fields,
+      paidUntil:  fields.paidUntil || trialEnd.toISOString().slice(0,10),
+      payments:   [],
+      createdAt:  new Date().toISOString().slice(0,10),
+    });
+  }
+  closeTenantModal();
+  await refresh();
+};
+
+// ─── Ближайшие платежи ────────────────────────────────────
+function renderUpcoming() {
+  const tenants = getTenants();
+  const today = new Date();
+  const in30  = new Date(); in30.setDate(today.getDate() + 30);
+
+  const due = tenants
+    .filter(t => t.status === 'active' || t.status === 'trial')
+    .filter(t => {
+      if (!t.paidUntil) return false;
+      const d = new Date(t.paidUntil);
+      return d <= in30;
+    })
+    .sort((a, b) => (a.paidUntil > b.paidUntil ? 1 : -1));
+
+  const el = document.getElementById('upcoming-payments');
+  if (!due.length) {
+    el.innerHTML = '<div class="text-xs text-[#8b90a0]">Нет платежей в ближайшие 30 дней</div>';
+    return;
+  }
+
+  el.innerHTML = due.map(t => {
+    const days = daysUntil(t.paidUntil);
+    const plan = PLANS[t.plan] || PLANS.trial;
+    const urgency = days < 0 ? 'border-[#ff6b6b]/30 bg-[#ff6b6b]/5'
+                  : days <= 3 ? 'border-[#FFD60A]/30 bg-[#FFD60A]/5'
+                  : 'border-white/10 bg-transparent';
+    return `
+    <div class="flex items-center gap-4 px-4 py-2.5 rounded-xl border ${urgency} cursor-pointer hover:bg-white/05 transition-all"
+         onclick="selectTenant('${t.id}')">
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-semibold">${esc(t.name)}</div>
+        <div class="text-[10px] text-[#8b90a0]">${esc(t.contact || plan.label)}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs font-mono font-bold" style="color:${plan.color}">${t.price ? t.price.toLocaleString('ru-RU') + ' ₽' : 'Бесплатно'}</div>
+        <div class="text-[10px]">${daysLabel(days)}</div>
+      </div>
+      <button onclick="event.stopPropagation();openPayModal('${t.id}')"
+        class="px-2.5 py-1 rounded-lg bg-[#34C759]/10 border border-[#34C759]/30 text-[#34C759] text-[10px] font-bold hover:bg-[#34C759]/20 transition-all flex-shrink-0">
+        Оплата
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ─── Общий рефреш ─────────────────────────────────────────
+async function refresh() {
+  await loadData();
+  renderStats();
+  renderTable();
+  renderUpcoming();
+}
+
+await refresh();
+
+// ─── Переключение вкладок ────────────────────────────────
+const _clientSections = ['stats-row', 'section-clients-wrap', 'section-upcoming'];
+window.switchTab = function(tab) {
+  const isClients = tab === 'clients';
+  // Шапка: кнопки
+  document.getElementById('tab-clients').className = isClients
+    ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/40'
+    : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10';
+  document.getElementById('tab-doctors').className = !isClients
+    ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[#34C759]/15 text-[#34C759] border border-[#34C759]/40'
+    : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10';
+  // Кнопки добавления
+  document.getElementById('btn-add-client').classList.toggle('hidden', !isClients);
+  document.getElementById('btn-add-doctor').classList.toggle('hidden', isClients);
+  // Секции
+  document.getElementById('stats-row').classList.toggle('hidden', !isClients);
+  document.getElementById('section-upcoming').classList.toggle('hidden', !isClients);
+  const clientsWrap = document.getElementById('section-clients-wrap');
+  if (clientsWrap) clientsWrap.classList.toggle('hidden', !isClients);
+  document.getElementById('section-doctors').classList.toggle('hidden', isClients);
+  if (!isClients) renderUsers();
+};
+
+// ─── Управление пользователями ───────────────────────────
+const ROLE_NAMES = { doctor: '🩺 Врач', boss: '👑 Руководитель', admin: '⚙️ Администратор' };
+
+async function renderUsers() {
+  const users = await apiGetUsers().catch(() => []);
+  const tbody = document.getElementById('users-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = users.map(u => `
+    <tr class="border-b border-white/5 hover:bg-white/3 transition-colors">
+      <td class="px-4 py-3 font-mono font-bold text-[#00F2FF]">${esc(u.username)}</td>
+      <td class="px-4 py-3">${esc(u.name)}</td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+        u.role==='admin' ? 'bg-[#BF5AF2]/15 text-[#BF5AF2] border-[#BF5AF2]/40' :
+        u.role==='boss'  ? 'bg-[#FFD60A]/12 text-[#FFD60A] border-[#FFD60A]/40' :
+                           'bg-[#0A84FF]/12 text-[#0A84FF] border-[#0A84FF]/40'
+      }">${ROLE_NAMES[u.role] || u.role}</span></td>
+      <td class="px-4 py-3 text-[#8b90a0]">${(u.created_at||'').slice(0,10)}</td>
+      <td class="px-4 py-3 text-right">
+        ${u.username !== session.username ? `
+        <button onclick="deleteUser('${esc(u.username)}')"
+                class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#ff6b6b] border border-[#ff6b6b]/30 hover:bg-[#ff6b6b]/10 transition-colors">
+          Удалить
+        </button>` : '<span class="text-[10px] text-[#414755]">вы</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+window.openUserModal = function() {
+  document.getElementById('u-name').value = '';
+  document.getElementById('u-username').value = '';
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-role').value = 'doctor';
+  document.getElementById('u-error').classList.add('hidden');
+  document.getElementById('user-modal').classList.remove('hidden');
+};
+window.closeUserModal = function() {
+  document.getElementById('user-modal').classList.add('hidden');
+};
+
+window.saveUser = async function() {
+  const name     = document.getElementById('u-name').value.trim();
+  const username = document.getElementById('u-username').value.trim();
+  const password = document.getElementById('u-password').value.trim();
+  const role     = document.getElementById('u-role').value;
+  const errEl    = document.getElementById('u-error');
+  errEl.classList.add('hidden');
+
+  if (!name || !username || !password) { errEl.textContent = 'Заполните все поля'; errEl.classList.remove('hidden'); return; }
+  if (password.length < 4) { errEl.textContent = 'Пароль минимум 4 символа'; errEl.classList.remove('hidden'); return; }
+
+  const result = await apiAddUser(username, name, password, role).catch(e => ({ ok: false, error: e.message }));
+  if (result && result.ok) {
+    closeUserModal();
+    renderUsers();
+  } else {
+    errEl.textContent = result?.error || 'Ошибка создания пользователя';
+    errEl.classList.remove('hidden');
+  }
+};
+
+window.deleteUser = async function(username) {
+  if (!confirm(`Удалить пользователя «${username}»?\nВсе его записи останутся в базе.`)) return;
+  await apiDeleteUser(username);
+  renderUsers();
+};
+
+</script>
+</body>
+</html>

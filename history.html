@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>AcuTwin — История</title>
+<script src="tailwind.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+<link href="design.css" rel="stylesheet"/>
+<script id="tw-cfg">
+tailwind.config={darkMode:'class',theme:{extend:{colors:{
+  'background':'#131313','surface':'#131313',
+  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
+  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
+  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
+  'primary':'#adc6ff','primary-container':'#4b8eff',
+  'outline':'#8b90a0','outline-variant':'#414755',
+  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
+  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
+  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
+}}}}
+</script>
+<style>
+#body-bg { position:fixed; top:0; right:0; bottom:0; left:16rem; pointer-events:none; z-index:0; overflow:hidden; }
+.md\:ml-64 > * { position:relative; z-index:1; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+<div id="body-bg">
+  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
+</div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 flex-shrink-0">
+    <div class="h-16 flex items-center justify-between px-6">
+      <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">История приёмов</h2>
+      <div class="flex items-center gap-3">
+        <div id="doctor-filter-wrap" class="hidden">
+          <select id="doctor-filter" class="px-3 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
+            <option value="">Все врачи</option>
+          </select>
+        </div>
+        <select id="patient-filter" class="px-3 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
+          <option value="">Все пациенты</option>
+        </select>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-base">search</span>
+          <input id="h-search" placeholder="Поиск..." class="pl-9 pr-4 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] transition-all w-48"/>
+        </div>
+      </div>
+    </div>
+    <!-- Date filter row -->
+    <div class="h-11 flex items-center gap-3 px-6 border-t border-white/5">
+      <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:16px;zoom:1">calendar_month</span>
+      <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Период</span>
+      <input id="date-from" type="date" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
+      <span class="text-[10px] text-[#8b90a0]">—</span>
+      <input id="date-to" type="date" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
+      <button id="date-reset" class="hidden text-[10px] text-[#ffb4ab] hover:text-[#ff8a80] transition-colors flex items-center gap-1" onclick="resetDateFilter()">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">close</span>сбросить
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 p-6 page-enter">
+    <div class="max-w-3xl mx-auto space-y-4">
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-4 gap-3">
+        <div class="glass-panel rounded-xl p-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Сессий</div>
+          <div id="stat-sessions" class="text-2xl font-bold font-mono text-[#00F2FF]">0</div>
+        </div>
+        <div class="glass-panel rounded-xl p-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Пациентов</div>
+          <div id="stat-patients" class="text-2xl font-bold font-mono text-[#adc6ff]">0</div>
+        </div>
+        <div class="glass-panel rounded-xl p-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Точек исп.</div>
+          <div id="stat-points" class="text-2xl font-bold font-mono text-[#FFD60A]">0</div>
+        </div>
+        <div class="glass-panel rounded-xl p-3">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Ср. сессия</div>
+          <div id="stat-avg" class="text-2xl font-bold font-mono text-[#ffb4ab]">0<span class="text-sm">м</span></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider">Хронология сессий</h3>
+        <span class="text-xs font-mono text-[#8b90a0] bg-[#1f1f1f] px-2 py-0.5 rounded" id="session-count"></span>
+      </div>
+      <div id="timeline" class="space-y-3 relative">
+        <div class="absolute left-[18px] top-0 bottom-0 w-px bg-[#414755]"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, MERIDIANS, MER_ORDER, esc, displayCode } from './shared.js';
+import { requireAuth } from './auth.js';
+import { apiGetRecords, apiDeleteRecord } from './api.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('history', session);
+initElementClock();
+
+const isBoss = session.role === 'boss';
+const sessions = await apiGetRecords();
+
+function getDocFilter() {
+  return isBoss ? document.getElementById('doctor-filter').value : '';
+}
+
+function rebuildPatientFilter(doctorVal) {
+  const sel = document.getElementById('patient-filter');
+  const prev = sel.value;
+  const visible = doctorVal
+    ? sessions.filter(s => s.doctor === doctorVal)
+    : sessions;
+  const patients = [...new Set(visible.map(s => s.patient))].sort((a,b) => a.localeCompare(b, 'ru'));
+  sel.innerHTML = '<option value="">Все пациенты</option>' +
+    patients.map(p => `<option value="${esc(p)}"${p===prev?' selected':''}>${esc(p)}</option>`).join('');
+}
+
+// Boss: show doctor filter dropdown
+if (isBoss) {
+  const wrap = document.getElementById('doctor-filter-wrap');
+  wrap.classList.remove('hidden');
+  const sel = document.getElementById('doctor-filter');
+  const doctors = [...new Set(sessions.map(s => s.doctor))];
+  doctors.forEach(d => {
+    const name = sessions.find(s => s.doctor === d)?.doctorName || d;
+    sel.innerHTML += `<option value="${esc(d)}">${esc(name)}</option>`;
+  });
+  sel.addEventListener('change', () => {
+    rebuildPatientFilter(sel.value);
+    renderTimeline(document.getElementById('h-search').value);
+  });
+}
+
+rebuildPatientFilter('');
+document.getElementById('patient-filter').addEventListener('change', () =>
+  renderTimeline(document.getElementById('h-search').value));
+
+window.resetDateFilter = () => {
+  document.getElementById('date-from').value = '';
+  document.getElementById('date-to').value = '';
+  document.getElementById('date-reset').classList.add('hidden');
+  renderTimeline(document.getElementById('h-search').value);
+};
+
+function onDateChange() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  document.getElementById('date-reset').classList.toggle('hidden', !from && !to);
+  renderTimeline(document.getElementById('h-search').value);
+}
+document.getElementById('date-from').addEventListener('change', onDateChange);
+document.getElementById('date-to').addEventListener('change', onDateChange);
+
+// ── Исход сеанса ──────────────────────────────────────────
+const OUTCOME_CFG = {
+  positive: { icon:'trending_up',   color:'#3d8a5c', label:'Улучшение' },
+  neutral:  { icon:'trending_flat', color:'#8b90a0', label:'Нейтрально' },
+  negative: { icon:'trending_down', color:'#c0392b', label:'Ухудшение'  },
+};
+function renderOutcomeBtn(id, outcome) {
+  const o = OUTCOME_CFG[outcome] || OUTCOME_CFG.neutral;
+  const opts = Object.entries(OUTCOME_CFG).map(([k,v]) =>
+    `<button onclick='event.stopPropagation();setOutcome("${id}","${k}")' style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:5px 12px;font-size:.7rem;font-weight:600;color:${v.color};background:none;border:none;cursor:pointer" onmouseover="this.style.background='${v.color}18'" onmouseout="this.style.background='none'"><span class="material-symbols-outlined" style="font-size:14px;zoom:1">${v.icon}</span>${v.label}</button>`
+  ).join('');
+  return `<div style="position:relative;display:inline-block">
+    <span onclick="event.stopPropagation();toggleOutcomeMenu('${id}')" style="cursor:pointer;display:flex;align-items:center" title="${o.label}">
+      <span class="material-symbols-outlined text-base" style="color:${o.color};zoom:1">${o.icon}</span>
+    </span>
+    <div id="omenu-${id}" style="display:none;position:absolute;top:100%;right:0;z-index:50;background:#1f1f1f;border:1px solid #414755;border-radius:10px;padding:4px 0;min-width:130px;box-shadow:0 4px 20px rgba(0,0,0,.5);margin-top:4px">
+      ${opts}
+    </div>
+  </div>`;
+}
+window.toggleOutcomeMenu = id => {
+  document.querySelectorAll('[id^="omenu-"]').forEach(m => { if (m.id !== `omenu-${id}`) m.style.display='none'; });
+  const m = document.getElementById(`omenu-${id}`);
+  if (m) m.style.display = m.style.display==='none' ? 'block' : 'none';
+};
+document.addEventListener('click', () => document.querySelectorAll('[id^="omenu-"]').forEach(m => m.style.display='none'));
+window.setOutcome = (id, outcome) => {
+  const token = sessionStorage.getItem('acutwin_token');
+  fetch(`/api/records/${id}/outcome`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({outcome})
+  }).then(r => {
+    if (r.ok) {
+      const rec = sessions.find(r => r.id === id);
+      if (rec) rec.outcome = outcome;
+      renderTimeline(document.getElementById('h-search').value);
+    }
+  });
+};
+
+// ── Статус лечения ────────────────────────────────────────
+const STATUS_CFG = {
+  started:   { label:'Начат',      color:'#0A84FF' },
+  active:    { label:'В процессе', color:'#FFD60A' },
+  completed: { label:'Завершён',   color:'#5AC85A' },
+};
+function renderStatusBadge(id, status) {
+  const s = STATUS_CFG[status];
+  const badge = s
+    ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${s.label}</span>`
+    : `<span style="font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#1f1f1f;border:1px solid #414755;color:#8b90a0">Статус</span>`;
+  const opts = Object.entries(STATUS_CFG).map(([k,v]) =>
+    `<button onclick='event.stopPropagation();setStatus("${id}","${k}")' style="display:block;width:100%;text-align:left;padding:5px 12px;font-size:.7rem;font-weight:600;color:${v.color};background:none;border:none;cursor:pointer;transition:background .1s" onmouseover="this.style.background='${v.color}18'" onmouseout="this.style.background='none'">${v.label}</button>`
+  ).join('');
+  return `<div style="position:relative;display:inline-block">
+    <span onclick="event.stopPropagation();toggleStatusMenu('${id}')" style="cursor:pointer">${badge}</span>
+    <div id="smenu-${id}" style="display:none;position:absolute;top:100%;left:0;z-index:50;background:#1f1f1f;border:1px solid #414755;border-radius:10px;padding:4px 0;min-width:110px;box-shadow:0 4px 20px rgba(0,0,0,.5);margin-top:4px">
+      ${opts}
+    </div>
+  </div>`;
+}
+window.toggleStatusMenu = (id) => {
+  document.querySelectorAll('[id^="smenu-"]').forEach(m => { if (m.id !== `smenu-${id}`) m.style.display='none'; });
+  const m = document.getElementById(`smenu-${id}`);
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+};
+document.addEventListener('click', () => document.querySelectorAll('[id^="smenu-"]').forEach(m => m.style.display='none'));
+window.setStatus = (id, status) => {
+  // статус — только локально (UI), запись в БД не меняем
+  const rec = sessions.find(r => r.id === id);
+  if (rec) rec.status = status;
+  renderTimeline(document.getElementById('h-search').value);
+};
+
+const PAGE_SIZE = 50;
+let currentPage = 0;
+let lastFiltered = [];
+
+function renderTimeline(filter='', page=0) {
+  currentPage = page;
+  const doctorFilter  = getDocFilter();
+  const patientFilter = document.getElementById('patient-filter').value;
+  const dateFrom      = document.getElementById('date-from').value;
+  const dateTo        = document.getElementById('date-to').value;
+  lastFiltered = sessions.filter(s => {
+    if (doctorFilter && s.doctor !== doctorFilter) return false;
+    if (patientFilter && s.patient !== patientFilter) return false;
+    if (dateFrom && s.date < dateFrom) return false;
+    if (dateTo   && s.date > dateTo)   return false;
+    return !filter || s.patient.toLowerCase().includes(filter.toLowerCase()) ||
+      (s.reason||'').toLowerCase().includes(filter.toLowerCase()) ||
+      (s.meridians||[]).some(m => m.toLowerCase().includes(filter.toLowerCase()));
+  });
+  const filtered = lastFiltered;
+
+  document.getElementById('session-count').textContent = `${filtered.length} сессий`;
+  renderStats(filtered);
+
+  const tl = document.getElementById('timeline');
+  if (!filtered.length) {
+    tl.innerHTML = '<div class="pl-12 text-sm text-[#8b90a0] py-6">Записей пока нет</div>';
+    return;
+  }
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageData   = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const pagerHtml = totalPages > 1 ? `
+    <div class="pl-12 flex items-center gap-2 mt-4 flex-wrap">
+      <button onclick="_tlPage(${page-1})" ${page===0?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">← Пред.</button>
+      <span class="text-xs text-[#8b90a0] font-mono">${page+1} / ${totalPages}</span>
+      <button onclick="_tlPage(${page+1})" ${page===totalPages-1?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">След. →</button>
+      <span class="text-[10px] text-[#8b90a0] ml-2">${filtered.length} записей</span>
+    </div>` : '';
+
+  tl.innerHTML = pageData.map((s, idx) => {
+    const meridians = s.meridians || [];
+    const points    = s.points    || [];
+    const outcome   = s.outcome   || 'neutral';
+    const outcomeColor = outcome==='positive' ? '#3d8a5c' : outcome==='neutral' ? '#8b90a0' : '#c0392b';
+    const outcomeIcon  = outcome==='positive' ? 'trending_up' : outcome==='neutral' ? 'trending_flat' : 'trending_down';
+    const noteText  = s.notes || s.reason || '';
+    const timeText  = s.time ? ` · ${s.time}` : '';
+    const metaRight = s.duration ? `<span class="text-xs font-mono text-[#8b90a0]">${s.duration}м</span>` :
+                      s.gender   ? `<span class="text-xs text-[#8b90a0]">${esc(s.gender)}${s.age ? ', ' + esc(s.age) + ' л' : ''}</span>` : '';
+
+    return `
+      <div class="relative pl-12 group" style="animation:fadeUp 0.3s ease-out ${idx*0.05}s both">
+
+        <div class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all${noteText ? ' cursor-pointer' : ''}"
+             ${noteText ? `onclick="this.querySelector('.session-notes').classList.toggle('hidden')"` : ''}>
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                <button onclick='event.stopPropagation();sessionStorage.setItem("acutwin_patient_view",${JSON.stringify(s.patient)});location.href="patient.html"'
+                        class="font-bold text-[#e2e2e2] hover:text-[#00F2FF] transition-colors truncate max-w-[240px]">${esc(s.patient)}</button>
+                ${s.type ? `<span class="text-xs text-[#8b90a0]">${esc(s.type)}</span>` : ''}
+                ${s.session && s.session!=='1/1' ? `<span class="text-[10px] font-mono text-[#adc6ff] bg-[#adc6ff]/10 px-1.5 py-0.5 rounded">сессия ${esc(s.session)}</span>` : ''}
+                ${isBoss && s.doctorName ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#0A84FF]/10 text-[#0A84FF] border border-[#0A84FF]/20">${esc(s.doctorName)}</span>` : ''}
+                ${renderStatusBadge(s.id, s.status)}
+              </div>
+              <div class="text-xs text-[#8b90a0]">${new Date(s.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              ${renderOutcomeBtn(s.id, outcome)}
+              ${metaRight}
+              <button onclick='event.stopPropagation();sessionStorage.setItem("acutwin_diag_patient",${JSON.stringify(JSON.stringify({patient:s.patient,age:s.age||'',gender:s.gender||'',reason:''}))});location.href="treatment.html"'
+                      title="К тактике лечения"
+                      class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors flex-shrink-0 text-[10px] font-bold">
+                <span class="material-symbols-outlined" style="font-size:13px;zoom:1">medical_services</span>
+                Рецепт
+              </button>
+            </div>
+          </div>
+
+          ${noteText ? `
+          <p class="text-xs text-[#c1c6d7] leading-relaxed mb-2">${esc(noteText)}</p>` : ''}
+
+          ${points.length ? `
+          <div class="flex flex-wrap gap-1">
+            ${points.map(p => `
+              <a href="atlas.html?code=${p}" onclick="event.stopPropagation()"
+                 class="text-[10px] mer-code font-bold px-2 py-0.5 rounded bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/10 transition-colors border border-[#414755] hover:border-[#00F2FF]/30">
+                ${displayCode(p)}
+              </a>`).join('')}
+          </div>` : ''}
+        </div>
+      </div>`;
+  }).join('') + pagerHtml;
+}
+
+window._tlPage = function(p) {
+  renderTimeline(document.getElementById('h-search').value, p);
+  document.getElementById('timeline').scrollIntoView({ behavior:'smooth', block:'start' });
+};
+
+function renderStats(data) {
+  const totalPoints = data.reduce((n, s) => n + (s.points||[]).length, 0);
+  const durations = data.filter(s => s.duration).map(s => s.duration);
+  const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : 0;
+  const uniquePatients = new Set(data.map(s => s.patient)).size;
+  document.getElementById('stat-sessions').textContent = data.length;
+  document.getElementById('stat-patients').textContent = uniquePatients;
+  document.getElementById('stat-points').textContent = totalPoints;
+  document.getElementById('stat-avg').innerHTML = `${avgDur}<span class="text-sm">м</span>`;
+}
+
+renderStats(sessions);
+renderTimeline();
+
+document.getElementById('h-search').addEventListener('input', e => renderTimeline(e.target.value));
+</script>
+</body>
+</html>

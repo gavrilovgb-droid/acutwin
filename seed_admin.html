@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<base href="/new/">
+<title>AcuTwin — Seed Admin Data</title>
+<script src="tailwind.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 p-8 font-mono text-sm">
+<div id="log" class="space-y-1 mb-6"></div>
+<div id="done" class="hidden text-center mt-8">
+  <div class="text-2xl text-green-400 font-bold mb-2">✅ Готово!</div>
+  <a href="admin.html" class="inline-block mt-4 px-6 py-3 bg-blue-600 rounded-xl text-white font-bold hover:bg-blue-500">
+    Открыть админку →
+  </a>
+</div>
+<script type="module">
+import { requireAdmin } from './auth.js';
+const session = requireAdmin();
+if (!session) throw new Error('redirect');
+
+const log = (msg, color = 'text-gray-300') => {
+  const el = document.createElement('div');
+  el.className = color;
+  el.textContent = msg;
+  document.getElementById('log').appendChild(el);
+};
+
+// ─── Хеширование (идентично auth.js) ────────────────────
+async function hashPwd(p) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(p));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ─── Имена пациентов ─────────────────────────────────────
+const PATIENT_POOL = [
+  {n:'Смирнова Е.П.',  age:42,g:'Ж'}, {n:'Козлов В.А.',    age:55,g:'М'},
+  {n:'Морозова Н.С.',  age:38,g:'Ж'}, {n:'Белов Д.К.',     age:61,g:'М'},
+  {n:'Яковлева О.И.',  age:29,g:'Ж'}, {n:'Новиков А.М.',   age:48,g:'М'},
+  {n:'Волкова Т.Р.',   age:35,g:'Ж'}, {n:'Лебедев С.П.',   age:58,g:'М'},
+  {n:'Зайцева К.Н.',   age:31,g:'Ж'}, {n:'Кузнецов И.В.',  age:67,g:'М'},
+  {n:'Попова А.С.',    age:44,g:'Ж'}, {n:'Соколов М.В.',   age:52,g:'М'},
+  {n:'Никитина Л.Г.',  age:37,g:'Ж'}, {n:'Орлов Б.Д.',     age:63,g:'М'},
+  {n:'Фёдорова Е.Н.',  age:26,g:'Ж'}, {n:'Петрова М.В.',   age:49,g:'Ж'},
+  {n:'Тихонов Р.А.',   age:39,g:'М'}, {n:'Власова Г.С.',   age:54,g:'Ж'},
+  {n:'Абрамов К.Д.',   age:33,g:'М'}, {n:'Ковалёва Е.И.',  age:45,g:'Ж'},
+  {n:'Гусев П.Н.',     age:57,g:'М'}, {n:'Ларина В.О.',    age:28,g:'Ж'},
+  {n:'Макаров С.Л.',   age:41,g:'М'}, {n:'Дмитриева Т.К.', age:36,g:'Ж'},
+  {n:'Шилов А.В.',     age:60,g:'М'}, {n:'Романова Ю.М.',  age:32,g:'Ж'},
+  {n:'Крылов Е.С.',    age:47,g:'М'}, {n:'Осипова Н.А.',   age:53,g:'Ж'},
+  {n:'Медведев О.И.',  age:40,g:'М'}, {n:'Сорокина А.Г.',  age:25,g:'Ж'},
+];
+
+const SCENARIOS = [
+  { reason:'Бессонница, тревожность, раздражительность',
+    points:['C7','MC6','TR5','C3','RP6'],
+    notes:['Первичная диагностика. Избыток Ян Сердца. Частые пробуждения ночью.','Динамика слабоположительная. Сон улучшился незначительно.','Заметное улучшение сна. Тревожность снизилась на 30%.','Хорошая динамика. Пациент отмечает спокойный сон 5 из 7 ночей.','Завершение курса. Сон нормализовался.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Хронические боли в пояснице, слабость',
+    points:['V23','V52','R3','R7','VB25'],
+    notes:['Первичный осмотр. Недостаток Инь Почек. Боли при движении.','Боль снизилась незначительно. Тепло в пояснице после сеанса.','Положительная динамика. Боль 4/10 вместо 7/10.','Значительное улучшение. Ходит без скованности по утрам.','Курс завершён. Боли практически нет.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Мигрень, головные боли, головокружение',
+    points:['VB20','VB34','F3','F8','TR5'],
+    notes:['Диагностика. Застой Ци Печени. Приступы 2–3 раза в неделю.','Частота не изменилась, но интенсивность снизилась.','Приступы 1 раз в неделю.','Приступов за 2 недели не было.','Стойкая ремиссия. Завершение курса.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Нарушение пищеварения, вздутие, слабый аппетит',
+    points:['E36','E40','RP6','RP3','VC12'],
+    notes:['Первичная диагностика. Слабость Ци Желудка. Вздутие после еды.','Слабая положительная динамика.','Вздутие уменьшилось. Аппетит 6/10.','Хорошая динамика. Дискомфорта нет.','Курс завершён. Пищеварение нормализовалось.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Депрессия, упадок сил, хроническая усталость',
+    points:['R7','RP6','E36','VG20','C7'],
+    notes:['Диагностика. Недостаток Ян Почек. Выраженная усталость утром.','Небольшой прилив энергии после сеансов.','Настроение улучшилось. Утренняя усталость снизилась.','Значительное улучшение. Работоспособность восстановлена на 70%.','Состояние стабильно хорошее.'],
+    outcomes:['neutral','positive','positive','positive','positive'] },
+  { reason:'Боль в шее и плечевом поясе, остеохондроз',
+    points:['VB21','TR15','iG14','V10','Gi4'],
+    notes:['Шейный остеохондроз. Ограничение подвижности. Боль 6/10.','После сеанса временное облегчение на 2 дня.','Подвижность улучшилась. Боль снизилась до 4/10.','Объём движений увеличился. Головные боли прошли.','Курс завершён успешно. Рекомендован ЛФК.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Артериальная гипертония, повышенное давление',
+    points:['E36','LI11','PC6','HT7','KI3'],
+    notes:['Гипертония II степени. АД 155/95. Частые головные боли.','АД 148/90. Незначительная динамика.','АД 140/85. Самочувствие улучшилось.','АД 135/80 стабильно. Головные боли редко.','АД в норме. Завершение поддерживающего курса.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+  { reason:'Онемение конечностей, нарушение чувствительности',
+    points:['Gi4','Gi11','TR5','ST36','SP6'],
+    notes:['Онемение кистей. Синдром карпального канала. Анамнез 8 мес.','Незначительное улучшение. Онемение по ночам реже.','Онемение уменьшилось на 50%. Работоспособность кисти растёт.','Онемение только при длительной работе за ПК.','Симптомы практически устранены. Профилактика раз в квартал.'],
+    outcomes:['neutral','neutral','positive','positive','positive'] },
+];
+
+// ─── Генерация записей ───────────────────────────────────
+function makeRecords(doctorUsername, doctorName, patientSlice, baseOffset = 0) {
+  const records = [];
+  const baseDate = new Date('2026-02-01');
+  baseDate.setDate(baseDate.getDate() + baseOffset * 3);
+  patientSlice.forEach((patient, pi) => {
+    const sc = SCENARIOS[pi % SCENARIOS.length];
+    for (let v = 0; v < 5; v++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + pi * 10 + v * 7);
+      records.push({
+        id: d.getTime() + pi*1000 + v + Math.random()*100,
+        doctor: doctorUsername, doctorName,
+        date: d.toISOString().slice(0,10),
+        time: `${9 + pi % 5}:${v%2===0?'00':'30'}`,
+        patient: patient.n, age: patient.age, gender: patient.g,
+        reason: sc.reason, type: 'Акупунктура',
+        session: `${v+1}/5`, points: sc.points,
+        notes: sc.notes[v], outcome: sc.outcomes[v], duration: 45+v*5,
+      });
+    }
+  });
+  return records;
+}
+
+// ─── Данные арендаторов ──────────────────────────────────
+const today = new Date().toISOString().slice(0,10);
+function addDays(n) {
+  const d = new Date(); d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function subDays(n) { return addDays(-n); }
+
+const TENANTS_DEF = [
+  // TRIAL (3)
+  { name:'Медцентр «Восход»',          type:'clinic',     plan:'trial', status:'trial',
+    price:0, paidUntil:addDays(20), contact:'Степанов А.Р.', phone:'+7 (495) 210-33-44',
+    email:'voskhod@mail.ru',
+    doctors:[{login:'dr_voskhod1', name:'Степанов А.Р.', pwd:'pass1'}],
+    note:'Пробный период до конца мая' },
+  { name:'Кабинет Малининой А.С.',      type:'individual', plan:'trial', status:'trial',
+    price:0, paidUntil:addDays(5),  contact:'Малинина А.С.', phone:'+7 (916) 445-12-88',
+    email:'malinina@gmail.com',
+    doctors:[{login:'dr_malinina', name:'Малинина А.С.', pwd:'pass2'}],
+    note:'Осталось 5 дней триала — позвонить' },
+  { name:'Клиника «Здоровье+»',         type:'clinic',     plan:'trial', status:'trial',
+    price:0, paidUntil:addDays(2),  contact:'Орехов В.Н.', phone:'+7 (812) 300-55-77',
+    email:'zdorovie@clinic.spb.ru',
+    doctors:[{login:'dr_zdorovie1', name:'Орехов В.Н.', pwd:'pass3'}],
+    note:'Срочно — триал заканчивается через 2 дня!' },
+
+  // ИП (3)
+  { name:'ИП Кузнецова Е.В.',           type:'individual', plan:'solo', status:'active',
+    price:1500, paidUntil:addDays(40), contact:'Кузнецова Е.В.', phone:'+7 (926) 888-12-34',
+    email:'kuznetsova.ev@gmail.com',
+    doctors:[{login:'dr_kuznetsova', name:'Кузнецова Е.В.', pwd:'pass4'}],
+    payments:[{date:subDays(20), amount:1500, until:addDays(40), method:'Перевод', comment:'Май 2026'}] },
+  { name:'Иглотерапия Тихонова',         type:'individual', plan:'solo', status:'active',
+    price:1500, paidUntil:addDays(15), contact:'Тихонов Р.А.', phone:'+7 (903) 512-76-90',
+    email:'tikhonov.ra@yandex.ru',
+    doctors:[{login:'dr_tikhonov', name:'Тихонов Р.А.', pwd:'pass5'}],
+    payments:[{date:subDays(15), amount:1500, until:addDays(15), method:'Карта', comment:''}] },
+  { name:'ИП Громов М.С.',               type:'individual', plan:'solo', status:'expired',
+    price:1500, paidUntil:subDays(5),  contact:'Громов М.С.', phone:'+7 (967) 341-09-22',
+    email:'gromov.ms@mail.ru',
+    doctors:[{login:'dr_gromov', name:'Громов М.С.', pwd:'pass6'}],
+    payments:[{date:subDays(35), amount:1500, until:subDays(5), method:'Наличные', comment:'Апрель'}],
+    note:'Не продлил — уточнить' },
+
+  // БАЗОВЫЙ (3)
+  { name:'Клиника восточной медицины «Ци»', type:'clinic', plan:'basic', status:'active',
+    price:2500, paidUntil:addDays(25), contact:'Лу Вэй', phone:'+7 (495) 677-44-11',
+    email:'qi.clinic@yandex.ru',
+    doctors:[
+      {login:'dr_qi1', name:'Лу Вэй', pwd:'pass7'},
+      {login:'dr_qi2', name:'Серова О.К.', pwd:'pass8'},
+    ],
+    payments:[{date:subDays(5), amount:2500, until:addDays(25), method:'Счёт', comment:'Договор №12'}] },
+  { name:'Медицинский центр «Ритм»',     type:'clinic',     plan:'basic', status:'active',
+    price:2500, paidUntil:addDays(8),  contact:'Громова П.В.', phone:'+7 (812) 422-15-63',
+    email:'ritm.med@gmail.com',
+    doctors:[
+      {login:'dr_ritm1', name:'Громова П.В.', pwd:'pass9'},
+      {login:'dr_ritm2', name:'Власов Е.М.', pwd:'pass10'},
+    ],
+    payments:[{date:subDays(22), amount:2500, until:addDays(8), method:'Перевод', comment:''}],
+    note:'Платёж через 8 дней — напомнить' },
+  { name:'Центр акупунктуры «Баланс»',   type:'clinic',     plan:'basic', status:'suspended',
+    price:2500, paidUntil:subDays(10), contact:'Носов Д.А.', phone:'+7 (495) 300-78-45',
+    email:'balance.acu@mail.ru',
+    doctors:[
+      {login:'dr_balans1', name:'Носов Д.А.', pwd:'pass11'},
+      {login:'dr_balans2', name:'Ильина С.В.', pwd:'pass12'},
+    ],
+    payments:[{date:subDays(40), amount:2500, until:subDays(10), method:'Наличные', comment:'Март'}],
+    note:'Приостановлен — не выходит на связь' },
+
+  // PRO (3)
+  { name:'Клиника «АкуМед»',            type:'clinic',     plan:'pro', status:'active',
+    price:5000, paidUntil:addDays(35), contact:'Власова Г.С.', phone:'+7 (495) 955-00-11',
+    email:'info@akumed.ru',
+    doctors:[
+      {login:'dr_akumed1', name:'Власова Г.С.', pwd:'pass13'},
+      {login:'dr_akumed2', name:'Панов К.Е.', pwd:'pass14'},
+      {login:'dr_akumed3', name:'Жукова Н.Р.', pwd:'pass15'},
+    ],
+    payments:[{date:subDays(25), amount:5000, until:addDays(35), method:'Счёт', comment:'Договор №5 май'}] },
+  { name:'Восточная медицина «Дао»',     type:'clinic',     plan:'pro', status:'active',
+    price:5000, paidUntil:addDays(50), contact:'Фомин В.П.', phone:'+7 (812) 765-33-99',
+    email:'dao.medicine@yandex.ru',
+    doctors:[
+      {login:'dr_dao1', name:'Фомин В.П.', pwd:'pass16'},
+      {login:'dr_dao2', name:'Сазонова Л.И.', pwd:'pass17'},
+      {login:'dr_dao3', name:'Крылов А.Е.', pwd:'pass18'},
+    ],
+    payments:[{date:subDays(10), amount:5000, until:addDays(50), method:'Перевод', comment:''}] },
+  { name:'Центр ТКМ «Импульс»',          type:'clinic',     plan:'pro', status:'expired',
+    price:5000, paidUntil:subDays(3),  contact:'Зимина А.В.', phone:'+7 (495) 410-22-87',
+    email:'impuls.tkm@gmail.com',
+    doctors:[
+      {login:'dr_impuls1', name:'Зимина А.В.', pwd:'pass19'},
+      {login:'dr_impuls2', name:'Соболев М.К.', pwd:'pass20'},
+      {login:'dr_impuls3', name:'Рыбакова Е.Д.', pwd:'pass21'},
+    ],
+    payments:[{date:subDays(33), amount:5000, until:subDays(3), method:'Счёт', comment:'Апрель'}],
+    note:'Ждут счёт на май — отправить' },
+];
+
+// ─── СТАРТ ───────────────────────────────────────────────
+(async () => {
+  log('▶ Начинаем сидирование...', 'text-cyan-400');
+
+  // 1. Пользователи
+  const existingUsers = JSON.parse(localStorage.getItem('acutwin_users') || '[]');
+  const existingLogins = new Set(existingUsers.map(u => u.username));
+  const newUsers = [...existingUsers];
+  let addedUsers = 0;
+
+  for (const t of TENANTS_DEF) {
+    for (const d of t.doctors) {
+      if (!existingLogins.has(d.login)) {
+        const hash = await hashPwd(d.pwd);
+        newUsers.push({ name: d.name, username: d.login, hash, role: 'doctor' });
+        existingLogins.add(d.login);
+        addedUsers++;
+      }
+    }
+  }
+  localStorage.setItem('acutwin_users', JSON.stringify(newUsers));
+  log(`✓ Создано пользователей: ${addedUsers}`, 'text-green-400');
+
+  // 2. Арендаторы
+  const existingTenants = JSON.parse(localStorage.getItem('acutwin_tenants') || '[]');
+  const existingNames = new Set(existingTenants.map(t => t.name));
+  const newTenants = [...existingTenants];
+  let addedTenants = 0;
+
+  for (const td of TENANTS_DEF) {
+    if (existingNames.has(td.name)) continue;
+    newTenants.push({
+      id: uid(),
+      name: td.name, type: td.type, plan: td.plan, status: td.status,
+      price: td.price, paidUntil: td.paidUntil,
+      contact: td.contact, phone: td.phone, email: td.email,
+      doctorLogins: td.doctors.map(d => d.login),
+      notes: td.note || '',
+      payments: td.payments || [],
+      createdAt: subDays(Math.floor(Math.random()*60 + 5)),
+    });
+    addedTenants++;
+  }
+  localStorage.setItem('acutwin_tenants', JSON.stringify(newTenants));
+  log(`✓ Создано арендаторов: ${addedTenants}`, 'text-green-400');
+
+  // 3. Записи приёмов (10 пациентов × 5 сеансов на каждого врача)
+  const existingRecs = JSON.parse(localStorage.getItem('acutwin_records') || '[]');
+  const existingDoctors = new Set(existingRecs.map(r => r.doctor));
+  let allNewRecs = [...existingRecs];
+  let addedDoctors = 0;
+
+  let patientOffset = 0;
+  for (const td of TENANTS_DEF) {
+    for (const d of td.doctors) {
+      if (existingDoctors.has(d.login)) continue;
+      const slice = PATIENT_POOL.slice(patientOffset % PATIENT_POOL.length,
+                                       (patientOffset % PATIENT_POOL.length) + 10);
+      // Если не хватает до конца массива — добиваем с начала
+      const patients = slice.length === 10 ? slice :
+        [...slice, ...PATIENT_POOL.slice(0, 10 - slice.length)];
+      const recs = makeRecords(d.login, d.name, patients, patientOffset);
+      allNewRecs.push(...recs);
+      patientOffset++;
+      addedDoctors++;
+      log(`  · ${d.name} (${d.login}): 10 пациентов × 5 сеансов = 50 записей`, 'text-gray-400');
+    }
+  }
+
+  // Сортируем по дате убыванию
+  allNewRecs.sort((a,b) => b.id - a.id);
+  localStorage.setItem('acutwin_records', JSON.stringify(allNewRecs));
+  log(`✓ Добавлено врачей с записями: ${addedDoctors} (${addedDoctors * 50} записей)`, 'text-green-400');
+  log('', '');
+  log(`📊 Итого в базе: ${newTenants.length} арендаторов, ${newUsers.length} пользователей, ${allNewRecs.length} записей`, 'text-cyan-400');
+
+  document.getElementById('done').classList.remove('hidden');
+})();
+</script>
+</body>
+</html>

@@ -23,8 +23,9 @@ jobs:
             echo "App dir: $APP"
             cd "$APP"
 
-            # Git pull
-            git pull origin master
+            # Git pull (принудительно, сохраняем data/)
+            git fetch origin master
+            git reset --hard origin/master
 
             # Restart (pm2 / systemd / kill+start)
             if command -v pm2 &>/dev/null; then

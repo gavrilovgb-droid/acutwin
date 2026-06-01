@@ -7,86 +7,53 @@ jobs:
   mail:
     runs-on: ubuntu-latest
     steps:
-      - name: Configure mail forwarding on VPS
+      - name: Add MX record via REG.RU web
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: 194.67.92.166
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          timeout: 300s
+          timeout: 120s
           script: |
-            REGRU_USER="ggbksi"
-            REGRU_PASS='Elena196672!@'
-            VPS_IP="194.67.92.166"
-            DOMAIN="acutwin.ru"
-            FORWARD_TO="gavrilovgb@gmail.com"
+            python3 - << 'PYEOF'
+            import urllib.request, urllib.parse, urllib.error, json, re, http.cookiejar
 
-            echo "=== 1. Тест REG.RU API с VPS ==="
-            API_TEST=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/get_resource_records" \
-              --data-urlencode "username=$REGRU_USER" \
-              --data-urlencode "password=$REGRU_PASS" \
-              --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
-              --data-urlencode "output_content_type=plain")
-            echo "$API_TEST"
+            USER = "ggbksi"
+            PASS = "Elena196672!@"
+            DOMAIN = "acutwin.ru"
+            VPS_IP = "194.67.92.166"
 
-            if echo "$API_TEST" | grep -q '"success"'; then
-              echo "=== 2. API доступен — добавляем DNS ==="
+            jar = http.cookiejar.CookieJar()
+            opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+            opener.addheaders = [('User-Agent', 'Mozilla/5.0')]
 
-              # A-запись для mail.acutwin.ru
-              curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_alias" \
-                --data-urlencode "username=$REGRU_USER" \
-                --data-urlencode "password=$REGRU_PASS" \
-                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
-                --data-urlencode "subdomain=mail" \
-                --data-urlencode "ipaddr=$VPS_IP"
+            # 1. Получаем страницу логина
+            resp = opener.open("https://www.reg.ru/user/login/")
+            html = resp.read().decode("utf-8")
+            token = re.search(r'name="csrf_token"\s+value="([^"]+)"', html)
+            csrf = token.group(1) if token else ""
+            print("CSRF:", csrf[:20] if csrf else "not found")
 
-              # MX-запись
-              MX=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_mx" \
-                --data-urlencode "username=$REGRU_USER" \
-                --data-urlencode "password=$REGRU_PASS" \
-                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
-                --data-urlencode "subdomain=@" \
-                --data-urlencode "mail_host=mail.$DOMAIN" \
-                --data-urlencode "priority=10")
-              echo "MX: $MX"
+            # 2. Логинимся
+            data = urllib.parse.urlencode({
+                "login": USER, "password": PASS,
+                "csrf_token": csrf, "action": "login"
+            }).encode()
+            resp = opener.open("https://www.reg.ru/user/login/", data)
+            body = resp.read().decode("utf-8")
+            logged_in = "logout" in body.lower() or "выход" in body.lower() or "lk" in resp.url
+            print("Logged in:", logged_in, "URL:", resp.url[:60])
 
-              # SPF TXT-запись
-              SPF=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_txt" \
-                --data-urlencode "username=$REGRU_USER" \
-                --data-urlencode "password=$REGRU_PASS" \
-                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
-                --data-urlencode "subdomain=@" \
-                --data-urlencode "text=v=spf1 ip4:$VPS_IP ~all")
-              echo "SPF: $SPF"
-            else
-              echo "!!! API заблокирован с VPS. DNS нужно добавить вручную."
-            fi
+            # 3. Получаем список DNS-записей домена
+            resp = opener.open(f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}")
+            body = resp.read().decode("utf-8")
+            print("Domain page:", resp.url[:80])
+            print("Page snippet:", body[2000:2200])
 
-            echo "=== 3. Установка Postfix ==="
-            DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
+            # 4. Пробуем найти endpoint для добавления DNS
+            # REG.RU использует /api/ endpoint для DNS
+            dns_url = f"https://www.reg.ru/domain/new/ajax/?action=get_dns_records&zone_name={DOMAIN}"
+            resp = opener.open(dns_url)
+            print("DNS API:", resp.read().decode("utf-8")[:300])
 
-            echo "=== 4. Конфигурация Postfix ==="
-            postconf -e "myhostname = mail.$DOMAIN"
-            postconf -e "mydomain = $DOMAIN"
-            postconf -e "myorigin = $DOMAIN"
-            postconf -e "inet_interfaces = all"
-            postconf -e "inet_protocols = ipv4"
-            postconf -e "mydestination = mail.$DOMAIN, localhost"
-            postconf -e "virtual_alias_domains = $DOMAIN"
-            postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
-            postconf -e "smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination"
-
-            printf "info@%s\t%s\n@%s\t%s\n" "$DOMAIN" "$FORWARD_TO" "$DOMAIN" "$FORWARD_TO" \
-              > /etc/postfix/virtual
-            postmap /etc/postfix/virtual
-
-            echo "=== 5. Запуск Postfix ==="
-            systemctl enable postfix
-            systemctl restart postfix
-            sleep 2
-            systemctl status postfix --no-pager | head -20
-
-            echo "=== 6. Проверка порта 25 ==="
-            ss -tlnp | grep :25 && echo "OK: порт 25 слушает" || echo "WARN: порт 25 не активен"
-
-            echo "=== Готово ==="
+            PYEOF

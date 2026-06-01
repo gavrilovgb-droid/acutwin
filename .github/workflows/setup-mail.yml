@@ -7,124 +7,15 @@ jobs:
   dns:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Install Playwright
         run: |
           pip install playwright
           playwright install chromium --with-deps
 
-      - name: Add MX + A records via headless browser
-        run: |
-          python3 - << 'PYEOF'
-import time, sys
-from playwright.sync_api import sync_playwright
-
-USER   = "ggbksi"
-PASS   = "Elena196672!@"
-DOMAIN = "acutwin.ru"
-VPS_IP = "194.67.92.166"
-
-def ss(page, name):
-    page.screenshot(path=f"/tmp/{name}.png")
-    print(f"  [screenshot] {name}.png")
-
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-    ctx = browser.new_context(
-        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121",
-        locale="ru-RU", viewport={"width": 1280, "height": 800}
-    )
-    page = ctx.new_page()
-    page.set_default_timeout(30000)
-
-    # ── 1. Главная ────────────────────────────────────────────
-    print("=== Step 1: Load reg.ru ===")
-    page.goto("https://www.reg.ru/", wait_until="domcontentloaded")
-    time.sleep(3)
-    ss(page, "s1_main")
-    print("URL:", page.url)
-
-    # Закрываем куки-баннер если есть
-    try:
-        page.get_by_text("Хорошо").click(timeout=3000)
-        time.sleep(1)
-    except: pass
-
-    # ── 2. Кликаем Войти (правый верхний угол ~1113,108) ─────
-    print("=== Step 2: Click login button ===")
-    try:
-        # Пробуем get_by_role
-        page.get_by_role("link", name="Войти").click(timeout=5000)
-    except:
-        try:
-            page.get_by_role("button", name="Войти").click(timeout=5000)
-        except:
-            # По координатам (кнопка Войти в правом верхнем)
-            page.mouse.click(1113, 108)
-
-    page.wait_for_load_state("networkidle")
-    time.sleep(3)
-    ss(page, "s2_afterlogin_click")
-    print("URL after click:", page.url)
-
-    # ── 3. Форма входа ────────────────────────────────────────
-    print("=== Step 3: Fill login form ===")
-    ss(page, "s3_loginform")
-
-    # Заполняем логин
-    for sel in ['input[type="text"]', 'input[type="email"]', 'input[autocomplete="username"]',
-                'input[name="login"]', 'input[placeholder]']:
-        try:
-            loc = page.locator(sel).first
-            if loc.is_visible(timeout=2000):
-                loc.fill(USER)
-                print(f"  login filled via: {sel}")
-                break
-        except: pass
-
-    # Заполняем пароль
-    try:
-        page.locator('input[type="password"]').first.fill(PASS)
-        print("  password filled")
-    except Exception as e:
-        print("  password error:", e)
-
-    ss(page, "s4_filled")
-
-    # Кликаем войти
-    for sel in ['button[type="submit"]',
-                'button:has-text("Войти")',
-                'input[type="submit"]']:
-        try:
-            loc = page.locator(sel).first
-            if loc.is_visible(timeout=2000):
-                loc.click()
-                print(f"  submit via: {sel}")
-                break
-        except: pass
-
-    page.wait_for_load_state("networkidle")
-    time.sleep(4)
-    ss(page, "s5_loggedin")
-    print("URL after login:", page.url)
-
-    # ── 4. Панель управления DNS ──────────────────────────────
-    print("=== Step 4: DNS management ===")
-    for dns_url in [
-        f"https://www.reg.ru/user/domain/{DOMAIN}/dns/",
-        f"https://cp.reg.ru/domains/{DOMAIN}/dns",
-        f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}",
-    ]:
-        try:
-            page.goto(dns_url, wait_until="networkidle", timeout=15000)
-            time.sleep(2)
-            ss(page, f"s6_dns_{dns_url.split('/')[-2]}")
-            print(f"  URL: {page.url} | Title: {page.title()[:60]}")
-        except Exception as e:
-            print(f"  Error for {dns_url}: {e}")
-
-    print("=== Done. Check screenshots. ===")
-    browser.close()
-PYEOF
+      - name: Run DNS automation
+        run: python3 .github/regru_dns.py
 
       - name: Upload screenshots
         if: always()

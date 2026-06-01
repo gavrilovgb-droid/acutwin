@@ -2,29 +2,43 @@
 <html class="dark" lang="ru">
 <head>
 <meta charset="utf-8"/>
-<base href="/new/">
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>AcuTwin — Карточка пациента</title>
-<script src="tailwind.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
-<link href="design.css" rel="stylesheet"/>
-<script id="tw-cfg">
-tailwind.config={darkMode:'class',theme:{extend:{colors:{
-  'background':'#131313','surface':'#131313',
-  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
-  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
-  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
-  'primary':'#adc6ff','primary-container':'#4b8eff',
-  'outline':'#8b90a0','outline-variant':'#414755',
-  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
-}}}}
-</script>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=2" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 #body-bg { position:fixed; top:0; right:0; bottom:0; left:16rem; pointer-events:none; z-index:0; overflow:hidden; }
 .md\:ml-64 > * { position:relative; z-index:1; }
 .stat-card { background:#1f1f1f; border-radius:12px; padding:12px 16px; border:1px solid #2a2a2a; }
 .trend-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.outcome-dot {
+  transition: transform .15s, box-shadow .15s;
+}
+.outcome-dot:hover {
+  transform: scale(1.5);
+  box-shadow: 0 0 12px currentColor !important;
+}
+.outcome-dot-wrap::after {
+  content: 'исход';
+  position: absolute;
+  left: 22px;
+  top: 1px;
+  font-size: 9px;
+  color: #8b90a0;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .15s;
+  pointer-events: none;
+}
+.outcome-dot-wrap:hover::after {
+  opacity: 1;
+}
 
 /* ── PDF print ──────────────────────────────── */
 #pdf-report { display:none; }
@@ -47,6 +61,8 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
   #pdf-report .outcome-n { color:#888; }
   #pdf-report .outcome-neg { color:#b33; font-weight:600; }
   #pdf-report .sep { border:none; border-top:2px solid #111; margin:14px 0; }
+  #pdf-report svg { max-width:100%; height:auto; }
+  #pdf-report circle, #pdf-report polyline, #pdf-report line { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 </style>
 </head>
@@ -54,7 +70,7 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
 
 <div id="nav-mount"></div>
 <div id="body-bg">
-  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
   <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
 </div>
 
@@ -179,14 +195,29 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
         </div>
       </div>
 
+      <!-- NRS-статы (появляются только если есть данные) -->
+      <div id="nrs-stats" class="hidden grid grid-cols-3 gap-3">
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Боль (начало курса)</div>
+          <div id="nrs-start" class="text-2xl font-bold font-mono text-[#FF9F0A]">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Боль (последняя)</div>
+          <div id="nrs-end" class="text-2xl font-bold font-mono text-[#30D158]">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Снижение боли</div>
+          <div id="nrs-delta" class="text-2xl font-bold font-mono text-[#00F2FF]">—</div>
+        </div>
+      </div>
+
       <!-- График динамики -->
       <div class="glass-panel rounded-xl p-4">
         <div class="flex items-center justify-between mb-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Прогресс по сессиям</div>
-          <div class="flex items-center gap-3 text-[10px] text-[#8b90a0]">
-            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5AC85A"></span>Улучшение</span>
-            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b90a0"></span>Нейтрально</span>
-            <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffb4ab"></span>Ухудшение</span>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Динамика боли (NRS 0–10)</div>
+          <div id="p-chart-legend" class="flex items-center gap-3 text-[10px] text-[#8b90a0]">
+            <span class="flex items-center gap-1"><span style="display:inline-block;width:20px;height:2px;background:#FF9F0A;border-radius:2px"></span>Боль до</span>
+            <span class="flex items-center gap-1"><span style="display:inline-block;width:20px;height:2px;background:#30D158;border-radius:2px"></span>Боль после</span>
           </div>
         </div>
         <div id="p-chart" style="width:100%;overflow-x:auto"></div>
@@ -309,58 +340,175 @@ const outcomeColor = { positive:'#5AC85A', neutral:'#8b90a0', negative:'#ffb4ab'
 const outcomeIcon  = { positive:'↑', neutral:'→', negative:'↓' };
 const outcomeVal   = { positive:2, neutral:1, negative:0 };
 
-function renderChart() {
-  const sorted = [...recs].reverse(); // хронологически
+function renderNrsChart(sorted) {
+  const W = 560, H = 140, PAD_L = 28, PAD_R = 10, PAD_T = 12, PAD_B = 22;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
   const n = sorted.length;
-  if (!n) { document.getElementById('p-chart').innerHTML = '<p style="color:#8b90a0;font-size:.8rem">Нет данных</p>'; return; }
+  const yFor = v => PAD_T + (1 - v / 10) * chartH;
+  const xFor = i => PAD_L + (n > 1 ? i * chartW / (n - 1) : chartW / 2);
 
+  const pts = sorted.map((r, i) => ({
+    x:      xFor(i),
+    before: r.nrs_before != null ? Number(r.nrs_before) : null,
+    after:  r.nrs_after  != null ? Number(r.nrs_after)  : null,
+    r
+  }));
+
+  // grid
+  const grid = [0, 2, 4, 6, 8, 10].map(v => {
+    const y = yFor(v);
+    return `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}"
+      stroke="${v === 0 ? '#414755' : '#252535'}" stroke-width="${v === 0 ? 1 : 0.7}" ${v > 0 ? 'stroke-dasharray="3,4"' : ''}/>
+    <text x="${PAD_L - 4}" y="${y + 3.5}" text-anchor="end" font-size="8" fill="#414755">${v}</text>`;
+  }).join('');
+
+  // shaded area (between before and after where both exist)
+  const bothPts = pts.filter(p => p.before != null && p.after != null);
+  let area = '';
+  if (bothPts.length >= 2) {
+    const top = bothPts.map(p => `${p.x},${yFor(p.before)}`).join(' ');
+    const bot = [...bothPts].reverse().map(p => `${p.x},${yFor(p.after)}`).join(' ');
+    area = `<polygon points="${top} ${bot}" fill="#30D158" opacity="0.07"/>`;
+  }
+
+  // before line + dots
+  const bPts = pts.filter(p => p.before != null);
+  const beforeLine = bPts.length >= 2
+    ? `<polyline points="${bPts.map(p=>`${p.x},${yFor(p.before)}`).join(' ')}" fill="none" stroke="#FF9F0A" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>`
+    : '';
+  const beforeDots = bPts.map(p => {
+    const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    return `<circle cx="${p.x}" cy="${yFor(p.before)}" r="4.5" fill="#FF9F0A" stroke="#131313" stroke-width="1.5"><title>${d} · До: ${p.before}</title></circle>`;
+  }).join('');
+
+  // after line + dots
+  const aPts = pts.filter(p => p.after != null);
+  const afterLine = aPts.length >= 2
+    ? `<polyline points="${aPts.map(p=>`${p.x},${yFor(p.after)}`).join(' ')}" fill="none" stroke="#30D158" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>`
+    : '';
+  const afterDots = aPts.map(p => {
+    const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    return `<circle cx="${p.x}" cy="${yFor(p.after)}" r="4.5" fill="#30D158" stroke="#131313" stroke-width="1.5"><title>${d} · После: ${p.after}</title></circle>`;
+  }).join('');
+
+  // x labels
+  const labelIdx = new Set([0, Math.floor((n-1)/2), n-1]);
+  const xLabels = pts.filter((_,i) => labelIdx.has(i)).map(p => {
+    const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+    return `<text x="${p.x}" y="${H + 4}" text-anchor="middle" font-size="9" fill="#8b90a0">${d}</text>`;
+  }).join('');
+
+  document.getElementById('p-chart').innerHTML = `
+    <svg viewBox="0 0 ${W} ${H + 16}" style="width:100%;max-width:${W}px;display:block;overflow:visible">
+      ${grid}${area}${beforeLine}${afterLine}${beforeDots}${afterDots}${xLabels}
+    </svg>`;
+
+  // NRS-статы
+  const allBefore = pts.filter(p => p.before != null).map(p => p.before);
+  const allAfter  = pts.filter(p => p.after  != null).map(p => p.after);
+  if (allBefore.length || allAfter.length) {
+    document.getElementById('nrs-stats').classList.remove('hidden');
+    const firstBefore = allBefore[0];
+    const lastAfter   = allAfter[allAfter.length - 1] ?? allBefore[allBefore.length - 1];
+    const delta = firstBefore != null && lastAfter != null ? firstBefore - lastAfter : null;
+    document.getElementById('nrs-start').textContent  = firstBefore != null ? firstBefore : '—';
+    document.getElementById('nrs-end').textContent    = lastAfter   != null ? lastAfter   : '—';
+    document.getElementById('nrs-delta').textContent  = delta != null
+      ? (delta > 0 ? '−' + delta : delta < 0 ? '+' + Math.abs(delta) : '0')
+      : '—';
+    document.getElementById('nrs-delta').style.color  = delta > 0 ? '#30D158' : delta < 0 ? '#ffb4ab' : '#8b90a0';
+  }
+}
+
+function renderOutcomeChart(sorted) {
+  const n = sorted.length;
+  if (!n) return;
   const W = 560, H = 90, PAD = 20;
   const xStep = n > 1 ? (W - PAD*2) / (n - 1) : 0;
-  const yFor  = v => PAD + (2 - v) * ((H - PAD*2) / 2); // 2→top, 0→bottom
-
+  const yFor  = v => PAD + (2 - v) * ((H - PAD*2) / 2);
   const pts = sorted.map((r, i) => {
     const v = outcomeVal[r.outcome] ?? 1;
     return { x: n > 1 ? PAD + i * xStep : W/2, y: yFor(v), r, v };
   });
-
-  // polyline points
   const polyline = pts.map(p => `${p.x},${p.y}`).join(' ');
-
-  // trend color — смотрим на последние 3 точки
   const tail = pts.slice(-3).map(p => p.v);
   const trendAvg = tail.reduce((a,b)=>a+b,0)/tail.length;
   const lineColor = trendAvg > 1.3 ? '#5AC85A' : trendAvg < 0.8 ? '#ffb4ab' : '#8b90a0';
-
   const circles = pts.map(p => {
     const c = outcomeColor[p.r.outcome] || '#8b90a0';
     const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
-    return `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${c}" stroke="#131313" stroke-width="2">
-      <title>${d} · ${outcomeIcon[p.r.outcome]||'→'}</title>
-    </circle>`;
+    return `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${c}" stroke="#131313" stroke-width="2"><title>${d} · ${outcomeIcon[p.r.outcome]||'→'}</title></circle>`;
   }).join('');
-
-  // date labels — показываем только первую, последнюю и среднюю
   const labelIdx = new Set([0, Math.floor((n-1)/2), n-1]);
   const labels = pts.filter((_,i)=>labelIdx.has(i)).map(p => {
     const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
     return `<text x="${p.x}" y="${H+2}" text-anchor="middle" font-size="9" fill="#8b90a0">${d}</text>`;
   }).join('');
-
-  // baseline grid lines
   const grid = [0,1,2].map(v => {
     const y = yFor(v);
-    const label = v===2?'↑ Улучш.':v===1?'→ Норма':'↓ Ухудш.';
+    const label = v===2?'↑':v===1?'→':'↓';
     return `<line x1="${PAD-4}" y1="${y}" x2="${W-PAD+4}" y2="${y}" stroke="#2a2a2a" stroke-width="1"/>
     <text x="${PAD-6}" y="${y+3}" text-anchor="end" font-size="8" fill="#414755">${label}</text>`;
   }).join('');
-
+  // обновляем легенду на outcome
+  document.getElementById('p-chart-legend').innerHTML = `
+    <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#5AC85A"></span>Улучшение</span>
+    <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b90a0"></span>Нейтрально</span>
+    <span class="flex items-center gap-1"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ffb4ab"></span>Ухудшение</span>`;
   document.getElementById('p-chart').innerHTML = `
+    <p style="color:#555;font-size:.72rem;margin-bottom:6px">Нет данных шкалы боли NRS — заполняйте поля «Боль до/после» при записи сессии</p>
     <svg viewBox="0 0 ${W} ${H+16}" style="width:100%;max-width:${W}px;display:block;overflow:visible">
       ${grid}
       <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" opacity="0.6"/>
       ${circles}
       ${labels}
     </svg>`;
+}
+
+// ── Смена исхода прямо из карточки ───────────────────────
+window.toggleOutcomeDot = (id) => {
+  document.querySelectorAll('.outcome-dot-menu').forEach(m => {
+    if (m.dataset.id !== id) m.style.display = 'none';
+  });
+  const menu = document.querySelector(`.outcome-dot-menu[data-id="${id}"]`);
+  if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('.outcome-dot-wrap')) {
+    document.querySelectorAll('.outcome-dot-menu').forEach(m => m.style.display = 'none');
+  }
+});
+window.setOutcomeDot = (id, outcome) => {
+  const token = sessionStorage.getItem('acutwin_token');
+  fetch(`/api/records/${id}/outcome`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ outcome })
+  }).then(r => {
+    if (r.ok) {
+      const rec = recs.find(r => r.id === id);
+      if (rec) rec.outcome = outcome;
+      const dot = document.querySelector(`.outcome-dot-wrap[data-id="${id}"] .outcome-dot`);
+      if (dot) {
+        const c = outcomeColor[outcome];
+        dot.style.background = c;
+        dot.style.borderColor = c;
+        dot.style.boxShadow = `0 0 8px ${c}44`;
+        dot.title = outcomeIcon[outcome];
+      }
+      document.querySelectorAll('.outcome-dot-menu').forEach(m => m.style.display = 'none');
+      renderChart();
+    }
+  });
+};
+
+function renderChart() {
+  const sorted = [...recs].reverse();
+  if (!sorted.length) { document.getElementById('p-chart').innerHTML = '<p style="color:#8b90a0;font-size:.8rem">Нет данных</p>'; return; }
+  const hasNRS = sorted.some(r => r.nrs_before != null || r.nrs_after != null);
+  if (hasNRS) renderNrsChart(sorted);
+  else renderOutcomeChart(sorted);
 }
 renderChart();
 
@@ -387,8 +535,18 @@ tl.innerHTML = recs.map((r, idx) => {
   const status = STATUS_CFG[r.status];
   return `
   <div class="relative pl-12" style="animation:fadeUp 0.3s ease-out ${idx*0.04}s both">
-    <div class="absolute left-3 top-4 w-3 h-3 rounded-full border-2 z-10"
-         style="background:${c};border-color:${c};box-shadow:0 0 8px ${c}44"></div>
+    <div class="outcome-dot-wrap absolute left-0 top-3 z-10" data-id="${r.id}" style="position:absolute">
+      <div class="outcome-dot rounded-full border-2 cursor-pointer"
+           style="width:14px;height:14px;background:${c};border-color:${c};box-shadow:0 0 8px ${c}44;margin-left:10px"
+           title="Нажми чтобы изменить исход"
+           onclick="event.stopPropagation();toggleOutcomeDot('${r.id}')"></div>
+      <div class="outcome-dot-menu" data-id="${r.id}"
+           style="display:none;position:absolute;left:0;top:18px;z-index:50;background:#1f1f1f;border:1px solid #414755;border-radius:10px;padding:4px 0;min-width:120px;box-shadow:0 4px 20px rgba(0,0,0,.6)">
+        <button onclick="event.stopPropagation();setOutcomeDot('${r.id}','positive')" style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#5AC85A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#5AC85A18'" onmouseout="this.style.background='none'">↑ Улучшение</button>
+        <button onclick="event.stopPropagation();setOutcomeDot('${r.id}','neutral')"  style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#8b90a0;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#8b90a018'" onmouseout="this.style.background='none'">→ Нейтрально</button>
+        <button onclick="event.stopPropagation();setOutcomeDot('${r.id}','negative')" style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#ffb4ab;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#ffb4ab18'" onmouseout="this.style.background='none'">↓ Ухудшение</button>
+      </div>
+    </div>
     <div class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all${noteText ? ' cursor-pointer' : ''}"
          ${noteText ? `onclick="this.querySelector('.vis-notes').classList.toggle('hidden')"` : ''}>
       <div class="flex items-start justify-between gap-3">
@@ -397,6 +555,9 @@ tl.innerHTML = recs.map((r, idx) => {
             <span class="font-semibold text-[#e2e2e2]">${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</span>
             ${r.type ? `<span class="text-xs text-[#8b90a0]">${esc(r.type)}</span>` : ''}
             ${status ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${status.color}18;border:1px solid ${status.color}55;color:${status.color}">${status.label}</span>` : ''}
+            ${(r.nrs_before != null || r.nrs_after != null) ? `<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:#FF9F0A18;border:1px solid #FF9F0A44;color:#FF9F0A;font-family:monospace">NRS ${r.nrs_before ?? '?'}→${r.nrs_after ?? '?'}</span>` : ''}
+            ${r.stimulation ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#FFD60A10;border:1px solid #FFD60A33;color:#FFD60A">${esc(r.stimulation)}</span>` : ''}
+            ${r.treatment_type ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#BF5AF210;border:1px solid #BF5AF230;color:#BF5AF2">${esc(r.treatment_type)}</span>` : ''}
           </div>
           ${noteText ? `<p class="text-xs text-[#c1c6d7] leading-relaxed vis-notes">${esc(noteText)}</p>` : ''}
         </div>
@@ -498,14 +659,75 @@ window.exportPDF = () => {
 
   const ptRows = topPts.slice(0,10).map(([p,n])=>`<tr><td class="pts">${p}</td><td>${n}</td></tr>`).join('');
 
+  // Генерируем светлую версию графика для печати
+  const printChartHtml = (() => {
+    const sorted = [...recs].reverse();
+    const n = sorted.length;
+    if (!n) return '';
+    const W = 520, H = 80, PAD = 50;
+    const xStep = n > 1 ? (W - PAD*2) / (n - 1) : 0;
+    const yFor  = v => PAD*0.6 + (2 - v) * ((H - PAD*0.6*2) / 2);
+    const oc    = { positive:'#2a7a2a', neutral:'#888', negative:'#c0392b' };
+    const oval  = { positive:2, neutral:1, negative:0 };
+    const pts   = sorted.map((r, i) => ({
+      x: n > 1 ? PAD + i * xStep : W/2,
+      y: yFor(oval[r.outcome] ?? 1),
+      r
+    }));
+    const tail      = pts.slice(-3).map(p => oval[p.r.outcome]??1);
+    const trendAvg  = tail.reduce((a,b)=>a+b,0)/tail.length;
+    const lineColor = trendAvg > 1.3 ? '#2a7a2a' : trendAvg < 0.8 ? '#c0392b' : '#888';
+    const polyline  = pts.map(p=>`${p.x},${p.y}`).join(' ');
+    const circles   = pts.map(p => {
+      const c = oc[p.r.outcome]||'#888';
+      const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+      return `<circle cx="${p.x}" cy="${p.y}" r="4" fill="${c}" stroke="#fff" stroke-width="1.5"><title>${d}</title></circle>`;
+    }).join('');
+    const labelIdx  = new Set([0, Math.floor((n-1)/2), n-1]);
+    const labels    = pts.filter((_,i)=>labelIdx.has(i)).map(p => {
+      const d = new Date(p.r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short'});
+      return `<text x="${p.x}" y="${H+14}" text-anchor="middle" font-size="8" fill="#555">${d}</text>`;
+    }).join('');
+    const grid = [
+      {v:2, label:'Улучш.'},
+      {v:1, label:'Нейтр.'},
+      {v:0, label:'Ухудш.'}
+    ].map(({v, label}) => {
+      const y = yFor(v);
+      const c = v===2?'#2a7a2a':v===1?'#aaa':'#c0392b';
+      return `<line x1="${PAD}" y1="${y}" x2="${W-PAD+10}" y2="${y}" stroke="#ddd" stroke-width="0.8" stroke-dasharray="3,3"/>
+              <text x="${PAD-4}" y="${y+3}" text-anchor="end" font-size="8" fill="${c}">${label}</text>`;
+    }).join('');
+    return `<h2>Прогресс по сессиям</h2>
+      <div style="margin:6px 0 14px;border:1px solid #e0e0e0;border-radius:6px;padding:8px 4px 4px;background:#fafafa">
+        <svg viewBox="0 0 ${W} ${H+20}" style="width:100%;display:block;overflow:visible">
+          ${grid}
+          <polyline points="${polyline}" fill="none" stroke="${lineColor}" stroke-width="1.5" stroke-linejoin="round" opacity="0.8"/>
+          ${circles}
+          ${labels}
+        </svg>
+        <div style="display:flex;gap:14px;padding:2px 8px;font-size:8px;color:#555">
+          <span style="color:#2a7a2a">● Улучшение</span>
+          <span style="color:#888">● Нейтрально</span>
+          <span style="color:#c0392b">● Ухудшение</span>
+        </div>
+      </div>`;
+  })();
+
+  const statusLabel = { started:'Начат', active:'В процессе', completed:'Завершён' };
   const visitRows = [...recs].reverse().map(r => {
-    const pts = (r.points||[]).join(', ') || '—';
-    const oc  = outcomeLabel[r.outcome] || '—';
-    const cls = outcomeClass[r.outcome] || '';
+    const pts  = (r.points||[]).join(', ') || '—';
+    const oc   = outcomeLabel[r.outcome] || 'Нейтрально';
+    const cls  = outcomeClass[r.outcome] || '';
+    const st   = statusLabel[r.status]   || '—';
     const note = r.notes || r.reason || '';
+    const nrs  = (r.nrs_before != null || r.nrs_after != null)
+      ? `${r.nrs_before ?? '?'} → ${r.nrs_after ?? '?'}` : '—';
     return `<tr>
-      <td>${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})}</td>
+      <td>${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'})}${r.time ? ' '+r.time : ''}</td>
+      <td>${esc(st)}</td>
       <td class="${cls}">${oc}</td>
+      <td style="font-family:monospace;font-size:10px;color:#c05000">${nrs}</td>
       <td class="pts">${esc(pts)}</td>
       <td>${esc(note)}</td>
     </tr>`;
@@ -530,11 +752,12 @@ window.exportPDF = () => {
       <td>${totalPoints}</td>
     </tr></table>
     ${nextLine}
+    ${printChartHtml}
     <h2>Часто назначаемые точки</h2>
     <table><tr><th>Точка</th><th>Кол-во назначений</th></tr>${ptRows}</table>
     <h2>История сессий</h2>
     <table>
-      <tr><th>Дата</th><th>Динамика</th><th>Точки</th><th>Заметки</th></tr>
+      <tr><th>Дата</th><th>Статус</th><th>Динамика</th><th>NRS до→после</th><th>Точки</th><th>Заметки</th></tr>
       ${visitRows}
     </table>
     <hr class="sep"/>
@@ -551,5 +774,6 @@ window.openTreatment = () => {
   location.href = 'treatment.html';
 };
 </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

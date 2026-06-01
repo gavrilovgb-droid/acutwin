@@ -3,28 +3,18 @@
 <head>
 <meta charset="utf-8"/>
 <base href="./">
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>AcuTwin v4</title>
-<script src="tailwind.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
-<link href="design.css" rel="stylesheet"/>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=2" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <script src="html2canvas.min.js"></script>
 <script src="jspdf.umd.min.js"></script>
-<script id="tw-cfg">
-tailwind.config={darkMode:'class',theme:{extend:{colors:{
-  'background':'#131313','surface':'#131313',
-  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
-  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
-  'surface-container-highest':'#353535',
-  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
-  'primary':'#adc6ff','primary-container':'#4b8eff',
-  'outline':'#8b90a0','outline-variant':'#414755',
-  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
-  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
-  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
-}}}}
-</script>
 <style>
 .path-btn { transition: all 0.2s; }
 .path-btn.active { border-color: rgba(0,242,255,0.5) !important; background: rgba(0,242,255,0.08) !important; }
@@ -69,6 +59,34 @@ html, body {
   max-width: 100vw;
 }
 
+/* ── Mobile path nav ── */
+@media (max-width: 767px) {
+  #mob-path-nav { display: flex !important; }
+  #mob-path-nav::-webkit-scrollbar { display: none; }
+}
+.mob-path-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 10px 7px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: #8b90a0;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.mob-path-btn .material-symbols-outlined { font-size: 20px; zoom: 1; }
+.mob-path-btn.active {
+  color: #00F2FF;
+  border-bottom-color: #00F2FF;
+}
+
 /* ── U-Sin grid: левая колонка уже, правая шире ── */
 @media (min-width: 1024px) {
   #usin-sub-sym {
@@ -92,6 +110,7 @@ html, body {
   width: 100% !important;
   max-width: 100% !important;
 }
+
 
 /* ── Body background ── */
 #body-bg {
@@ -128,7 +147,7 @@ html, body {
   </div>
 </div>
 
-<div class="md:ml-64 flex flex-col min-h-screen">
+<div class="md:ml-64 flex flex-col h-screen overflow-hidden">
 
   <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center px-6 gap-4 flex-shrink-0">
     <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Тактика лечения</h2>
@@ -142,6 +161,13 @@ html, body {
     </div>
   </header>
 
+  <!-- Mobile path selector — visible only on mobile -->
+  <div id="mob-path-nav" style="display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    background:rgba(14,14,14,0.97);border-bottom:1px solid rgba(255,255,255,0.1);
+    padding:0 8px;flex-shrink:0;scrollbar-width:none">
+  </div>
+
+  <div style="flex:1;display:flex;overflow:hidden;min-height:0">
   <main class="flex-1 flex flex-col overflow-hidden p-4 page-enter">
     <!-- Плашка пациента — видна на всех вкладках -->
     <div id="patient-context" class="hidden flex items-center gap-3 mb-3 px-3 py-2 bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-xl flex-shrink-0">
@@ -167,6 +193,50 @@ html, body {
         Записать сессию
       </button>
     </div>
+    <!-- ИРТ-поля сессии -->
+    <div id="irt-fields" class="hidden flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 mb-3 bg-[#1a1a2e]/60 border border-[#414755]/50 rounded-xl flex-shrink-0 text-xs text-[#8b90a0]">
+      <label class="flex items-center gap-1.5">
+        <span>Боль до</span>
+        <input id="irt-nrs-before" type="number" min="0" max="10" placeholder="0–10"
+               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <span>Боль после</span>
+        <input id="irt-nrs-after" type="number" min="0" max="10" placeholder="0–10"
+               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <span>Воздействие</span>
+        <select id="irt-treatment-type"
+                class="appearance-auto cursor-pointer px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all">
+          <option value="">— выбрать —</option>
+          <option value="Корпоральная">Корпоральная</option>
+          <option value="Аурикулярная">Аурикулярная</option>
+          <option value="Скальпотерапия">Скальпотерапия</option>
+          <option value="ЭАП">ЭАП</option>
+        </select>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <span>Стимуляция</span>
+        <select id="irt-needle-type"
+                class="appearance-auto cursor-pointer px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all">
+          <option value="">— выбрать —</option>
+          <option value="Тонизирование">Тонизирование</option>
+          <option value="Седатирование">Седатирование</option>
+          <option value="Гармонизация">Гармонизация</option>
+        </select>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <span>Экспозиция, мин</span>
+        <input id="irt-exposure" type="number" min="1" max="120" placeholder="20"
+               class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
+      <label class="flex items-center gap-2 cursor-pointer select-none" title="Де-ци — ощущение тяжести, онемения или тепла у пациента при правильном попадании иглы">
+        <input id="irt-deqi" type="checkbox"
+               class="w-3.5 h-3.5 accent-[#0A84FF] cursor-pointer"/>
+        <span class="border-b border-dashed border-[#8b90a0]">Де-ци</span>
+      </label>
+    </div>
     <div class="flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden">
 
 
@@ -186,7 +256,7 @@ html, body {
                         placeholder-[#8b90a0] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
         </div>
         <div id="recipe-chips" class="flex flex-wrap gap-2 mb-4 flex-shrink-0"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        <div id="recipe-panels" class="mob-master-detail grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
           <div class="glass-panel rounded-xl overflow-hidden flex flex-col">
             <div id="dis-list" class="overflow-y-auto flex-1"></div>
           </div>
@@ -217,7 +287,7 @@ html, body {
                         placeholder-[#8b90a0] focus:outline-none focus:border-[#FFD60A] focus:ring-1 focus:ring-[#FFD60A]/30 transition-all"/>
         </div>
         <div id="tcm-sections" class="flex flex-wrap gap-2 mb-4"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        <div id="tcm-panels" class="mob-master-detail grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
           <div class="glass-panel rounded-xl overflow-hidden flex flex-col">
             <div id="tcm-list" class="overflow-y-auto flex-1"></div>
           </div>
@@ -262,7 +332,7 @@ html, body {
         </div>
 
         <!-- ── SUB: ПО СИМПТОМАМ ── -->
-        <div id="usin-sub-sym" class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+        <div id="usin-sub-sym" class="mob-master-detail flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
           <div class="flex flex-col min-h-0 gap-2">
             <div class="flex justify-end gap-2 flex-shrink-0">
               <button onclick="resetUsin()"
@@ -288,7 +358,7 @@ html, body {
         </div>
 
         <!-- ── SUB: ПО ЗАБОЛЕВАНИЮ ── -->
-        <div id="usin-sub-dis" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+        <div id="usin-sub-dis" class="mob-master-detail hidden flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
           <div class="glass-panel rounded-xl overflow-hidden flex flex-col min-h-0">
             <div class="px-3 pt-3 pb-2 flex-shrink-0">
               <div class="relative">
@@ -319,7 +389,7 @@ html, body {
           <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Свой рецепт</h3>
           <span id="custom-sel-count" class="text-xs font-mono text-[#34C759] ml-auto">0 точек</span>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        <div id="custom-panels" class="mob-master-detail grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
 
           <!-- Левая: список точек -->
           <div class="glass-panel rounded-xl overflow-hidden flex flex-col min-h-0">
@@ -339,6 +409,10 @@ html, body {
 
           <!-- Правая: корзина выбранных точек -->
           <div class="glass-panel rounded-xl p-4 flex flex-col min-h-0">
+            <button class="mob-back-btn" onclick="document.getElementById('custom-panels')?.classList.remove('detail-open')">
+              <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+              Список точек
+            </button>
             <!-- Кнопка наверху — всегда видна -->
             <div class="mb-3 flex-shrink-0">
               <button id="custom-confirm-btn" onclick="confirmCustomRecipe()" disabled
@@ -428,7 +502,7 @@ html, body {
         </div>
 
         <div id="diag-chips" class="flex flex-wrap gap-2 mb-4 flex-shrink-0"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+        <div id="diag-panels" class="mob-master-detail grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
           <div class="glass-panel rounded-xl overflow-hidden flex flex-col min-h-0">
             <div class="px-3 pt-2 pb-1 flex justify-end gap-2 flex-shrink-0 border-b border-white/5">
               <button onclick="clearDiagSyms()"
@@ -466,6 +540,7 @@ html, body {
 
     </div>
   </main>
+  </div><!-- end split wrapper -->
 </div>
 
 <script type="module">
@@ -489,10 +564,13 @@ try {
     _diagData = { patient, age, gender };
     const pc = document.getElementById('patient-context');
     pc.classList.remove('hidden');
+    document.getElementById('irt-fields').classList.remove('hidden');
     document.getElementById('pc-name').textContent = patient;
     document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
     document.getElementById('pc-reason').textContent = reason;
     window._pendingPath = 'recipe';
+    initSplitPanel(patient);
+    window._spPatientSet = true;
     const gMap = { 'М': 'm', 'Ж': 'f' };
     window._pendingGender = gMap[gender] || null;
   }
@@ -574,18 +652,43 @@ window._treatOpen = false;
 let diseases = {};
 let diseaseKeys = [];
 let points = {};
+let evidence = {};
+let ikb10 = {};
 let selectedSyms = new Set();
 let merScores = {};
 let activeDis = null;
 let manualSessions = [];
 
+const GRADE_CFG = {
+  A: { color:'#30D158', bg:'#30D15818', border:'#30D15844', title:'Уровень A — сильная доказательность (Cochrane-обзоры, множественные РКИ)' },
+  B: { color:'#FFD60A', bg:'#FFD60A18', border:'#FFD60A44', title:'Уровень B — умеренная доказательность (систематические обзоры, отдельные РКИ)' },
+  C: { color:'#8b90a0', bg:'#8b90a018', border:'#8b90a044', title:'Уровень C — ограниченная доказательность (экспертное мнение, клинический опыт)' },
+};
+
+function gradeHtml(key, compact = false) {
+  const ev = evidence[key];
+  if (!ev) return '';
+  const g = GRADE_CFG[ev.grade];
+  if (!g) return '';
+  const tip = ev.ref ? `${g.title}\nИсточник: ${ev.ref}${ev.note ? '\n' + ev.note : ''}` : g.title;
+  if (compact) {
+    return `<span title="${tip}" style="cursor:help;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${g.bg};border:1px solid ${g.border};color:${g.color};white-space:nowrap">Grade ${ev.grade}</span>`;
+  }
+  return `<span title="${tip}" style="cursor:help;font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:7px;background:${g.bg};border:1px solid ${g.border};color:${g.color};white-space:nowrap">Grade ${ev.grade}</span>`;
+}
+
 // Load data
+const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
 Promise.all([
-  fetch('../data/points.json').then(r=>r.json()).catch(()=>({})),
-  fetch('../data/diseases.json').then(r=>r.json()).catch(()=>({})),
-]).then(([pts, dis]) => {
+  fetch('/data/points.json',   _authHdr()).then(r=>r.json()).catch(()=>({})),
+  fetch('/data/diseases.json', _authHdr()).then(r=>r.json()).catch(()=>({})),
+  fetch('/data/evidence.json', _authHdr()).then(r=>r.json()).catch(()=>({})),
+  fetch('/data/ikb10.json',    _authHdr()).then(r=>r.json()).catch(()=>({})),
+]).then(([pts, dis, ev, ik]) => {
   points = pts;
   diseases = dis;
+  evidence = ev;
+  ikb10 = ik;
   diseaseKeys = Object.keys(diseases);
   buildSymGroups();
   buildGrouped();
@@ -600,6 +703,8 @@ Promise.all([
   window.selectPath(_startPath);
   initCtx();
   if (window._pendingGender) setTimeout(() => setCtxGender(window._pendingGender), 50);
+  // Если пациент не был задан через sessionStorage — показываем поиск в панели
+  if (!window._spPatientSet) spShowPicker();
 });
 
 // ─── PATH HINT ───────────────────────────────────────────
@@ -636,7 +741,29 @@ function updateSidebarActive(path) {
     }
   });
 }
+// ── Mobile path nav: build buttons ──────────────────────────
+(function() {
+  const MOB_LABELS = {
+    custom: 'Свой рецепт',
+    recipe: 'Показания',
+    tcm:    'ТКМ',
+    usin:   'У-Син',
+    diag:   'Меридианы',
+  };
+  const nav = document.getElementById('mob-path-nav');
+  if (!nav) return;
+  nav.innerHTML = PATH_NAV.map(p => `
+    <button class="mob-path-btn" data-path="${p.path}" onclick="selectPath('${p.path}')">
+      <span class="material-symbols-outlined" style="color:${p.color}">${p.icon}</span>
+      <span>${MOB_LABELS[p.path] || p.label}</span>
+    </button>`).join('');
+})();
+
 window.selectPath = (path) => {
+  // Sync mobile path nav
+  document.querySelectorAll('.mob-path-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.path === path);
+  });
   updateSidebarActive(path);
 
   document.getElementById('path-recipe').classList.add('hidden');
@@ -885,7 +1012,7 @@ const SECTION_COLORS = {
 };
 
 function loadTcm() {
-  fetch('./data/belov.json')
+  fetch('./data/belov.json', _authHdr())
     .then(r => r.json())
     .then(data => {
       tcmData = data;
@@ -1008,7 +1135,8 @@ function renderTcmList(q) {
               <button onclick="tcmRowClick(${i},${hasChildren})" id="tcm_${i}"
                       class="w-full text-left px-4 py-2.5 border-b border-white/5 hover:bg-white/5 transition-colors
                              flex items-center gap-2
-                             ${parentActive ? 'bg-[#FFD60A]/08 text-[#e2e2e2]' : 'text-[#c1c6d7]'}">
+                             ${parentActive ? 'text-[#e2e2e2]' : 'text-[#c1c6d7]'}"
+                             style="${parentActive ? 'background:rgba(255,214,10,0.08)' : ''}">
                 <span class="flex-1 min-w-0">
                   <span class="text-sm truncate block">${r.name_ru}</span>
                   ${MODERN_NAMES[r.name_ru] ? `<span class="text-[10px] text-[#8b90a0] truncate block">${MODERN_NAMES[r.name_ru]}</span>` : ''}
@@ -1021,7 +1149,8 @@ function renderTcmList(q) {
                 <button onclick="selectTcm(${ci})" id="tcm_${ci}"
                         class="w-full text-left pl-8 pr-4 py-2 border-b border-white/5 hover:bg-white/5 transition-colors
                                flex items-center gap-2
-                               ${activeTcm === ci ? 'bg-[#FFD60A]/08 text-[#e2e2e2]' : 'text-[#8b90a0]'}">
+                               ${activeTcm === ci ? 'text-[#e2e2e2]' : 'text-[#8b90a0]'}"
+                               style="${activeTcm === ci ? 'background:rgba(255,214,10,0.08)' : ''}">
                   <span class="text-xs truncate flex-1">${cr.name_ru}</span>
                   ${cr.name_cn ? `<span class="text-[11px] text-[#8b90a0] flex-shrink-0 font-mono">${cr.name_cn}</span>` : ''}
                 </button>`).join('') : ''}
@@ -1047,10 +1176,14 @@ window.selectTcm = (idx) => {
 
   // Highlight list item
   document.querySelectorAll('#tcm-list button').forEach(b => {
-    b.className = b.className.replace('bg-[#FFD60A]/08 text-[#e2e2e2]', 'text-[#c1c6d7]');
+    b.style.background = '';
+    b.className = b.className.replace('text-[#e2e2e2]', 'text-[#c1c6d7]');
   });
   const btn = document.getElementById('tcm_' + idx);
-  if (btn) btn.className = btn.className.replace('text-[#c1c6d7]', 'bg-[#FFD60A]/08 text-[#e2e2e2]');
+  if (btn) {
+    btn.style.background = 'rgba(255,214,10,0.08)';
+    btn.className = btn.className.replace('text-[#c1c6d7]', 'text-[#e2e2e2]').replace('text-[#8b90a0]', 'text-[#e2e2e2]');
+  }
 
   const secColor = SECTION_COLORS[r.section] || '#8b90a0';
 
@@ -1150,10 +1283,18 @@ window.selectTcm = (idx) => {
       <div id="manual-builder" class="hidden mt-3"></div>
     </div>`;
 
+  if (window.innerWidth < 1024) {
+    document.getElementById('tcm-panels')?.classList.add('detail-open');
+  }
+
   const detailEl = document.getElementById('tcm-detail');
   detailEl.scrollTop = 0;
   detailEl.innerHTML = `
     <div class="space-y-4 text-left">
+      <button class="mob-back-btn" onclick="document.getElementById('tcm-panels')?.classList.remove('detail-open')">
+        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+        Список синдромов
+      </button>
       <!-- Header -->
       <div>
         <div class="flex items-center gap-2 mb-1">
@@ -1324,9 +1465,14 @@ function disItemHtml(i) {
   return `
     <button onclick="selectDisease(${i})" id="dis_${i}"
             class="w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between gap-2
-                   ${activeDis===i ? 'bg-[#00F2FF]/08 text-[#e2e2e2]' : 'text-[#c1c6d7]'}">
+                   ${activeDis===i ? 'text-[#e2e2e2]' : 'text-[#c1c6d7]'}"
+            style="${activeDis===i ? 'background:rgba(0,242,255,0.08)' : ''}">
       <span class="text-sm truncate">${k}</span>
-      ${ptCount ? `<span class="text-[10px] font-mono text-[#414755] flex-shrink-0">${ptCount}т</span>` : ''}
+      <span class="flex items-center gap-1.5 flex-shrink-0">
+        ${ikb10[k] ? `<span class="text-[10px] font-mono text-[#8b90a0]">${ikb10[k]}</span>` : ''}
+        ${gradeHtml(k, true)}
+        ${ptCount ? `<span class="text-[10px] font-mono text-[#414755]">${ptCount}т</span>` : ''}
+      </span>
     </button>`;
 }
 
@@ -1364,6 +1510,7 @@ function renderRecipeChips() {
 window.setRecipeChip = function(id) {
   activeCatId = id;
   activeDis = null;
+  document.getElementById('recipe-panels')?.classList.remove('detail-open');
   document.getElementById('dis-search').value = '';
   renderRecipeChips();
   renderDiseaseList('');
@@ -1474,13 +1621,38 @@ window.selectDisease = (idx) => {
       </div>
     </div>`;
 
+  if (window.innerWidth < 1024) {
+    document.getElementById('recipe-panels')?.classList.add('detail-open');
+  }
+
   const disDetailEl = document.getElementById('dis-detail');
   disDetailEl.classList.remove('flex', 'items-center', 'justify-center');
   disDetailEl.innerHTML = `
     <div class="space-y-4">
+      <button class="mob-back-btn" onclick="document.getElementById('recipe-panels')?.classList.remove('detail-open')">
+        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+        Список болезней
+      </button>
       <div>
-        <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Рецепт</div>
-        <h4 class="text-base font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">${k}</h4>
+        <div class="flex items-center gap-2 mb-1">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest">Рецепт</div>
+          ${ikb10[k] ? `<span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#0A84FF]/10 text-[#0A84FF] border border-[#0A84FF]/30">МКБ-10: ${ikb10[k]}</span>` : ''}
+        </div>
+        <h4 class="text-base font-bold text-[#e2e2e2] mb-2" style="font-family:'Hanken Grotesk',sans-serif">${k}</h4>
+        ${(() => {
+          const ev = evidence[k];
+          if (!ev) return '';
+          const g = GRADE_CFG[ev.grade];
+          if (!g) return '';
+          return `<div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;background:${g.bg};border:1px solid ${g.border}">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:6px;background:${g.bg};border:1px solid ${g.border};color:${g.color}">Grade ${ev.grade}</span>
+              <span style="font-size:.7rem;color:${g.color}">${ev.grade==='A'?'Сильная доказательность':ev.grade==='B'?'Умеренная доказательность':'Ограниченная доказательность'}</span>
+            </div>
+            ${ev.ref ? `<div style="font-size:.65rem;color:#8b90a0">📄 ${ev.ref}</div>` : ''}
+            ${ev.note ? `<div style="font-size:.65rem;color:#c1c6d7;line-height:1.4">${ev.note}</div>` : ''}
+          </div>`;
+        })()}
       </div>
 
       ${ptsList.length ? `
@@ -1516,7 +1688,8 @@ window.selectDisease = (idx) => {
 
   document.querySelectorAll('#dis-list button').forEach(b => {
     const isA = b.id === `dis_${idx}`;
-    b.className = `w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between gap-2 ${isA ? 'bg-[#00F2FF]/08 text-[#e2e2e2]' : 'text-[#c1c6d7]'}`;
+    b.className = `w-full text-left px-4 py-3 border-b border-white/5 hover:bg-white/5 transition-colors flex items-center justify-between gap-2 ${isA ? 'text-[#e2e2e2]' : 'text-[#c1c6d7]'}`;
+    b.style.background = isA ? 'rgba(0,242,255,0.08)' : '';
   });
 };
 
@@ -1773,6 +1946,29 @@ window.saveNote = () => {
   }
 };
 
+function getIrtFields() {
+  const nrsBefore = document.getElementById('irt-nrs-before')?.value;
+  const nrsAfter  = document.getElementById('irt-nrs-after')?.value;
+  return {
+    nrs_before:     nrsBefore !== '' && nrsBefore != null ? parseInt(nrsBefore) : null,
+    nrs_after:      nrsAfter  !== '' && nrsAfter  != null ? parseInt(nrsAfter)  : null,
+    treatment_type: document.getElementById('irt-treatment-type')?.value || null,
+    stimulation:    document.getElementById('irt-needle-type')?.value    || null,
+    exposure:       parseInt(document.getElementById('irt-exposure')?.value) || null,
+    deqi:           document.getElementById('irt-deqi')?.checked ? 1 : 0,
+  };
+}
+
+function resetIrtFields() {
+  ['irt-nrs-before','irt-nrs-after','irt-exposure'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['irt-treatment-type','irt-needle-type'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const deqi = document.getElementById('irt-deqi'); if (deqi) deqi.checked = false;
+}
+
 let _savingSession = false;
 window.savePatientSession = async () => {
   if (_savingSession) return;
@@ -1792,6 +1988,7 @@ window.savePatientSession = async () => {
     if (!confirm(`Записать ${confirmedRecipes.length} рецепт(ов) отдельными сессиями для:\n${patientName}\n\nПодтвердить?`)) { _savingSession = false; return; }
 
     const now = new Date();
+    const irt = getIrtFields();
 
     for (const recipe of confirmedRecipes) {
       const pts      = [recipe.ownPt, ...(recipe.ebPts||[]), ...(recipe.distPts||[])].filter(Boolean);
@@ -1805,11 +2002,15 @@ window.savePatientSession = async () => {
         patient: patientName, age, gender, reason,
         notes: recNote, points, meridians,
         type: 'Акупунктура', outcome: 'neutral',
+        ...irt,
       });
     }
     window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
     confirmedRecipes.length = 0;
+    window._currentPts = [];
+    if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
     updateConfirmedPanel();
+    resetIrtFields();
 
     const btn = document.getElementById('pc-save-btn');
     if (btn) {
@@ -1831,6 +2032,7 @@ window.savePatientSession = async () => {
   const manualPts = (typeof manualSessions !== 'undefined')
     ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
   const points  = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
+  if (!points.length) { _savingSession = false; return; }
   if (!showConfirmSave(patientName, points)) { _savingSession = false; return; }
 
   const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
@@ -1840,8 +2042,12 @@ window.savePatientSession = async () => {
     date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
     patient: patientName, age, gender, reason, notes, points, meridians,
     type: 'Акупунктура', outcome: 'neutral',
+    ...getIrtFields(),
   };
   await apiAddRecord(rec);
+  window._currentPts = [];
+  if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
+  resetIrtFields();
 
   const btn = document.getElementById('pc-save-btn');
   if (btn) {
@@ -1860,10 +2066,12 @@ window.savePatientSession = async () => {
 
 // ─── HEADER SAVE (без контекста пациента) ─────────────────
 async function doSaveRecord(patientName, age, gender, reason) {
+  if (confirmedRecipes.length > 0) { window.savePatientSession(); return; }
   const notes = document.getElementById('doc-notes')?.value?.trim() || '';
   const manualPts = (typeof manualSessions !== 'undefined')
     ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
   const points = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
+  if (!points.length) { _savingSession = false; return; }
   const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
   const now = new Date();
   await apiAddRecord({
@@ -1872,6 +2080,8 @@ async function doSaveRecord(patientName, age, gender, reason) {
     patient: patientName, age, gender, reason, notes, points, meridians,
     type: 'Акупунктура', outcome: 'neutral',
   });
+  window._currentPts = [];
+  if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
   const btn = document.getElementById('hdr-save-btn');
   if (btn) {
     btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;zoom:1">check_circle</span>Сохранено';
@@ -2371,11 +2581,19 @@ window.showDiagResult = function() {
     if (merScores[mer]) { merScores[mer][type]++; merScores[mer].total++; }
   });
   selectedMers = new Set(MER_ORDER.filter(m => merScores[m].total > 0));
+  if (window.innerWidth < 1024) {
+    document.getElementById('diag-panels')?.classList.add('detail-open');
+  }
+
   const res = document.getElementById('diag-result');
   if (!res) return;
   res.classList.remove('flex', 'items-center', 'justify-center');
   if (!selectedMers.size) {
-    res.innerHTML = '<div class="p-4 text-center text-[#8b90a0]">Симптомы не соответствуют ни одному меридиану</div>';
+    res.innerHTML = `
+      <button class="mob-back-btn" onclick="document.getElementById('diag-panels')?.classList.remove('detail-open')">
+        <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>Симптомы
+      </button>
+      <div class="p-4 text-center text-[#8b90a0]">Симптомы не соответствуют ни одному меридиану</div>`;
     return;
   }
   let tempDiv = document.getElementById('plan-cards');
@@ -2386,7 +2604,11 @@ window.showDiagResult = function() {
     document.body.appendChild(tempDiv);
   }
   showStep3();
-  res.innerHTML = `<div class="space-y-6">${tempDiv.innerHTML}</div>`;
+  res.innerHTML = `
+    <button class="mob-back-btn" onclick="document.getElementById('diag-panels')?.classList.remove('detail-open')">
+      <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>Симптомы
+    </button>
+    <div class="space-y-6">${tempDiv.innerHTML}</div>`;
   // step3 used only as data source here — keep it hidden
   document.getElementById('step3')?.classList.add('hidden');
 };
@@ -3114,6 +3336,9 @@ window.toggleCustomPoint = (code) => {
     customSelected.delete(code);
   } else {
     customSelected.add(code);
+    if (window.innerWidth < 1024 && customSelected.size === 1) {
+      document.getElementById('custom-panels')?.classList.add('detail-open');
+    }
   }
   updateCustomBasket();
   // Обновить строку в списке без полного перерендера
@@ -3228,13 +3453,19 @@ window.printCustomRecipe = () => {
 window.confirmCustomRecipe = () => {
   const pts = [...customSelected];
   if (!pts.length) return;
-  const key   = 'custom_' + Date.now();
+  const key   = 'custom_' + pts.slice().sort().join(',');
   const label = `Свой рецепт (${pts.length} ${declPts(pts.length)})`;
   window._currentPts     = pts;
   window._currentDisKey  = key;
   window._currentSource  = 'custom';
   window._currentDisName = label;
   window._currentColor   = '#34C759';
+  const existIdx = confirmedRecipes.findIndex(r => r._key === key);
+  if (existIdx >= 0) {
+    confirmedRecipes.splice(existIdx, 1);
+    updateConfirmedPanel();
+    return;
+  }
   confirmedRecipes.push({
     id: Date.now(), source: 'custom', sourceLabel: label, _key: key,
     mer: '', name: label, color: '#34C759',
@@ -3561,6 +3792,10 @@ window.initUsin = function initUsin() {
 window.usinCountUpdate = function usinCountUpdate() {
   const n = document.querySelectorAll('.usin-cb:checked').length;
   document.getElementById('usin-sym-count').textContent = n + ' симптом' + (n===1?'':'ов');
+  document.querySelectorAll('.usin-cb').forEach(cb => {
+    const label = cb.closest('label');
+    if (label) label.style.background = cb.checked ? 'rgba(191,90,242,0.12)' : '';
+  });
 }
 
 window.resetUsin = () => {
@@ -3804,7 +4039,14 @@ window.renderUsinResult = function renderUsinResult(sc, mk, mtype, extra) {
       <div class="flex flex-col gap-1.5">${also2html}</div>` : ''}
     </div>` : '';
 
+  if (window.innerWidth < 1024) {
+    document.getElementById('usin-sub-sym')?.classList.add('detail-open');
+  }
+
   document.getElementById('usin-result-panel').innerHTML = `
+    <button class="mob-back-btn" onclick="document.getElementById('usin-sub-sym')?.classList.remove('detail-open')">
+      <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>Симптомы
+    </button>
     <div style="width:100%;overflow:hidden;word-break:break-word;box-sizing:border-box">
     ${explanationHtml}
     <!-- Заголовок -->
@@ -4359,7 +4601,8 @@ window.showUsinDisease = function(i) {
   // Highlight selected
   document.querySelectorAll('.usin-dis-item').forEach((el,j) => {
     const realIdx = parseInt(el.getAttribute('onclick').match(/\d+/)[0]);
-    el.classList.toggle('bg-[#BF5AF2]/10', realIdx === i);
+    const active = realIdx === i;
+    el.style.background = active ? 'rgba(191,90,242,0.10)' : '';
   });
 
   const ptRow = p => `
@@ -4372,9 +4615,17 @@ window.showUsinDisease = function(i) {
       <td class="py-2 text-[11px] font-semibold text-[#BF5AF2]">${/источник/i.test(p.r) ? p.r + '<span style="color:#8b90a0;font-weight:normal"> (нейтр. техника)</span>' : p.r}</td>
     </tr>`;
 
+  if (window.innerWidth < 1024) {
+    document.getElementById('usin-sub-dis')?.classList.add('detail-open');
+  }
+
   const detPanel = document.getElementById('usin-dis-detail');
   detPanel.classList.remove('flex', 'items-center', 'justify-center');
   detPanel.innerHTML = `
+    <button class="mob-back-btn" onclick="document.getElementById('usin-sub-dis')?.classList.remove('detail-open')">
+      <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+      Список болезней
+    </button>
     <div class="flex items-center gap-2 mb-4">
       <span class="material-symbols-outlined text-xl text-[#BF5AF2]">local_hospital</span>
       <div>
@@ -4419,6 +4670,7 @@ window.printUsinDisRecipe = function() {
     prio: d.prio
   });
 };
+
 
 // ── Body background (V1 fixed) ──
 document.addEventListener('DOMContentLoaded', function() {
@@ -4467,15 +4719,11 @@ document.addEventListener('DOMContentLoaded', function() {
       <span class="material-symbols-outlined text-[#8b90a0]" id="confirmed-chevron">expand_less</span>
     </div>
     <div id="confirmed-drawer" class="px-5 pb-3 space-y-2 overflow-y-auto" style="max-height:38vh"></div>
-    <div id="confirmed-footer" class="hidden px-5 pb-4 pt-1 border-t border-white/10 flex items-center justify-between gap-3">
+    <div id="confirmed-footer" class="hidden px-5 pb-2 pt-1 border-t border-white/10">
       <span id="confirmed-footer-label" class="text-xs text-[#8b90a0]"></span>
-      <button onclick="savePatientSession()"
-        class="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#3d8a5c]/50 bg-[#3d8a5c]/15 hover:bg-[#3d8a5c]/30 text-[#5AC85A] text-xs font-bold transition-all">
-        <span class="material-symbols-outlined" style="font-size:14px">save</span>
-        Записать все сессии
-      </button>
     </div>
   </div>
 </div>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

@@ -2,26 +2,22 @@
 <html class="dark" lang="ru">
 <head>
 <meta charset="utf-8"/>
-<base href="/new/">
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>AcuTwin — Вход</title>
-<script src="tailwind.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
-<link href="design.css" rel="stylesheet"/>
-<script id="tw-cfg">
-tailwind.config={darkMode:'class',theme:{extend:{colors:{
-  'background':'#131313','surface-container':'#1f1f1f',
-  'outline-variant':'#414755','on-surface':'#e2e2e2',
-  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
-}}}}
-</script>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=2" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body class="bg-[#131313] text-[#e2e2e2] min-h-screen flex items-center justify-center p-4" style="font-family:'Inter',sans-serif">
 
 <!-- Background figure -->
 <div style="position:fixed;right:0;top:0;bottom:0;width:50%;pointer-events:none;z-index:0;overflow:hidden">
-  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.5;filter:saturate(0.4) brightness(1.2)"/>
+  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.5;filter:saturate(0.4) brightness(1.2)"/>
   <div style="position:absolute;inset:0;background:linear-gradient(to right,#131313 30%,rgba(19,19,19,.5) 70%,rgba(19,19,19,.1) 100%)"></div>
 </div>
 
@@ -29,7 +25,7 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
 
   <!-- Logo -->
   <div class="flex items-center gap-3 mb-8 justify-center">
-    <img src="vitruvian-digital.png" alt="" style="height:3rem;width:3rem;object-fit:cover;border-radius:8px;opacity:0.9"/>
+    <img src="vitruvian-digital.webp" alt="" style="height:3rem;width:3rem;object-fit:cover;border-radius:8px;opacity:0.9"/>
     <div>
       <h1 class="text-xl font-bold text-[#00F2FF]" style="font-family:'Hanken Grotesk',sans-serif">AcuTwin</h1>
       <p class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Иглорефлексотерапия</p>
@@ -114,17 +110,7 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
       <button onclick="editClinic()" class="text-[10px] text-[#8b90a0] hover:text-[#0A84FF] transition-colors">изменить</button>
     </div>
 
-    <!-- Tabs -->
-    <div class="flex mb-6 bg-[#1f1f1f] rounded-xl p-1 gap-1">
-      <button id="tab-login" onclick="showTab('login')"
-        class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all bg-[#00F2FF]/10 text-[#00F2FF]">
-        Вход
-      </button>
-      <button id="tab-reg" onclick="showTab('reg')"
-        class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all text-[#8b90a0] hover:text-[#c1c6d7]">
-        Регистрация
-      </button>
-    </div>
+    <!-- Tabs: регистрация отключена, вход — единственный режим -->
 
     <!-- Demo hint -->
     <div id="demo-hint" class="hidden mb-4">
@@ -160,50 +146,12 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
       </button>
     </form>
 
-    <!-- Register form -->
-    <form id="form-reg" onsubmit="submitReg(event)" class="space-y-4 hidden">
-      <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ФИО врача</label>
-        <input id="r-name" type="text" required placeholder="Иванов И.И."
-               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
-                      placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
-      </div>
-      <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Логин</label>
-        <input id="r-username" type="text" autocomplete="username" required placeholder="doctor"
-               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
-                      placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
-      </div>
-      <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пароль</label>
-        <input id="r-password" type="password" autocomplete="new-password" required minlength="4"
-               class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
-                      focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
-      </div>
-      <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Роль</label>
-        <select id="r-role"
-                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
-                       focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all">
-          <option value="doctor" class="bg-[#1f1f1f]">🩺 Врач</option>
-          <option value="boss" class="bg-[#1f1f1f] admin-only-role" style="display:none">👑 Руководитель клиники</option>
-          <option value="admin" class="bg-[#1f1f1f] admin-only-role" style="display:none">⚙️ Администратор</option>
-        </select>
-        <p id="role-hint" class="text-[10px] text-[#414755] mt-1">Роль «Руководитель» назначается администратором системы</p>
-      </div>
-      <button type="submit"
-        class="w-full py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 border border-[#0A84FF]/40 text-[#0A84FF]
-               rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
-        <span class="material-symbols-outlined text-base" style="zoom:1">person_add</span>
-        Создать аккаунт
-      </button>
-    </form>
 
   </div>
 </div>
 
 <script type="module">
-import { login, register, getSession } from './auth.js';
+import { login, getSession } from './auth.js';
 import { apiGetUsers, apiGetClinic, apiSetClinic, getToken } from './api.js';
 import { seedIfEmpty } from './seed.js';
 import { esc } from './shared.js';
@@ -296,7 +244,7 @@ if (!_usersCheck || _usersCheck.status === 401 || _usersCheck.status === 404) {
 
 // Демо-аккаунты — только логины, без паролей в исходнике
 const users = await apiGetUsers();
-if (users.length) {
+if (users && users.length) {
   const ROLE_LABEL = { admin:'⚙️ Админ', boss: '👑 Босс', doctor: '🩺 Врач' };
   const DEMO_LOGINS = ['admin','boss','ivanov','petrov','sidorov','dr_kuznetsova','dr_qi1','dr_akumed1','dr_dao1'];
   document.getElementById('demo-hint').classList.remove('hidden');
@@ -320,18 +268,7 @@ function hideError() {
   document.getElementById('err-msg').classList.add('hidden');
 }
 
-window.showTab = (tab) => {
-  hideError();
-  const isLogin = tab === 'login';
-  document.getElementById('form-login').classList.toggle('hidden', !isLogin);
-  document.getElementById('form-reg').classList.toggle('hidden', isLogin);
-  document.getElementById('tab-login').className = `flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-    isLogin ? 'bg-[#00F2FF]/10 text-[#00F2FF]' : 'text-[#8b90a0] hover:text-[#c1c6d7]'}`;
-  document.getElementById('tab-reg').className = `flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-    !isLogin ? 'bg-[#0A84FF]/10 text-[#0A84FF]' : 'text-[#8b90a0] hover:text-[#c1c6d7]'}`;
-};
 
-if (!users.length) window.showTab('reg');
 
 window.submitLogin = async (e) => {
   e.preventDefault();
@@ -350,26 +287,7 @@ window.submitLogin = async (e) => {
   }
 };
 
-window.submitReg = async (e) => {
-  e.preventDefault();
-  hideError();
-  try {
-    const name     = document.getElementById('r-name').value.trim();
-    const username = document.getElementById('r-username').value.trim();
-    const password = document.getElementById('r-password').value;
-    const role     = document.getElementById('r-role').value;
-    const result = await register(name, username, password, role);
-    if (result.ok) {
-      await login(username, password);
-      const s = getSession();
-      window.location.href = s?.role === 'admin' ? 'admin.html' : 'index.html';
-    } else {
-      showError(result.error);
-    }
-  } catch (err) {
-    showError(err.message || 'Ошибка регистрации. Проверьте подключение.');
-  }
-};
 </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

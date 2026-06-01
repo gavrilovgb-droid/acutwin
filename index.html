@@ -2,27 +2,16 @@
 <html class="dark" lang="ru">
 <head>
 <meta charset="utf-8"/>
-<base href="/new/">
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <title>AcuTwin — Запись</title>
-<script src="tailwind.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
-<link href="design.css" rel="stylesheet"/>
-<script id="tw-cfg">
-tailwind.config={darkMode:'class',theme:{extend:{colors:{
-  'background':'#131313','surface':'#131313',
-  'surface-container-lowest':'#0e0e0e','surface-container-low':'#1b1b1b',
-  'surface-container':'#1f1f1f','surface-container-high':'#2a2a2a',
-  'surface-container-highest':'#353535',
-  'on-surface':'#e2e2e2','on-surface-variant':'#c1c6d7',
-  'primary':'#adc6ff','primary-container':'#4b8eff',
-  'outline':'#8b90a0','outline-variant':'#414755',
-  'meridian-glow':'#00F2FF','medical-blue':'#0A84FF',
-  'clinical-white':'#F2F2F7','warning-amber':'#FFD60A',
-  'error':'#ffb4ab','glass-surface':'rgba(255,255,255,0.08)',
-}}}}
-</script>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=2" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 #body-bg { position:fixed; top:0; right:0; bottom:0; left:16rem; pointer-events:none; z-index:0; overflow:hidden; }
 .md\:ml-64 > * { position:relative; z-index:1; }
@@ -39,7 +28,7 @@ tailwind.config={darkMode:'class',theme:{extend:{colors:{
 
 <div id="nav-mount"></div>
 <div id="body-bg">
-  <img src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
+  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
   <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
 </div>
 
@@ -356,5 +345,6 @@ document.getElementById('intake-form').addEventListener('submit', e => {
   goToTreatment();
 });
 </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>
 </html>

@@ -14,100 +14,117 @@ jobs:
 
       - name: Add MX + A records via headless browser
         run: |
-          python3 << 'PYEOF'
-          from playwright.sync_api import sync_playwright
-          import time
+          python3 - << 'PYEOF'
+import time, sys
+from playwright.sync_api import sync_playwright
 
-          USER = "ggbksi"
-          PASS = "Elena196672!@"
-          DOMAIN = "acutwin.ru"
-          VPS_IP = "194.67.92.166"
+USER   = "ggbksi"
+PASS   = "Elena196672!@"
+DOMAIN = "acutwin.ru"
+VPS_IP = "194.67.92.166"
 
-          with sync_playwright() as p:
-              browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-              ctx = browser.new_context(
-                  user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120",
-                  locale="ru-RU", viewport={"width": 1280, "height": 800}
-              )
-              page = ctx.new_page()
-              page.set_default_timeout(30000)
+def ss(page, name):
+    page.screenshot(path=f"/tmp/{name}.png")
+    print(f"  [screenshot] {name}.png")
 
-              # ── 1. Главная страница ──────────────────────────────
-              print("Step 1: Opening reg.ru main page...")
-              page.goto("https://www.reg.ru/", wait_until="networkidle")
-              page.screenshot(path="/tmp/s1_main.png")
-              print("URL:", page.url, "| Title:", page.title())
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+    ctx = browser.new_context(
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121",
+        locale="ru-RU", viewport={"width": 1280, "height": 800}
+    )
+    page = ctx.new_page()
+    page.set_default_timeout(30000)
 
-              # ── 2. Кликаем кнопку Войти ─────────────────────────
-              print("Step 2: Clicking Войти button...")
-              page.click('button:has-text("Войти"), a:has-text("Войти"), [data-testid="login-btn"]')
-              page.wait_for_load_state("networkidle")
-              time.sleep(2)
-              page.screenshot(path="/tmp/s2_afterclick.png")
-              print("URL after click:", page.url)
+    # ── 1. Главная ────────────────────────────────────────────
+    print("=== Step 1: Load reg.ru ===")
+    page.goto("https://www.reg.ru/", wait_until="domcontentloaded")
+    time.sleep(3)
+    ss(page, "s1_main")
+    print("URL:", page.url)
 
-              # ── 3. Заполняем форму входа ─────────────────────────
-              print("Step 3: Filling login form...")
-              page.screenshot(path="/tmp/s3_loginform.png")
+    # Закрываем куки-баннер если есть
+    try:
+        page.get_by_text("Хорошо").click(timeout=3000)
+        time.sleep(1)
+    except: pass
 
-              # Ищем поля логина и пароля
-              login_input = page.locator('input').filter(has_text="").nth(0)
-              # Более точный поиск
-              for sel in ['input[autocomplete="username"]', 'input[name="login"]',
-                          'input[type="text"]', 'input[type="email"]']:
-                  try:
-                      if page.locator(sel).count() > 0:
-                          page.fill(sel, USER)
-                          print(f"  Filled login with: {sel}")
-                          break
-                  except: pass
+    # ── 2. Кликаем Войти (правый верхний угол ~1113,108) ─────
+    print("=== Step 2: Click login button ===")
+    try:
+        # Пробуем get_by_role
+        page.get_by_role("link", name="Войти").click(timeout=5000)
+    except:
+        try:
+            page.get_by_role("button", name="Войти").click(timeout=5000)
+        except:
+            # По координатам (кнопка Войти в правом верхнем)
+            page.mouse.click(1113, 108)
 
-              for sel in ['input[autocomplete="current-password"]', 'input[name="password"]',
-                          'input[type="password"]']:
-                  try:
-                      if page.locator(sel).count() > 0:
-                          page.fill(sel, PASS)
-                          print(f"  Filled password with: {sel}")
-                          break
-                  except: pass
+    page.wait_for_load_state("networkidle")
+    time.sleep(3)
+    ss(page, "s2_afterlogin_click")
+    print("URL after click:", page.url)
 
-              page.screenshot(path="/tmp/s4_filled.png")
+    # ── 3. Форма входа ────────────────────────────────────────
+    print("=== Step 3: Fill login form ===")
+    ss(page, "s3_loginform")
 
-              # Отправляем форму
-              for sel in ['button[type="submit"]', 'button:has-text("Войти")',
-                          'button:has-text("Вход")', 'button:has-text("Войти в аккаунт")']:
-                  try:
-                      if page.locator(sel).count() > 0:
-                          page.click(sel)
-                          print(f"  Clicked submit: {sel}")
-                          break
-                  except: pass
+    # Заполняем логин
+    for sel in ['input[type="text"]', 'input[type="email"]', 'input[autocomplete="username"]',
+                'input[name="login"]', 'input[placeholder]']:
+        try:
+            loc = page.locator(sel).first
+            if loc.is_visible(timeout=2000):
+                loc.fill(USER)
+                print(f"  login filled via: {sel}")
+                break
+        except: pass
 
-              page.wait_for_load_state("networkidle")
-              time.sleep(3)
-              page.screenshot(path="/tmp/s5_loggedin.png")
-              print("URL after login:", page.url)
+    # Заполняем пароль
+    try:
+        page.locator('input[type="password"]').first.fill(PASS)
+        print("  password filled")
+    except Exception as e:
+        print("  password error:", e)
 
-              # ── 4. Переходим в управление DNS ───────────────────
-              print("Step 4: Going to DNS management...")
-              # Пробуем разные URL для DNS управления
-              for dns_url in [
-                  f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}",
-                  f"https://cp.reg.ru/domains/{DOMAIN}/dns",
-                  f"https://www.reg.ru/user/domain/{DOMAIN}/dns/",
-              ]:
-                  page.goto(dns_url, wait_until="networkidle")
-                  page.screenshot(path=f"/tmp/s6_dns_{dns_url.split('/')[-2]}.png")
-                  print(f"  Tried: {dns_url} -> {page.url}")
-                  if DOMAIN in page.url or "dns" in page.url.lower():
-                      print("  Found DNS page!")
-                      break
+    ss(page, "s4_filled")
 
-              print("Final URL:", page.url)
-              print("Page title:", page.title())
-              print("DONE - check screenshots")
-              browser.close()
-          PYEOF
+    # Кликаем войти
+    for sel in ['button[type="submit"]',
+                'button:has-text("Войти")',
+                'input[type="submit"]']:
+        try:
+            loc = page.locator(sel).first
+            if loc.is_visible(timeout=2000):
+                loc.click()
+                print(f"  submit via: {sel}")
+                break
+        except: pass
+
+    page.wait_for_load_state("networkidle")
+    time.sleep(4)
+    ss(page, "s5_loggedin")
+    print("URL after login:", page.url)
+
+    # ── 4. Панель управления DNS ──────────────────────────────
+    print("=== Step 4: DNS management ===")
+    for dns_url in [
+        f"https://www.reg.ru/user/domain/{DOMAIN}/dns/",
+        f"https://cp.reg.ru/domains/{DOMAIN}/dns",
+        f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}",
+    ]:
+        try:
+            page.goto(dns_url, wait_until="networkidle", timeout=15000)
+            time.sleep(2)
+            ss(page, f"s6_dns_{dns_url.split('/')[-2]}")
+            print(f"  URL: {page.url} | Title: {page.title()[:60]}")
+        except Exception as e:
+            print(f"  Error for {dns_url}: {e}")
+
+    print("=== Done. Check screenshots. ===")
+    browser.close()
+PYEOF
 
       - name: Upload screenshots
         if: always()

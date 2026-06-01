@@ -1,0 +1,92 @@
+name: Setup Mail Forwarding
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure mail forwarding on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 194.67.92.166
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 300s
+          script: |
+            REGRU_USER="ggbksi"
+            REGRU_PASS='Elena196672!@'
+            VPS_IP="194.67.92.166"
+            DOMAIN="acutwin.ru"
+            FORWARD_TO="gavrilovgb@gmail.com"
+
+            echo "=== 1. Тест REG.RU API с VPS ==="
+            API_TEST=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/get_resource_records" \
+              --data-urlencode "username=$REGRU_USER" \
+              --data-urlencode "password=$REGRU_PASS" \
+              --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
+              --data-urlencode "output_content_type=plain")
+            echo "$API_TEST"
+
+            if echo "$API_TEST" | grep -q '"success"'; then
+              echo "=== 2. API доступен — добавляем DNS ==="
+
+              # A-запись для mail.acutwin.ru
+              curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_alias" \
+                --data-urlencode "username=$REGRU_USER" \
+                --data-urlencode "password=$REGRU_PASS" \
+                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
+                --data-urlencode "subdomain=mail" \
+                --data-urlencode "ipaddr=$VPS_IP"
+
+              # MX-запись
+              MX=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_mx" \
+                --data-urlencode "username=$REGRU_USER" \
+                --data-urlencode "password=$REGRU_PASS" \
+                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
+                --data-urlencode "subdomain=@" \
+                --data-urlencode "mail_host=mail.$DOMAIN" \
+                --data-urlencode "priority=10")
+              echo "MX: $MX"
+
+              # SPF TXT-запись
+              SPF=$(curl -s -X POST "https://api.reg.ru/api/regru2/zone/add_txt" \
+                --data-urlencode "username=$REGRU_USER" \
+                --data-urlencode "password=$REGRU_PASS" \
+                --data-urlencode "domains=[{\"dname\":\"$DOMAIN\"}]" \
+                --data-urlencode "subdomain=@" \
+                --data-urlencode "text=v=spf1 ip4:$VPS_IP ~all")
+              echo "SPF: $SPF"
+            else
+              echo "!!! API заблокирован с VPS. DNS нужно добавить вручную."
+            fi
+
+            echo "=== 3. Установка Postfix ==="
+            DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
+
+            echo "=== 4. Конфигурация Postfix ==="
+            postconf -e "myhostname = mail.$DOMAIN"
+            postconf -e "mydomain = $DOMAIN"
+            postconf -e "myorigin = $DOMAIN"
+            postconf -e "inet_interfaces = all"
+            postconf -e "inet_protocols = ipv4"
+            postconf -e "mydestination = mail.$DOMAIN, localhost"
+            postconf -e "virtual_alias_domains = $DOMAIN"
+            postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
+            postconf -e "smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination"
+
+            printf "info@%s\t%s\n@%s\t%s\n" "$DOMAIN" "$FORWARD_TO" "$DOMAIN" "$FORWARD_TO" \
+              > /etc/postfix/virtual
+            postmap /etc/postfix/virtual
+
+            echo "=== 5. Запуск Postfix ==="
+            systemctl enable postfix
+            systemctl restart postfix
+            sleep 2
+            systemctl status postfix --no-pager | head -20
+
+            echo "=== 6. Проверка порта 25 ==="
+            ss -tlnp | grep :25 && echo "OK: порт 25 слушает" || echo "WARN: порт 25 не активен"
+
+            echo "=== Готово ==="

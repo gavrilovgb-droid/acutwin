@@ -62,26 +62,33 @@ with sync_playwright() as p:
     ss(page, "s2_after_click")
     print("URL:", page.url)
 
-    # ── 3. Форма логина ───────────────────────────────────────
-    print("=== Step 3: Fill login form ===")
+    # ── 3. Ждём модального окна и заполняем ──────────────────
+    print("=== Step 3: Wait for modal & fill ===")
+    # Модал содержит input с placeholder "Электронная почта или логин"
+    try:
+        page.wait_for_selector('input[placeholder*="логин"]', timeout=10000)
+        print("  modal appeared")
+    except:
+        print("  modal wait timeout — trying anyway")
     ss(page, "s3_form")
 
+    # Заполняем логин в модале по placeholder
     for sel in [
-        'input[name="login"]',
-        'input[type="text"]',
-        'input[type="email"]',
+        'input[placeholder*="логин"]',
+        'input[placeholder*="email"]',
+        'input[placeholder*="почта"]',
         'input[autocomplete="username"]',
-        'input[placeholder]',
     ]:
         try:
             loc = page.locator(sel).first
-            if loc.is_visible(timeout=2000):
+            if loc.is_visible(timeout=3000):
                 loc.fill(USER)
                 print(f"  login: {sel}")
                 break
         except:
             pass
 
+    # Заполняем пароль
     try:
         page.locator('input[type="password"]').first.fill(PASS)
         print("  password: filled")
@@ -90,16 +97,16 @@ with sync_playwright() as p:
 
     ss(page, "s4_filled")
 
-    # Нажимаем Enter — надёжнее чем искать кнопку в модале
+    # Нажимаем Enter
     page.keyboard.press("Enter")
     print("  submitted via Enter")
 
-    # Ждём закрытия модала и загрузки ЛК
+    # Ждём редиректа в ЛК
     try:
-        page.wait_for_url("**/lk/**", timeout=15000)
+        page.wait_for_url("**/lk/**", timeout=20000)
+        print("  redirected to LK")
     except:
-        pass
-    page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("networkidle")
     time.sleep(4)
     ss(page, "s5_loggedin")
     print("URL after login:", page.url)

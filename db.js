@@ -141,7 +141,7 @@ module.exports.updateStatus   = (id, status)  => _updStatus.run(status, id);
 
 // ── PATIENT STATUSES (курс лечения) ───────────────────────
 const _getPatientStatus = db.prepare('SELECT status FROM patient_statuses WHERE patient=?');
-const _setPatientStatus = db.prepare('INSERT OR REPLACE INTO patient_statuses (patient, status, updated_at) VALUES (?,?,datetime("now"))');
+const _setPatientStatus = db.prepare("INSERT OR REPLACE INTO patient_statuses (patient, status, updated_at) VALUES (?,?,datetime('now'))");
 module.exports.getPatientStatus = name => (_getPatientStatus.get(name) || {}).status || '';
 module.exports.setPatientStatus = (name, status) => _setPatientStatus.run(name, status);
 

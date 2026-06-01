@@ -14,6 +14,16 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
+// Миграции — добавляем новые поля если их нет
+try { db.exec("ALTER TABLE records ADD COLUMN status TEXT NOT NULL DEFAULT 'started'"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN nrs_before INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN nrs_after INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN treatment_type TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN needle_type TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN stimulation TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN exposure INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN deqi INTEGER DEFAULT 0"); } catch(e) {}
+
 // ── Создаём таблицы ────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -64,8 +74,10 @@ const _getUser   = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NO
 const _getUsers  = db.prepare('SELECT id,username,name,role,created_at FROM users');
 const _addUser   = db.prepare('INSERT INTO users (username,name,hash,role) VALUES (?,?,?,?)');
 const _delUser   = db.prepare('DELETE FROM users WHERE username = ? COLLATE NOCASE');
+const _updHash   = db.prepare('UPDATE users SET hash=? WHERE username=? COLLATE NOCASE');
 
-module.exports.getUser    = u => _getUser.get(u) || null;
+module.exports.getUser      = u => _getUser.get(u) || null;
+module.exports.updateUserHash = (username, hash) => _updHash.run(hash, username);
 module.exports.getUsers   = () => _getUsers.all();
 module.exports.addUser    = (username, name, hash, role='doctor') => {
   try { _addUser.run(username.trim(), name.trim(), hash, role); return { ok: true }; }
@@ -77,8 +89,8 @@ module.exports.deleteUser = u => _delUser.run(u);
 const _getRecords      = db.prepare('SELECT * FROM records ORDER BY date DESC, time DESC');
 const _getMyRecords    = db.prepare('SELECT * FROM records WHERE doctor=? ORDER BY date DESC, time DESC');
 const _addRecord       = db.prepare(`
-  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome)
-  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome)
+  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome,nrs_before,nrs_after,treatment_type,stimulation,exposure,deqi)
+  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome,@nrs_before,@nrs_after,@treatment_type,@stimulation,@exposure,@deqi)
 `);
 const _delRecord       = db.prepare('DELETE FROM records WHERE id=?');
 
@@ -87,16 +99,30 @@ function parseRecord(r) {
   return { ...r, points: JSON.parse(r.points||'[]'), meridians: JSON.parse(r.meridians||'[]') };
 }
 
-module.exports.getRecords   = () => _getRecords.all().map(parseRecord);
-module.exports.getMyRecords = doctor => _getMyRecords.all(doctor).map(parseRecord);
+module.exports.getRecords         = () => _getRecords.all().map(parseRecord);
+module.exports.getMyRecords       = doctor => _getMyRecords.all(doctor).map(parseRecord);
+module.exports.getRecordsByLogins = logins => {
+  if (!logins || logins.length === 0) return [];
+  return _getRecords.all().map(parseRecord).filter(r => logins.includes(r.doctor));
+};
 module.exports.addRecord    = rec => _addRecord.run({
   ...rec,
-  points:   JSON.stringify(rec.points   || []),
-  meridians: JSON.stringify(rec.meridians|| []),
+  points:         JSON.stringify(rec.points    || []),
+  meridians:      JSON.stringify(rec.meridians || []),
+  nrs_before:     rec.nrs_before     ?? null,
+  nrs_after:      rec.nrs_after      ?? null,
+  treatment_type: rec.treatment_type || null,
+  stimulation:    rec.stimulation    || null,
+  exposure:       rec.exposure       ?? null,
+  deqi:           rec.deqi           ? 1 : 0,
 });
 module.exports.deleteRecord   = id => _delRecord.run(id);
+const _getRecord = db.prepare('SELECT * FROM records WHERE id=?');
+module.exports.getRecord = id => parseRecord(_getRecord.get(id));
 const _updOutcome = db.prepare('UPDATE records SET outcome=? WHERE id=?');
 module.exports.updateOutcome  = (id, outcome) => _updOutcome.run(outcome, id);
+const _updStatus  = db.prepare('UPDATE records SET status=? WHERE id=?');
+module.exports.updateStatus   = (id, status)  => _updStatus.run(status, id);
 
 // ── CLINIC ─────────────────────────────────────────────────
 const _getClinic  = db.prepare('SELECT key,value FROM clinic');

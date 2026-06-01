@@ -90,41 +90,43 @@ with sync_playwright() as p:
 
     ss(page, "s4_filled")
 
-    for sel in [
-        'button[type="submit"]',
-        "button:has-text('Войти')",
-        "button:has-text('Вход')",
-    ]:
-        try:
-            loc = page.locator(sel).first
-            if loc.is_visible(timeout=2000):
-                loc.click()
-                print(f"  submit: {sel}")
-                break
-        except:
-            pass
+    # Нажимаем Enter — надёжнее чем искать кнопку в модале
+    page.keyboard.press("Enter")
+    print("  submitted via Enter")
 
+    # Ждём закрытия модала и загрузки ЛК
+    try:
+        page.wait_for_url("**/lk/**", timeout=15000)
+    except:
+        pass
     page.wait_for_load_state("networkidle")
     time.sleep(4)
     ss(page, "s5_loggedin")
     print("URL after login:", page.url)
 
-    # ── 4. DNS управление ─────────────────────────────────────
-    print("=== Step 4: DNS pages ===")
-    for dns_url in [
-        f"https://www.reg.ru/user/domain/{DOMAIN}/dns/",
-        f"https://cp.reg.ru/domains/{DOMAIN}/dns",
+    # ── 4. Личный кабинет — ищем домены ──────────────────────
+    print("=== Step 4: Find domains in LK ===")
+    for lk_url in [
+        "https://www.reg.ru/lk/",
+        "https://www.reg.ru/lk/domains/",
+        f"https://www.reg.ru/lk/domains/{DOMAIN}/dns/",
         f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}",
     ]:
         try:
-            page.goto(dns_url, wait_until="networkidle", timeout=15000)
-            time.sleep(2)
-            tag = dns_url.rstrip("/").split("/")[-1]
-            ss(page, f"s6_dns_{tag}")
-            print(f"  {dns_url}")
-            print(f"  -> {page.url} | {page.title()[:60]}")
+            page.goto(lk_url, wait_until="domcontentloaded", timeout=15000)
+            time.sleep(3)
+            tag = lk_url.rstrip("/").split("/")[-1] or "root"
+            ss(page, f"s6_{tag}")
+            print(f"  URL: {page.url}")
+            print(f"  Title: {page.title()[:80]}")
+            # Ищем ссылки на DNS в HTML
+            dns_links = page.locator("a[href*='dns'], a[href*='DNS']").all()
+            if dns_links:
+                print(f"  Found {len(dns_links)} DNS links:")
+                for lnk in dns_links[:5]:
+                    print(f"    {lnk.get_attribute('href')} | {lnk.text_content()[:40]}")
         except Exception as e:
             print(f"  Error: {e}")
 
-    print("=== Done ===")
+    print("=== Done - check screenshots ===")
     browser.close()

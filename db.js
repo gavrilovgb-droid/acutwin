@@ -214,3 +214,6 @@ const _addTrialRequest = db.prepare(
   "INSERT INTO trial_requests (method, contact, ip) VALUES (?, ?, ?)"
 );
 module.exports.addTrialRequest = (method, contact, ip) => _addTrialRequest.run(method, contact, ip);
+
+const _getTrialRequests = db.prepare("SELECT * FROM trial_requests ORDER BY created_at DESC");
+module.exports.getTrialRequests = () => _getTrialRequests.all();

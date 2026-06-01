@@ -1,10 +1,33 @@
 const http    = require('http');
+const https   = require('https');
 const fs      = require('fs');
 const path    = require('path');
 const crypto  = require('crypto');
 const jwt     = require('jsonwebtoken');
 const bcrypt  = require('bcryptjs');
 const db      = require('./db');
+
+const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN || '';
+const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID   || '';
+
+const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
+
+function sendTgNotify(contactMethod, contact, ip) {
+  if (!TG_TOKEN || !TG_CHAT_ID) return;
+  const label = TG_METHOD_LABEL[contactMethod] || contactMethod;
+  const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+  const text = `🔔 Новая заявка на триал АкуПро\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`;
+  const body = JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
+  const req = https.request({
+    hostname: 'api.telegram.org',
+    path: `/bot${TG_TOKEN}/sendMessage`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+  });
+  req.on('error', (e) => console.error('[TG notify error]', e.message));
+  req.write(body);
+  req.end();
+}
 
 const ROOT    = __dirname;
 const PORT    = process.env.PORT || 5500;
@@ -123,6 +146,7 @@ async function handleAPI(method, endpoint, req, res) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
     try {
       db.addTrialRequest(contactMethod, contact.trim(), ip);
+      sendTgNotify(contactMethod, contact.trim(), ip);
       return json(res, 200, { ok: true });
     } catch (e) {
       if (e.message && e.message.includes('UNIQUE')) return json(res, 409, { error: 'Дубликат' });
@@ -401,6 +425,12 @@ async function handleAPI(method, endpoint, req, res) {
     if (!['', 'started', 'active', 'completed'].includes(status)) return json(res, 400, { error: 'Invalid status' });
     db.setPatientStatus(name, status);
     return json(res, 200, { ok: true });
+  }
+
+  // GET /api/trial-requests (admin only)
+  if (method === 'GET' && endpoint === '/api/trial-requests') {
+    const user = requireAdmin(req, res); if (!user) return;
+    return json(res, 200, db.getTrialRequests());
   }
 
   return json(res, 404, { error: 'Endpoint not found' });

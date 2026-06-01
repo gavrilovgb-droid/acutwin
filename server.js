@@ -114,6 +114,23 @@ function checkRecordRate(username) {
 // ── API Router ─────────────────────────────────────────────
 async function handleAPI(method, endpoint, req, res) {
 
+  // POST /api/trial-request
+  if (method === 'POST' && endpoint === '/api/trial-request') {
+    const { method: contactMethod, contact } = await readBody(req);
+    const VALID_METHODS = ['telegram', 'max', 'phone', 'card'];
+    if (!VALID_METHODS.includes(contactMethod) || !contact || !contact.trim())
+      return json(res, 400, { error: 'Некорректные данные' });
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
+    try {
+      db.prepare('INSERT INTO trial_requests (method, contact, ip) VALUES (?, ?, ?)')
+        .run(contactMethod, contact.trim(), ip);
+      return json(res, 200, { ok: true });
+    } catch (e) {
+      if (e.message && e.message.includes('UNIQUE')) return json(res, 409, { error: 'Дубликат' });
+      return json(res, 500, { error: 'Ошибка сервера' });
+    }
+  }
+
   // POST /api/login
   if (method === 'POST' && endpoint === '/api/login') {
     const { username, password, hostname } = await readBody(req);

@@ -423,7 +423,7 @@
 
   /* ── PWA INSTALL ── */
   #pwa-banner {
-    display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     z-index: 200; background: #0d1220; border: 1px solid rgba(0,242,255,0.3);
     border-radius: 14px; padding: 14px 20px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
@@ -440,6 +440,78 @@
     background: none; border: none; color: var(--muted);
     cursor: pointer; font-size: 18px; line-height: 1;
   }
+
+  /* ── TRIAL MODAL ── */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+  .modal-card {
+    background: #0f1117;
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    padding: 32px 28px;
+    width: 100%; max-width: 420px;
+    position: relative;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+  }
+  .modal-backdrop.open .modal-card { transform: translateY(0); }
+  .modal-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none; color: var(--muted);
+    font-size: 24px; cursor: pointer; line-height: 1; padding: 4px;
+  }
+  .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .modal-sub { color: var(--muted); font-size: 14px; margin-bottom: 22px; line-height: 1.5; }
+  .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .method-btn {
+    background: var(--glass);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 16px 10px 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    color: var(--fg);
+  }
+  .method-btn:hover { border-color: rgba(0,242,255,0.5); }
+  .method-btn.selected { border-color: var(--accent); background: rgba(0,242,255,0.07); }
+  .method-icon { font-size: 24px; margin-bottom: 6px; display: block; }
+  .method-label { font-size: 13px; font-weight: 700; }
+  .contact-wrap { margin-bottom: 16px; }
+  .contact-wrap input {
+    width: 100%; padding: 12px 14px;
+    background: var(--glass);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--fg); font-size: 15px;
+    outline: none; box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  .contact-wrap input:focus { border-color: var(--accent); }
+  .contact-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .modal-submit {
+    width: 100%;
+    background: var(--accent); color: #000;
+    font-weight: 700; font-size: 15px;
+    border: none; border-radius: 10px;
+    padding: 14px; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .modal-submit:hover { opacity: 0.85; }
+  .modal-submit:disabled { opacity: 0.35; cursor: default; }
+  .modal-success { text-align: center; padding: 20px 0 8px; }
+  .modal-success-icon { font-size: 52px; margin-bottom: 14px; display: block; }
+  .modal-success-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+  .modal-success-sub { color: var(--muted); font-size: 14px; line-height: 1.6; }
 </style>
 </head>
 <body>
@@ -453,10 +525,10 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">Для практикующих рефлексотерапевтов</div>
-  <h1>Подбирайте рецепт точек прямо на приёме — за 30 секунд</h1>
+  <h1>Рецепт точек под любой диагноз — за 30 секунд</h1>
   <p class="hero-sub">Забудьте про бумажные атласы. Укажите симптомы пациента — получите готовый рецепт акупунктуры с точками, меридианами и техникой введения.</p>
   <div class="hero-btns">
-    <a href="/login.html" class="btn-primary">Попробовать бесплатно</a>
+    <button onclick="openTrialModal()" class="btn-primary">Хочу попробовать</button>
     <a href="#videos" class="btn-outline">Смотреть демо</a>
     <a href="/acutwin-manual.pdf" target="_blank" class="btn-outline" style="display:flex;align-items:center;gap:7px">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
@@ -636,7 +708,7 @@
           <li>Тактика лечения</li>
           <li>Карточка пациента</li>
         </ul>
-        <a href="/login.html" class="price-cta">Начать бесплатно</a>
+        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
 
       <div class="price-card" data-monthly="990" data-annual="790">
@@ -651,7 +723,7 @@
           <li>Карточка пациента</li>
           <li>PDF-отчёты</li>
         </ul>
-        <a href="/login.html" class="price-cta">Подключить</a>
+        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
 
       <div class="price-card popular" data-monthly="3 900" data-annual="3 100">
@@ -665,7 +737,7 @@
           <li>Все функции Практика</li>
           <li>Панель руководителя</li>
         </ul>
-        <a href="/login.html" class="price-cta">Подключить</a>
+        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
 
       <div class="price-card" data-monthly="5 990" data-annual="4 790">
@@ -678,7 +750,7 @@
           <li>Все функции Практика</li>
           <li>Панель руководителя</li>
         </ul>
-        <a href="/login.html" class="price-cta">Подключить</a>
+        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
 
       <div class="price-card" data-monthly="7 900" data-annual="6 300">
@@ -691,7 +763,7 @@
           <li>Все функции Практика</li>
           <li>Панель руководителя</li>
         </ul>
-        <a href="/login.html" class="price-cta">Обсудить</a>
+        <a href="mailto:info@acutwin.ru" class="price-cta">Обсудить</a>
       </div>
 
     </div>
@@ -752,9 +824,9 @@
 <!-- CTA STRIP -->
 <section class="cta-strip">
   <div class="container">
-    <h2>Попробуйте AcuTwin прямо сейчас</h2>
-    <p>Пробный доступ — бесплатно. Регистрация занимает 30 секунд.</p>
-    <a href="/login.html" class="btn-primary">Войти в систему →</a>
+    <h2>Хотите попробовать AcuTwin?</h2>
+    <p>Оставьте контакт — вышлем данные для входа.</p>
+    <button onclick="openTrialModal()" class="btn-primary">Хочу попробовать</button>
   </div>
 </section>
 
@@ -778,6 +850,45 @@
     <div class="footer-copy">© 2026 AcuTwin</div>
   </div>
 </footer>
+
+<!-- TRIAL MODAL -->
+<div id="trial-modal" class="modal-backdrop" onclick="if(event.target===this)closeTrialModal()">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeTrialModal()">×</button>
+    <div id="modal-form">
+      <div class="modal-title">Хочу попробовать</div>
+      <div class="modal-sub">Выберите удобный способ связи — вышлем данные для входа</div>
+      <div class="method-grid">
+        <button class="method-btn" onclick="selectMethod('telegram')" id="btn-telegram">
+          <span class="method-icon">✈️</span>
+          <span class="method-label">Telegram</span>
+        </button>
+        <button class="method-btn" onclick="selectMethod('max')" id="btn-max">
+          <span class="method-icon">💬</span>
+          <span class="method-label">MAX</span>
+        </button>
+        <button class="method-btn" onclick="selectMethod('phone')" id="btn-phone">
+          <span class="method-icon">📞</span>
+          <span class="method-label">Телефон</span>
+        </button>
+        <button class="method-btn" onclick="selectMethod('card')" id="btn-card">
+          <span class="method-icon">💳</span>
+          <span class="method-label">Карта</span>
+        </button>
+      </div>
+      <div class="contact-wrap" id="contact-wrap" style="display:none">
+        <input id="contact-input" type="text" placeholder="" autocomplete="off"/>
+        <div class="contact-hint" id="contact-hint"></div>
+      </div>
+      <button class="modal-submit" id="modal-submit-btn" onclick="submitTrialRequest()" disabled>Отправить заявку</button>
+    </div>
+    <div id="modal-success" class="modal-success" style="display:none">
+      <span class="modal-success-icon">✅</span>
+      <div class="modal-success-title">Заявка принята!</div>
+      <div class="modal-success-sub">Мы свяжемся с вами и вышлем данные для входа.<br>Проверьте указанный контакт.</div>
+    </div>
+  </div>
+</div>
 
 <!-- PWA install banner -->
 <div id="pwa-banner">
@@ -838,6 +949,86 @@
   // ── Service Worker ───────────────────────────────────────
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js');
+  }
+
+  // ── Trial Modal ──────────────────────────────────────────
+  const METHOD_CFG = {
+    telegram: { placeholder: '@username',             hint: 'Ваш username в Telegram' },
+    max:      { placeholder: '@username или ID',      hint: 'Ваш username или ID в MAX' },
+    phone:    { placeholder: '+7 900 000-00-00',      hint: 'Позвоним или отправим SMS', type: 'tel' },
+    card:     { placeholder: 'your@email.com',        hint: 'Email — пришлём ссылку для идентификации', type: 'email' },
+  };
+  let trialMethod = null;
+
+  function openTrialModal() {
+    document.getElementById('trial-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeTrialModal() {
+    document.getElementById('trial-modal').classList.remove('open');
+    document.body.style.overflow = '';
+    trialMethod = null;
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('contact-wrap').style.display = 'none';
+    document.getElementById('contact-input').value = '';
+    document.getElementById('contact-hint').textContent = '';
+    document.getElementById('contact-hint').style.color = '';
+    document.getElementById('modal-submit-btn').disabled = true;
+    document.getElementById('modal-form').style.display = '';
+    document.getElementById('modal-success').style.display = 'none';
+  }
+
+  function selectMethod(method) {
+    trialMethod = method;
+    document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('btn-' + method).classList.add('selected');
+    const cfg = METHOD_CFG[method];
+    const inp = document.getElementById('contact-input');
+    inp.type = cfg.type || 'text';
+    inp.placeholder = cfg.placeholder;
+    document.getElementById('contact-hint').textContent = cfg.hint;
+    document.getElementById('contact-hint').style.color = '';
+    document.getElementById('contact-wrap').style.display = '';
+    inp.focus();
+    document.getElementById('modal-submit-btn').disabled = !inp.value.trim();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('contact-input').addEventListener('input', e => {
+      document.getElementById('modal-submit-btn').disabled = !e.target.value.trim();
+    });
+  });
+
+  async function submitTrialRequest() {
+    const contact = document.getElementById('contact-input').value.trim();
+    if (!contact || !trialMethod) return;
+    const btn = document.getElementById('modal-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+    try {
+      const r = await fetch('/api/trial-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: trialMethod, contact })
+      });
+      if (r.ok) {
+        document.getElementById('modal-form').style.display = 'none';
+        document.getElementById('modal-success').style.display = '';
+      } else if (r.status === 409) {
+        btn.disabled = false;
+        btn.textContent = 'Отправить заявку';
+        const hint = document.getElementById('contact-hint');
+        hint.textContent = '⚠️ Этот контакт уже подавал заявку';
+        hint.style.color = '#ff6b6b';
+      } else {
+        throw new Error();
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Отправить заявку';
+      alert('Не удалось отправить. Напишите на info@acutwin.ru');
+    }
   }
 </script>
 

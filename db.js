@@ -23,6 +23,16 @@ try { db.exec("ALTER TABLE records ADD COLUMN needle_type TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN stimulation TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN exposure INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN deqi INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec(`CREATE TABLE IF NOT EXISTS trial_requests (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  method     TEXT NOT NULL,
+  contact    TEXT NOT NULL,
+  ip         TEXT,
+  status     TEXT NOT NULL DEFAULT 'new',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(method, contact)
+)`); } catch(e) {}
+
 try { db.exec(`CREATE TABLE IF NOT EXISTS patient_statuses (
   patient    TEXT PRIMARY KEY,
   status     TEXT NOT NULL DEFAULT '',

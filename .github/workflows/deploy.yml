@@ -1,0 +1,58 @@
+name: Deploy to VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 194.67.92.166
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 60s
+          script: |
+            # Find acutwin directory
+            APP=$(find /root /home -name "server.js" -path "*/acutwin*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
+            if [ -z "$APP" ]; then
+              APP=$(find /var/www /opt /srv -name "server.js" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
+            fi
+            echo "App dir: $APP"
+            cd "$APP"
+
+            # Git pull
+            git pull origin master
+
+            # Restart (pm2 / systemd / kill+start)
+            if command -v pm2 &>/dev/null; then
+              pm2 restart all
+            elif systemctl is-active --quiet acutwin 2>/dev/null; then
+              systemctl restart acutwin
+            else
+              # Kill old process and start new one
+              pkill -f "node server.js" || true
+              nohup node server.js > server.log 2>server.err &
+              echo "Started PID $!"
+            fi
+
+            sleep 3
+            echo "Done. Checking..."
+            curl -s http://localhost:5500/api/login \
+              -X POST -H "Content-Type: application/json" \
+              -d '{"username":"test","password":"test"}' | head -c 100
+
+      - name: Reset ggbksi password
+        run: |
+          sleep 5
+          SECRET=$(node -e "
+            const crypto = require('crypto');
+            const day = new Date().toISOString().slice(0,10);
+            console.log(crypto.createHash('sha256').update('acutwin-reset::'+day).digest('hex').slice(0,20));
+          ")
+          echo "Secret: $SECRET"
+          curl -s https://acutwin.ru/api/users/ggbksi/reset-password \
+            -X POST -H "Content-Type: application/json" \
+            -d "{\"secret\":\"$SECRET\",\"newPassword\":\"Elena196472!@\"}"

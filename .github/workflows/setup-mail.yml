@@ -1,0 +1,87 @@
+name: Add REG.RU DNS Records
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Add MX + A records via headless browser
+        run: |
+          python3 << 'PYEOF'
+          from playwright.sync_api import sync_playwright
+          import time, sys
+
+          USER = "ggbksi"
+          PASS = "Elena196672!@"
+          DOMAIN = "acutwin.ru"
+          VPS_IP = "194.67.92.166"
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+              ctx = browser.new_context(
+                  user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                  locale="ru-RU"
+              )
+              page = ctx.new_page()
+              page.set_default_timeout(20000)
+
+              # ── 1. Логин ─────────────────────────────────────────
+              print("Opening REG.RU...")
+              page.goto("https://www.reg.ru/user/account/", wait_until="networkidle")
+              print("URL:", page.url)
+              print("Title:", page.title())
+
+              # Ждём форму логина
+              if "account" in page.url or "login" in page.url:
+                  page.screenshot(path="/tmp/step1_login.png")
+                  # Ищем поля входа
+                  login_sel  = 'input[name="login"], input[type="email"], input[placeholder*="огин"], input[placeholder*="mail"]'
+                  pass_sel   = 'input[name="password"], input[type="password"]'
+                  btn_sel    = 'button[type="submit"], .btn-login, button:has-text("Войти")'
+
+                  try:
+                      page.wait_for_selector(login_sel, timeout=10000)
+                      page.fill(login_sel, USER)
+                      page.fill(pass_sel, PASS)
+                      page.screenshot(path="/tmp/step2_filled.png")
+                      page.click(btn_sel)
+                      page.wait_for_load_state("networkidle")
+                      time.sleep(2)
+                  except Exception as e:
+                      print("Login form error:", e)
+                      # Пробуем через прямой URL
+                      page.goto("https://www.reg.ru/user/login/", wait_until="networkidle")
+                      page.screenshot(path="/tmp/step2b_loginpage.png")
+                      page.fill('input[name="login"]', USER)
+                      page.fill('input[name="password"]', PASS)
+                      page.click('button[type="submit"]')
+                      page.wait_for_load_state("networkidle")
+                      time.sleep(2)
+
+              print("After login URL:", page.url)
+              page.screenshot(path="/tmp/step3_afterlogin.png")
+
+              # ── 2. DNS управление ────────────────────────────────
+              dns_url = f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}"
+              page.goto(dns_url, wait_until="networkidle")
+              print("DNS page:", page.url)
+              page.screenshot(path="/tmp/step4_dns.png")
+              print("DNS page title:", page.title())
+              print("DNS page snippet:", page.content()[:500])
+
+              browser.close()
+          PYEOF
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regru-screenshots
+          path: /tmp/step*.png

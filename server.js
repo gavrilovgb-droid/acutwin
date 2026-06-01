@@ -62,6 +62,8 @@ const MIME = {
   '.ico':  'image/x-icon',
   '.mp4':  'video/mp4',
   '.webp': 'image/webp',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.pdf':  'application/pdf',
 };
 
 // ── Helpers ────────────────────────────────────────────────

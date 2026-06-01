@@ -1,14 +1,61 @@
 import time
 from playwright.sync_api import sync_playwright
 
-USER   = "gavrilovgb@gmail.com"
 PASS   = "Cbf-9ii-Mcn-ywB"
 DOMAIN = "acutwin.ru"
 VPS_IP = "194.67.92.166"
 
+# Пробуем все варианты логина по очереди
+LOGINS = ["gavrilovgb@gmail.com", "ggbksi@gmail.com", "ggbksi"]
+
 def ss(page, name):
     page.screenshot(path=f"/tmp/{name}.png")
     print(f"  [screenshot] {name}.png")
+
+def try_login(page, user, password):
+    print(f"  Trying login: {user}")
+    page.goto("https://www.reg.ru/", wait_until="domcontentloaded")
+    time.sleep(3)
+
+    # Закрываем куки
+    try:
+        page.locator("text=Хорошо").click(timeout=3000)
+        time.sleep(1)
+    except: pass
+
+    # Кликаем Войти
+    for sel in ["a:has-text('Войти')", "button:has-text('Войти')"]:
+        try:
+            if page.locator(sel).first.is_visible(timeout=3000):
+                page.locator(sel).first.click()
+                break
+        except: pass
+
+    # Ждём модал
+    try:
+        page.wait_for_selector('input[placeholder*="логин"]', timeout=8000)
+    except: pass
+
+    # Заполняем
+    for sel in ['input[placeholder*="логин"]', 'input[placeholder*="email"]',
+                'input[placeholder*="почта"]', 'input[autocomplete="username"]']:
+        try:
+            if page.locator(sel).first.is_visible(timeout=2000):
+                page.locator(sel).first.fill(user)
+                break
+        except: pass
+
+    try:
+        page.locator('input[type="password"]').first.fill(password)
+    except: pass
+
+    page.keyboard.press("Enter")
+    try:
+        page.wait_for_url("**/lk/**", timeout=10000)
+        return True
+    except:
+        time.sleep(3)
+        return "lk" in page.url
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -19,97 +66,21 @@ with sync_playwright() as p:
     page = ctx.new_page()
     page.set_default_timeout(30000)
 
-    # ── 1. Главная ────────────────────────────────────────────
-    print("=== Step 1: Load reg.ru ===")
-    page.goto("https://www.reg.ru/", wait_until="domcontentloaded")
-    time.sleep(3)
-    ss(page, "s1_main")
-    print("URL:", page.url)
+    # ── 1-3. Перебираем логины ────────────────────────────────
+    print("=== Steps 1-3: Try all logins ===")
+    logged_in = False
+    for i, user in enumerate(LOGINS):
+        result = try_login(page, user, PASS)
+        ss(page, f"s{i+1}_login_{user.split('@')[0]}")
+        print(f"  {user} → {'OK' if result else 'FAIL'} | URL: {page.url}")
+        if result:
+            logged_in = True
+            print(f"  SUCCESS with: {user}")
+            break
+        time.sleep(2)
 
-    # Закрываем куки-баннер
-    try:
-        page.locator("text=Хорошо").click(timeout=3000)
-        time.sleep(1)
-    except:
-        pass
-
-    # ── 2. Кликаем Войти ─────────────────────────────────────
-    print("=== Step 2: Click login ===")
-    clicked = False
-    for sel in [
-        "a:has-text('Войти')",
-        "button:has-text('Войти')",
-        "[data-testid='login']",
-        "a[href*='login']",
-        "a[href*='account']",
-    ]:
-        try:
-            loc = page.locator(sel).first
-            if loc.is_visible(timeout=3000):
-                loc.click()
-                clicked = True
-                print(f"  clicked: {sel}")
-                break
-        except:
-            pass
-
-    if not clicked:
-        print("  fallback: click by coordinates")
-        page.mouse.click(1113, 108)
-
-    page.wait_for_load_state("domcontentloaded")
-    time.sleep(3)
-    ss(page, "s2_after_click")
-    print("URL:", page.url)
-
-    # ── 3. Ждём модального окна и заполняем ──────────────────
-    print("=== Step 3: Wait for modal & fill ===")
-    # Модал содержит input с placeholder "Электронная почта или логин"
-    try:
-        page.wait_for_selector('input[placeholder*="логин"]', timeout=10000)
-        print("  modal appeared")
-    except:
-        print("  modal wait timeout — trying anyway")
-    ss(page, "s3_form")
-
-    # Заполняем логин в модале по placeholder
-    for sel in [
-        'input[placeholder*="логин"]',
-        'input[placeholder*="email"]',
-        'input[placeholder*="почта"]',
-        'input[autocomplete="username"]',
-    ]:
-        try:
-            loc = page.locator(sel).first
-            if loc.is_visible(timeout=3000):
-                loc.fill(USER)
-                print(f"  login: {sel}")
-                break
-        except:
-            pass
-
-    # Заполняем пароль
-    try:
-        page.locator('input[type="password"]').first.fill(PASS)
-        print("  password: filled")
-    except Exception as e:
-        print("  password error:", e)
-
-    ss(page, "s4_filled")
-
-    # Нажимаем Enter
-    page.keyboard.press("Enter")
-    print("  submitted via Enter")
-
-    # Ждём редиректа в ЛК
-    try:
-        page.wait_for_url("**/lk/**", timeout=20000)
-        print("  redirected to LK")
-    except:
-        page.wait_for_load_state("networkidle")
-    time.sleep(4)
-    ss(page, "s5_loggedin")
-    print("URL after login:", page.url)
+    ss(page, "s4_final_login_state")
+    print("Logged in:", logged_in, "| URL:", page.url)
 
     # ── 4. Переходим в управление DNS домена ─────────────────
     print("=== Step 4: Navigate to DNS ===")

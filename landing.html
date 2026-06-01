@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AcuTwin — цифровой атлас и база знаний по иглорефлексотерапии</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#080c14">
 <style>
   :root {
     --accent: #00F2FF;
@@ -346,6 +348,98 @@
   @media (max-width: 420px) {
     .pricing-grid { grid-template-columns: 1fr; }
   }
+
+  /* ── TRUST STRIP ── */
+  .trust-strip {
+    background: rgba(0,242,255,0.03);
+    border-top: 1px solid rgba(0,242,255,0.1);
+    border-bottom: 1px solid rgba(0,242,255,0.1);
+    padding: 20px 24px;
+  }
+  .trust-items {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; align-items: center;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    white-space: nowrap;
+  }
+  .trust-item-icon { font-size: 16px; }
+
+  /* ── BILLING TOGGLE ── */
+  .billing-toggle {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin-bottom: 36px;
+  }
+  .billing-label { font-size: 14px; color: var(--muted); }
+  .billing-label.active { color: var(--text); font-weight: 600; }
+  .toggle-track {
+    width: 48px; height: 26px; border-radius: 13px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    position: relative; cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-track.on { background: rgba(0,242,255,0.25); border-color: rgba(0,242,255,0.4); }
+  .toggle-thumb {
+    position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--muted); transition: all 0.2s;
+  }
+  .toggle-track.on .toggle-thumb { left: 25px; background: var(--accent); }
+  .billing-save {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+    background: rgba(0,242,255,0.12); color: var(--accent);
+    border: 1px solid rgba(0,242,255,0.25);
+  }
+
+  /* ── FAQ ── */
+  .faq-section { background: var(--bg2); }
+  .faq-list { margin-top: 40px; display: flex; flex-direction: column; gap: 2px; max-width: 760px; }
+  .faq-item {
+    border: 1px solid var(--glass-border); border-radius: 12px;
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .faq-item.open { border-color: rgba(0,242,255,0.25); }
+  .faq-q {
+    width: 100%; text-align: left; padding: 18px 20px;
+    background: var(--glass); border: none; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 15px; font-weight: 600; color: var(--text);
+    transition: background 0.2s;
+  }
+  .faq-q:hover { background: rgba(255,255,255,0.06); }
+  .faq-arrow {
+    font-size: 18px; color: var(--accent); flex-shrink: 0;
+    transition: transform 0.25s;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(45deg); }
+  .faq-a {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    font-size: 14px; color: var(--muted); line-height: 1.65;
+    padding: 0 20px; background: var(--bg);
+  }
+  .faq-item.open .faq-a { max-height: 200px; padding: 16px 20px; }
+
+  /* ── PWA INSTALL ── */
+  #pwa-banner {
+    display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 200; background: #0d1220; border: 1px solid rgba(0,242,255,0.3);
+    border-radius: 14px; padding: 14px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    align-items: center; gap: 14px;
+    font-size: 13px; white-space: nowrap;
+  }
+  #pwa-banner.visible { display: flex; }
+  #pwa-banner-install {
+    background: var(--accent); color: #000;
+    font-weight: 700; font-size: 12px; padding: 7px 16px;
+    border-radius: 8px; border: none; cursor: pointer;
+  }
+  #pwa-banner-close {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 18px; line-height: 1;
+  }
 </style>
 </head>
 <body>
@@ -358,9 +452,9 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">Профессиональный инструмент · Работает в браузере</div>
-  <h1>Цифровой атлас и база знаний по иглорефлексотерапии</h1>
-  <p class="hero-sub">Диагностика, рецепты точек, атлас меридианов и видеоматериалы — всё в одном приложении. На ПК и телефоне.</p>
+  <div class="hero-badge">Для практикующих рефлексотерапевтов</div>
+  <h1>Подбирайте рецепт точек прямо на приёме — за 30 секунд</h1>
+  <p class="hero-sub">Забудьте про бумажные атласы. Укажите симптомы пациента — получите готовый рецепт акупунктуры с точками, меридианами и техникой введения.</p>
   <div class="hero-btns">
     <a href="/login.html" class="btn-primary">Попробовать бесплатно</a>
     <a href="#videos" class="btn-outline">Смотреть демо</a>
@@ -385,6 +479,10 @@
     <div class="stat-item">
       <div class="stat-num">352</div>
       <div class="stat-label">синдрома ТКМ</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">143+</div>
+      <div class="stat-label">специалиста уже работают</div>
     </div>
   </div>
 </section>
@@ -503,12 +601,32 @@
   </div>
 </section>
 
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+  <div class="trust-items">
+    <div class="trust-item"><span class="trust-item-icon">🔒</span> Данные хранятся на серверах в России</div>
+    <div class="trust-item"><span class="trust-item-icon">⚖️</span> Соответствие ФЗ-152 о персональных данных</div>
+    <div class="trust-item"><span class="trust-item-icon">🔐</span> Шифрование HTTPS</div>
+    <div class="trust-item"><span class="trust-item-icon">🚫</span> Данные не передаются третьим лицам</div>
+  </div>
+</div>
+
 <!-- PRICING -->
 <section id="pricing">
   <div class="container">
     <div class="section-tag">Тарифы</div>
     <h2 class="section-title">Прозрачные цены</h2>
     <p class="section-sub">Начните бесплатно. Платите только когда нужны расширенные возможности.</p>
+
+    <div class="billing-toggle" style="margin-top:32px">
+      <span class="billing-label active" id="lbl-monthly">Помесячно</span>
+      <div class="toggle-track" id="billing-toggle" onclick="toggleBilling()">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="billing-label" id="lbl-annual">За год</span>
+      <span class="billing-save">−20%</span>
+    </div>
+
     <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
 
       <div class="price-card">
@@ -525,10 +643,10 @@
         <a href="/login.html" class="price-cta">Начать бесплатно</a>
       </div>
 
-      <div class="price-card">
+      <div class="price-card" data-monthly="990" data-annual="790">
         <div class="price-plan">Практик</div>
-        <div class="price-amount">990 <span>₽</span></div>
-        <div class="price-period">в месяц</div>
+        <div class="price-amount price-val">990 <span>₽</span></div>
+        <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
           <li>1 врач</li>
           <li>Без лимита записей</li>
@@ -540,11 +658,11 @@
         <a href="/login.html" class="price-cta">Подключить</a>
       </div>
 
-      <div class="price-card popular">
+      <div class="price-card popular" data-monthly="3 900" data-annual="3 100">
         <div class="price-badge">Рекомендуемый</div>
         <div class="price-plan">Клиника S</div>
-        <div class="price-amount">3 900 <span>₽</span></div>
-        <div class="price-period">в месяц</div>
+        <div class="price-amount price-val">3 900 <span>₽</span></div>
+        <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
           <li>До 3 врачей</li>
           <li>Без лимита записей</li>
@@ -554,10 +672,10 @@
         <a href="/login.html" class="price-cta">Подключить</a>
       </div>
 
-      <div class="price-card">
+      <div class="price-card" data-monthly="5 990" data-annual="4 790">
         <div class="price-plan">Клиника M</div>
-        <div class="price-amount">5 990 <span>₽</span></div>
-        <div class="price-period">в месяц</div>
+        <div class="price-amount price-val">5 990 <span>₽</span></div>
+        <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
           <li>До 5 врачей</li>
           <li>Без лимита записей</li>
@@ -567,10 +685,10 @@
         <a href="/login.html" class="price-cta">Подключить</a>
       </div>
 
-      <div class="price-card">
+      <div class="price-card" data-monthly="7 900" data-annual="6 300">
         <div class="price-plan">Клиника Pro</div>
-        <div class="price-amount">7 900 <span>₽</span></div>
-        <div class="price-period">в месяц</div>
+        <div class="price-amount price-val">7 900 <span>₽</span></div>
+        <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
           <li>Неограниченно врачей</li>
           <li>Без лимита записей</li>
@@ -578,6 +696,57 @@
           <li>Панель руководителя</li>
         </ul>
         <a href="/login.html" class="price-cta">Обсудить</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="section-tag">Вопросы и ответы</div>
+    <h2 class="section-title">Отвечаем на главные вопросы</h2>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Где хранятся данные пациентов?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">На серверах в России. Мы работаем в соответствии с ФЗ-152 «О персональных данных». Данные зашифрованы при передаче (HTTPS) и не передаются третьим лицам ни при каких условиях.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Работает ли AcuTwin на телефоне и планшете?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">Да, полностью. Интерфейс адаптирован под любые экраны — врачи используют его прямо во время приёма на телефоне или планшете. Приложение можно установить на экран как PWA — работает как нативное без App Store.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Можно ли работать без интернета?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">Атлас точек и тактики лечения доступны офлайн после первой загрузки. Карточки пациентов синхронизируются автоматически при восстановлении соединения.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Как перенести историю пациентов из другой программы?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">Напишите нам на info@acutwin.ru — поможем с импортом данных. Либо создайте карточки вручную: это занимает 2–3 минуты на пациента при первом визите.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Как отменить подписку?
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">В любой момент, без штрафов и периодов уведомления. Напишите на info@acutwin.ru — отменим в течение дня. Все данные сохраняются 90 дней после отмены на случай возобновления.</div>
       </div>
 
     </div>
@@ -605,14 +774,76 @@
         <span class="footer-contact-icon">📞</span>
         +7 (903) 792-60-74
       </a>
-      <a href="mailto:gavrilovgb@gmail.com" class="footer-contact">
+      <a href="mailto:info@acutwin.ru" class="footer-contact">
         <span class="footer-contact-icon">✉</span>
-        gavrilovgb@gmail.com
+        info@acutwin.ru
       </a>
     </div>
     <div class="footer-copy">© 2026 AcuTwin</div>
   </div>
 </footer>
+
+<!-- PWA install banner -->
+<div id="pwa-banner">
+  <span>📱 Установите AcuTwin на экран</span>
+  <button id="pwa-banner-install" onclick="installPwa()">Установить</button>
+  <button id="pwa-banner-close" onclick="document.getElementById('pwa-banner').classList.remove('visible')" title="Закрыть">×</button>
+</div>
+
+<script>
+  // ── Billing toggle ────────────────────────────────────────
+  let isAnnual = false;
+
+  function toggleBilling() {
+    isAnnual = !isAnnual;
+    const track = document.getElementById('billing-toggle');
+    track.classList.toggle('on', isAnnual);
+    document.getElementById('lbl-monthly').classList.toggle('active', !isAnnual);
+    document.getElementById('lbl-annual').classList.toggle('active', isAnnual);
+
+    document.querySelectorAll('.price-card[data-monthly]').forEach(card => {
+      const price  = isAnnual ? card.dataset.annual  : card.dataset.monthly;
+      const period = isAnnual ? 'в месяц · при оплате за год' : 'в месяц';
+      card.querySelector('.price-val').innerHTML  = price + ' <span>₽</span>';
+      card.querySelector('.price-period-val').textContent = period;
+    });
+  }
+
+  // ── FAQ accordion ────────────────────────────────────────
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // ── PWA install ──────────────────────────────────────────
+  let deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('pwa-banner').classList.add('visible');
+  });
+
+  function installPwa() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('pwa-banner').classList.remove('visible');
+    });
+  }
+
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('pwa-banner').classList.remove('visible');
+  });
+
+  // ── Service Worker ───────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
 
 </body>
 </html>

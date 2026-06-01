@@ -1,8 +1,8 @@
 import time
 from playwright.sync_api import sync_playwright
 
-USER   = "ggbksi"
-PASS   = "Elena196672!@"
+USER   = "gavrilovgb@gmail.com"
+PASS   = "Cbf-9ii-Mcn-ywB"
 DOMAIN = "acutwin.ru"
 VPS_IP = "194.67.92.166"
 
@@ -111,29 +111,47 @@ with sync_playwright() as p:
     ss(page, "s5_loggedin")
     print("URL after login:", page.url)
 
-    # ── 4. Личный кабинет — ищем домены ──────────────────────
-    print("=== Step 4: Find domains in LK ===")
-    for lk_url in [
-        "https://www.reg.ru/lk/",
-        "https://www.reg.ru/lk/domains/",
+    # ── 4. Переходим в управление DNS домена ─────────────────
+    print("=== Step 4: Navigate to DNS ===")
+    logged_in = "lk" in page.url or "reg.ru" in page.url
+
+    if not logged_in:
+        print("  ERROR: not logged in, check screenshots")
+        browser.close()
+        exit(1)
+
+    # Пробуем найти DNS-страницу
+    dns_found = False
+    for dns_url in [
         f"https://www.reg.ru/lk/domains/{DOMAIN}/dns/",
         f"https://www.reg.ru/domain/new/service_list/?zone_name={DOMAIN}",
     ]:
         try:
-            page.goto(lk_url, wait_until="domcontentloaded", timeout=15000)
+            page.goto(dns_url, wait_until="domcontentloaded", timeout=15000)
             time.sleep(3)
-            tag = lk_url.rstrip("/").split("/")[-1] or "root"
+            tag = dns_url.rstrip("/").split("/")[-1] or "dns"
             ss(page, f"s6_{tag}")
-            print(f"  URL: {page.url}")
-            print(f"  Title: {page.title()[:80]}")
-            # Ищем ссылки на DNS в HTML
-            dns_links = page.locator("a[href*='dns'], a[href*='DNS']").all()
-            if dns_links:
-                print(f"  Found {len(dns_links)} DNS links:")
-                for lnk in dns_links[:5]:
-                    print(f"    {lnk.get_attribute('href')} | {lnk.text_content()[:40]}")
+            print(f"  URL: {page.url} | {page.title()[:60]}")
+            if "dns" in page.url.lower() or "DNS" in page.content():
+                dns_found = True
+                break
         except Exception as e:
             print(f"  Error: {e}")
+
+    if not dns_found:
+        print("  DNS page not found via direct URL, trying LK navigation...")
+        page.goto("https://www.reg.ru/lk/domains/", wait_until="domcontentloaded")
+        time.sleep(3)
+        ss(page, "s7_lk_domains")
+        print(f"  LK domains: {page.url} | {page.title()[:60]}")
+        # Ищем ссылку на домен
+        try:
+            page.get_by_text(DOMAIN).first.click()
+            time.sleep(2)
+            ss(page, "s8_domain_page")
+            print(f"  Domain page: {page.url}")
+        except Exception as e:
+            print(f"  Domain link error: {e}")
 
     print("=== Done - check screenshots ===")
     browser.close()

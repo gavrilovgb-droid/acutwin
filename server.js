@@ -122,8 +122,7 @@ async function handleAPI(method, endpoint, req, res) {
       return json(res, 400, { error: 'Некорректные данные' });
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
     try {
-      db.prepare('INSERT INTO trial_requests (method, contact, ip) VALUES (?, ?, ?)')
-        .run(contactMethod, contact.trim(), ip);
+      db.addTrialRequest(contactMethod, contact.trim(), ip);
       return json(res, 200, { ok: true });
     } catch (e) {
       if (e.message && e.message.includes('UNIQUE')) return json(res, 409, { error: 'Дубликат' });

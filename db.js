@@ -208,3 +208,9 @@ module.exports.findTenantByDoctor = username => {
   return _getTenants.all().map(parseTenant)
     .find(t => (t.doctorLogins||[]).includes(username)) || null;
 };
+
+// ── TRIAL REQUESTS ─────────────────────────────────────────
+const _addTrialRequest = db.prepare(
+  "INSERT INTO trial_requests (method, contact, ip) VALUES (?, ?, ?)"
+);
+module.exports.addTrialRequest = (method, contact, ip) => _addTrialRequest.run(method, contact, ip);

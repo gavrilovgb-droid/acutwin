@@ -25,6 +25,12 @@ jobs:
             echo "App dir: $APP"
             cd "$APP"
 
+            # Write env vars (not in git)
+            cat > .env << 'ENVEOF'
+TELEGRAM_BOT_TOKEN=8739849295:AAE_wt4r6Bx2_lA6JwALMNR_9kyinCBB2x8
+TELEGRAM_CHAT_ID=135280221
+ENVEOF
+
             # Git pull (принудительно, сохраняем data/)
             git fetch origin master
             git reset --hard origin/master

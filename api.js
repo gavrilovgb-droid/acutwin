@@ -22,8 +22,11 @@ async function req(method, url, body) {
   const res = await fetch(BASE + url, opts);
   if (res.status === 401) {
     clearToken();
-    if (!window.location.pathname.endsWith('login.html')) window.location.href = 'login.html';
-    return null;
+    // На странице логина — не редиректим, возвращаем ответ чтобы показать реальную ошибку
+    if (!window.location.pathname.endsWith('login.html')) {
+      window.location.href = 'login.html';
+      return null;
+    }
   }
   const text = await res.text();
   try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }

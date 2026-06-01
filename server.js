@@ -1,9 +1,10 @@
-const http   = require('http');
-const fs     = require('fs');
-const path   = require('path');
-const crypto = require('crypto');
-const jwt    = require('jsonwebtoken');
-const db     = require('./db');
+const http    = require('http');
+const fs      = require('fs');
+const path    = require('path');
+const crypto  = require('crypto');
+const jwt     = require('jsonwebtoken');
+const bcrypt  = require('bcryptjs');
+const db      = require('./db');
 
 const ROOT    = __dirname;
 const PORT    = process.env.PORT || 5500;
@@ -69,10 +70,18 @@ function requireAdmin(req, res) {
   return user;
 }
 
-// SHA-256 + соль (должна совпадать с auth.js на клиенте)
-function hashPwd(password, hostname) {
-  const salt = 'acutwin::v1::' + (hostname || 'localhost');
-  return crypto.createHash('sha256').update(salt + password).digest('hex');
+// bcrypt (новые пароли) — cost 12
+async function hashPwd(password) {
+  return bcrypt.hash(password, 12);
+}
+async function checkPwd(password, storedHash) {
+  // Поддержка старых SHA-256 хешей при миграции
+  if (storedHash.startsWith('$2')) {
+    return bcrypt.compare(password, storedHash);
+  }
+  // Legacy SHA-256 + hostname salt
+  const legacyHash = (hostname) => crypto.createHash('sha256').update('acutwin::v1::' + hostname + password).digest('hex');
+  return storedHash === legacyHash('localhost') || storedHash === legacyHash('acutwin.ru');
 }
 
 // ── Брутфорс-защита ────────────────────────────────────────
@@ -91,6 +100,17 @@ function recordFail(username) {
 }
 function clearFail(username) { delete _attempts[username]; }
 
+// ── Rate limiting для записей (max 20 в минуту на пользователя) ───
+const _recRateMap = {};
+function checkRecordRate(username) {
+  const now = Date.now();
+  const r = _recRateMap[username] || { count: 0, window: now };
+  if (now - r.window > 60_000) { r.count = 0; r.window = now; }
+  r.count++;
+  _recRateMap[username] = r;
+  return r.count > 20;
+}
+
 // ── API Router ─────────────────────────────────────────────
 async function handleAPI(method, endpoint, req, res) {
 
@@ -105,9 +125,15 @@ async function handleAPI(method, endpoint, req, res) {
     const user = db.getUser(username.trim());
     if (!user) { recordFail(username.trim().toLowerCase()); return json(res, 401, { error: 'Пользователь не найден' }); }
 
-    const hash = hashPwd(password, hostname || 'localhost');
-    if (hash !== user.hash) { recordFail(username.trim().toLowerCase()); return json(res, 401, { error: 'Неверный пароль' }); }
+    const ok = await checkPwd(password, user.hash);
+    if (!ok) { recordFail(username.trim().toLowerCase()); return json(res, 401, { error: 'Неверный пароль' }); }
     clearFail(username.trim().toLowerCase());
+
+    // Авто-миграция SHA-256 → bcrypt при первом успешном логине
+    if (!user.hash.startsWith('$2')) {
+      const newHash = await hashPwd(password);
+      db.updateUserHash(user.username, newHash);
+    }
 
     // Проверка арендатора
     const tenant = db.findTenantByDoctor(user.username);
@@ -125,6 +151,11 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { ok: true, token, user: { username: user.username, name: user.name, role: user.role } });
   }
 
+  // GET /api/status — публичный, без авторизации
+  if (method === 'GET' && endpoint === '/api/status') {
+    return json(res, 200, { hasUsers: db.getUsers().length > 0 });
+  }
+
   // GET /api/me
   if (method === 'GET' && endpoint === '/api/me') {
     const user = requireAuth(req, res); if (!user) return;
@@ -136,15 +167,20 @@ async function handleAPI(method, endpoint, req, res) {
   // GET /api/records
   if (method === 'GET' && endpoint === '/api/records') {
     const user = requireAuth(req, res); if (!user) return;
-    const records = user.role === 'admin' || user.role === 'boss'
-      ? db.getRecords()
-      : db.getMyRecords(user.username);
-    return json(res, 200, records);
+    if (user.role === 'admin') return json(res, 200, db.getRecords());
+    if (user.role === 'boss') {
+      const tenant = db.findTenantByDoctor(user.username);
+      return json(res, 200, tenant
+        ? db.getRecordsByLogins(tenant.doctorLogins)
+        : []);
+    }
+    return json(res, 200, db.getMyRecords(user.username));
   }
 
   // POST /api/records
   if (method === 'POST' && endpoint === '/api/records') {
     const user = requireAuth(req, res); if (!user) return;
+    if (checkRecordRate(user.username)) return json(res, 429, { error: 'Слишком много запросов. Подождите минуту.' });
     const body = await readBody(req);
     const rec = {
       id:         body.id || crypto.randomUUID(),
@@ -159,8 +195,14 @@ async function handleAPI(method, endpoint, req, res) {
       notes:      String(body.notes || '').slice(0,1000),
       points:     Array.isArray(body.points) ? body.points : [],
       meridians:  Array.isArray(body.meridians) ? body.meridians : [],
-      type:       String(body.type || 'Акупунктура').slice(0,50),
-      outcome:    String(body.outcome || 'neutral').slice(0,20),
+      type:           String(body.type || 'Акупунктура').slice(0,50),
+      outcome:        String(body.outcome || 'neutral').slice(0,20),
+      nrs_before:     body.nrs_before     != null ? Number(body.nrs_before)     : null,
+      nrs_after:      body.nrs_after      != null ? Number(body.nrs_after)      : null,
+      treatment_type: body.treatment_type ? String(body.treatment_type).slice(0,50) : null,
+      stimulation:    body.stimulation    ? String(body.stimulation).slice(0,50)    : null,
+      exposure:       body.exposure       != null ? Number(body.exposure)       : null,
+      deqi:           body.deqi ? 1 : 0,
     };
     db.addRecord(rec);
     return json(res, 201, { ok: true, id: rec.id });
@@ -172,7 +214,27 @@ async function handleAPI(method, endpoint, req, res) {
     const id = endpoint.split('/')[3];
     const { outcome } = await readBody(req);
     if (!['positive','neutral','negative'].includes(outcome)) return json(res, 400, { error: 'Invalid outcome' });
+    if (user.role !== 'admin' && user.role !== 'boss') {
+      const rec = db.getRecord(id);
+      if (!rec) return json(res, 404, { error: 'Запись не найдена' });
+      if (rec.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    }
     db.updateOutcome(id, outcome);
+    return json(res, 200, { ok: true });
+  }
+
+  // PATCH /api/records/:id/status
+  if (method === 'PATCH' && endpoint.match(/^\/api\/records\/[^/]+\/status$/)) {
+    const user = requireAuth(req, res); if (!user) return;
+    const id = endpoint.split('/')[3];
+    const { status } = await readBody(req);
+    if (!['started','active','completed'].includes(status)) return json(res, 400, { error: 'Invalid status' });
+    if (user.role !== 'admin' && user.role !== 'boss') {
+      const rec = db.getRecord(id);
+      if (!rec) return json(res, 404, { error: 'Запись не найдена' });
+      if (rec.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    }
+    db.updateStatus(id, status);
     return json(res, 200, { ok: true });
   }
 
@@ -180,6 +242,11 @@ async function handleAPI(method, endpoint, req, res) {
   if (method === 'DELETE' && endpoint.startsWith('/api/records/')) {
     const user = requireAuth(req, res); if (!user) return;
     const id = endpoint.slice('/api/records/'.length);
+    if (user.role !== 'admin' && user.role !== 'boss') {
+      const rec = db.getRecord(id);
+      if (!rec) return json(res, 404, { error: 'Запись не найдена' });
+      if (rec.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    }
     db.deleteRecord(id);
     return json(res, 200, { ok: true });
   }
@@ -188,24 +255,31 @@ async function handleAPI(method, endpoint, req, res) {
 
   // GET /api/users
   if (method === 'GET' && endpoint === '/api/users') {
-    const users = db.getUsers();
-    // Если БД пустая — разрешаем без токена (первый запуск)
-    if (users.length > 0) {
-      const user = requireAdmin(req, res); if (!user) return;
+    const allUsers = db.getUsers();
+    // Первый запуск — разрешаем без токена
+    if (allUsers.length === 0) return json(res, 200, allUsers);
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role === 'admin') return json(res, 200, allUsers);
+    if (user.role === 'boss') {
+      const tenant = db.findTenantByDoctor(user.username);
+      if (tenant) {
+        const logins = tenant.doctorLogins;
+        return json(res, 200, allUsers.filter(u => logins.includes(u.username)));
+      }
+      return json(res, 200, allUsers);
     }
-    return json(res, 200, users);
+    json(res, 403, { error: 'Недостаточно прав' });
   }
 
   // POST /api/users
   if (method === 'POST' && endpoint === '/api/users') {
-    const { username, name, password, role, hostname } = await readBody(req);
+    const { username, name, password, role } = await readBody(req);
     if (!username || !name || !password) return json(res, 400, { error: 'Заполните все поля' });
-    // Разрешаем без токена только если БД пустая (первый запуск / seed)
     const existingUsers = db.getUsers();
     if (existingUsers.length > 0) {
       const user = requireAdmin(req, res); if (!user) return;
     }
-    const hash = hashPwd(password, hostname || 'localhost');
+    const hash = await hashPwd(password);
     const result = db.addUser(username, name, hash, role || 'doctor');
     return json(res, result.ok ? 201 : 409, result);
   }
@@ -214,8 +288,24 @@ async function handleAPI(method, endpoint, req, res) {
   if (method === 'DELETE' && endpoint.startsWith('/api/users/')) {
     const user = requireAdmin(req, res); if (!user) return;
     const username = decodeURIComponent(endpoint.slice('/api/users/'.length));
+    if (username === user.username) return json(res, 400, { error: 'Нельзя удалить собственный аккаунт' });
     db.deleteUser(username);
     return json(res, 200, { ok: true });
+  }
+
+  // POST /api/users/:username/reset-password — аварийный сброс пароля (суточный токен)
+  if (method === 'POST' && endpoint.match(/^\/api\/users\/[^/]+\/reset-password$/)) {
+    const username = decodeURIComponent(endpoint.slice('/api/users/'.length, -'/reset-password'.length));
+    const { secret, newPassword } = await readBody(req);
+    const day = new Date().toISOString().slice(0, 10);
+    const expected = crypto.createHash('sha256').update('acutwin-reset::' + day).digest('hex').slice(0, 20);
+    if (secret !== expected) return json(res, 403, { error: 'Неверный секрет' });
+    if (!newPassword || newPassword.length < 6) return json(res, 400, { error: 'Пароль минимум 6 символов' });
+    const target = db.getUser(username.trim());
+    if (!target) return json(res, 404, { error: 'Пользователь не найден' });
+    const hash = await hashPwd(newPassword);
+    db.updateUserHash(username.trim(), hash);
+    return json(res, 200, { ok: true, message: 'Пароль изменён' });
   }
 
   // ── Clinic ───────────────────────────────────────────────
@@ -290,13 +380,19 @@ http.createServer(async (req, res) => {
 
   // CORS preflight
   if (method === 'OPTIONS') {
-    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Authorization,Content-Type', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE' });
+    const origin = req.headers['origin'] || '';
+    const ALLOWED_ORIGINS = ['https://acutwin.ru','https://www.acutwin.ru'];
+    const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+    res.writeHead(204, { 'Access-Control-Allow-Origin': corsOrigin, 'Access-Control-Allow-Headers': 'Authorization,Content-Type', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,PATCH', 'Access-Control-Allow-Credentials': 'true' });
     return res.end();
   }
 
   // API routes
   if (url.startsWith('/api/')) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const _origin = req.headers['origin'] || '';
+    const _ALLOWED = ['https://acutwin.ru','https://www.acutwin.ru'];
+    res.setHeader('Access-Control-Allow-Origin', _ALLOWED.includes(_origin) ? _origin : _ALLOWED[0]);
+    res.setHeader('Vary', 'Origin');
     try { await handleAPI(method, url, req, res); }
     catch (e) { json(res, 500, { error: e.message }); }
     return;
@@ -357,10 +453,17 @@ http.createServer(async (req, res) => {
     return res.end('Forbidden');
   }
 
+  // Protect data JSON files — require auth
+  if (url.startsWith('/data/') && path.extname(fp) === '.json' && url !== '/data/diseases-index.json') {
+    const _u = verifyToken(req);
+    if (!_u) { res.writeHead(401); return res.end('Unauthorized'); }
+  }
+
   try {
     const data = fs.readFileSync(fp);
     const ext  = path.extname(fp).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const cc = ext === '.html' ? 'no-store, no-cache' : 'no-cache';
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': cc });
     res.end(data);
   } catch {
     res.writeHead(404);

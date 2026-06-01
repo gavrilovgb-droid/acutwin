@@ -859,7 +859,7 @@
     <div id="modal-form">
       <div class="modal-title">Хочу попробовать</div>
       <div class="modal-sub">Выберите удобный способ связи — вышлем данные для входа</div>
-      <div class="method-grid">
+      <div class="method-grid" style="grid-template-columns:1fr 1fr 1fr">
         <button class="method-btn" onclick="selectMethod('telegram')" id="btn-telegram">
           <span class="method-icon">✈️</span>
           <span class="method-label">Telegram</span>
@@ -871,10 +871,6 @@
         <button class="method-btn" onclick="selectMethod('phone')" id="btn-phone">
           <span class="method-icon">📞</span>
           <span class="method-label">Телефон</span>
-        </button>
-        <button class="method-btn" onclick="selectMethod('card')" id="btn-card">
-          <span class="method-icon">💳</span>
-          <span class="method-label">Карта</span>
         </button>
       </div>
       <div class="contact-wrap" id="contact-wrap" style="display:none">
@@ -957,7 +953,6 @@
     telegram: { placeholder: '@username',             hint: 'Ваш username в Telegram' },
     max:      { placeholder: '@username или ID',      hint: 'Ваш username или ID в MAX' },
     phone:    { placeholder: '+7 900 000-00-00',      hint: 'Позвоним или отправим SMS', type: 'tel' },
-    card:     { placeholder: 'your@email.com',        hint: 'Email — пришлём ссылку для идентификации', type: 'email' },
   };
   let trialMethod = null;
 

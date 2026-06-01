@@ -317,22 +317,42 @@ function renderStatus(status) {
     icon.textContent      = 'flag';
   }
 }
-renderStatus(last.status || '');
+const COURSE_AUTO_DAYS = 10;
+const _courseToken = sessionStorage.getItem('acutwin_token');
+
+async function loadCourseStatus() {
+  let saved = '';
+  try {
+    const r = await fetch(`/api/patient-status/${encodeURIComponent(patientName)}`, {
+      headers: { 'Authorization': 'Bearer ' + _courseToken }
+    });
+    if (r.ok) saved = (await r.json()).status || '';
+  } catch {}
+  const daysSinceLast = Math.floor((Date.now() - new Date(last.date).getTime()) / 86400000);
+  const effective = saved || (daysSinceLast >= COURSE_AUTO_DAYS ? 'completed' : '');
+  renderStatus(effective);
+}
+await loadCourseStatus();
 
 window.toggleStatusDrop = (e) => {
   e.stopPropagation();
-  const drop = document.getElementById('p-status-drop');
-  drop.classList.toggle('hidden');
+  document.getElementById('p-status-drop').classList.toggle('hidden');
 };
 document.addEventListener('click', () => {
   document.getElementById('p-status-drop')?.classList.add('hidden');
 });
 
 window.setPatientStatus = (status) => {
-  // Статус — только локально в UI (нет поля в БД)
-  recs.forEach(r => { r.status = status || undefined; });
-  renderStatus(status);
-  document.getElementById('p-status-drop').classList.add('hidden');
+  fetch(`/api/patient-status/${encodeURIComponent(patientName)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _courseToken },
+    body: JSON.stringify({ status })
+  }).then(r => {
+    if (r.ok) {
+      renderStatus(status);
+      document.getElementById('p-status-drop').classList.add('hidden');
+    }
+  });
 };
 
 // ── Прогресс-график (SVG) ────────────────────────────────
@@ -503,6 +523,39 @@ window.setOutcomeDot = (id, outcome) => {
   });
 };
 
+window.toggleVisitStatusDrop = (id) => {
+  document.querySelectorAll('.visit-status-drop').forEach(d => {
+    if (d.dataset.id !== id) d.style.display = 'none';
+  });
+  const drop = document.querySelector(`.visit-status-drop[data-id="${id}"]`);
+  if (drop) drop.style.display = drop.style.display === 'none' ? 'block' : 'none';
+};
+document.addEventListener('click', () => {
+  document.querySelectorAll('.visit-status-drop').forEach(d => d.style.display = 'none');
+});
+
+window.setVisitStatus = (id, status) => {
+  fetch(`/api/records/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _courseToken },
+    body: JSON.stringify({ status: status || 'started' })
+  }).then(r => {
+    if (r.ok) {
+      const rec = recs.find(r => r.id === id);
+      if (rec) rec.status = status;
+      const s = STATUS_CFG[status];
+      const btn = document.querySelector(`.visit-status-btn[data-id="${id}"]`);
+      if (btn) {
+        btn.style.background  = s ? s.color + '18' : '#41475518';
+        btn.style.borderColor = s ? s.color + '55' : '#41475555';
+        btn.style.color       = s ? s.color : '#8b90a0';
+        btn.innerHTML         = `${s ? s.label : 'Статус'}<span style="opacity:.6;font-size:8px">▾</span>`;
+      }
+      document.querySelector(`.visit-status-drop[data-id="${id}"]`).style.display = 'none';
+    }
+  });
+};
+
 function renderChart() {
   const sorted = [...recs].reverse();
   if (!sorted.length) { document.getElementById('p-chart').innerHTML = '<p style="color:#8b90a0;font-size:.8rem">Нет данных</p>'; return; }
@@ -554,7 +607,20 @@ tl.innerHTML = recs.map((r, idx) => {
           <div class="flex items-center gap-2 flex-wrap mb-0.5">
             <span class="font-semibold text-[#e2e2e2]">${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</span>
             ${r.type ? `<span class="text-xs text-[#8b90a0]">${esc(r.type)}</span>` : ''}
-            ${status ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${status.color}18;border:1px solid ${status.color}55;color:${status.color}">${status.label}</span>` : ''}
+            <div class="relative visit-status-wrap" data-id="${r.id}" style="display:inline-flex;position:relative">
+              <button onclick="event.stopPropagation();toggleVisitStatusDrop('${r.id}')"
+                      class="visit-status-btn" data-id="${r.id}"
+                      style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:3px;background:${status ? status.color+'18' : '#41475518'};border:1px solid ${status ? status.color+'55' : '#41475555'};color:${status ? status.color : '#8b90a0'}">
+                ${status ? status.label : 'Статус'}<span style="opacity:.6;font-size:8px">▾</span>
+              </button>
+              <div class="visit-status-drop" data-id="${r.id}"
+                   style="display:none;position:absolute;left:0;top:calc(100% + 3px);z-index:60;background:#1f1f1f;border:1px solid #414755;border-radius:10px;padding:4px 0;min-width:130px;box-shadow:0 4px 20px rgba(0,0,0,.6)">
+                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','')"       style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#8b90a0;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#ffffff10'" onmouseout="this.style.background='none'">— Не указан</button>
+                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','started')"   style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#0A84FF;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#0A84FF18'" onmouseout="this.style.background='none'">● Начат</button>
+                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','active')"    style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#FFD60A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#FFD60A18'" onmouseout="this.style.background='none'">● В процессе</button>
+                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','completed')" style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#5AC85A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#5AC85A18'" onmouseout="this.style.background='none'">● Завершён</button>
+              </div>
+            </div>
             ${(r.nrs_before != null || r.nrs_after != null) ? `<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:#FF9F0A18;border:1px solid #FF9F0A44;color:#FF9F0A;font-family:monospace">NRS ${r.nrs_before ?? '?'}→${r.nrs_after ?? '?'}</span>` : ''}
             ${r.stimulation ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#FFD60A10;border:1px solid #FFD60A33;color:#FFD60A">${esc(r.stimulation)}</span>` : ''}
             ${r.treatment_type ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#BF5AF210;border:1px solid #BF5AF230;color:#BF5AF2">${esc(r.treatment_type)}</span>` : ''}

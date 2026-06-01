@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AcuTwin — цифровой атлас и база знаний по иглорефлексотерапии</title>
+<style>
+  :root {
+    --accent: #00F2FF;
+    --accent2: #7B5CF6;
+    --bg: #080c14;
+    --bg2: #0d1220;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px;
+    background: rgba(8,12,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-logo { font-size: 22px; font-weight: 900; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; }
+  .footer-logo { font-size: 20px; font-weight: 900; color: var(--accent); text-decoration: none; }
+  .nav-logo span { color: #fff; }
+  .nav-cta {
+    background: var(--accent); color: #000;
+    font-weight: 700; font-size: 13px;
+    padding: 9px 22px; border-radius: 8px;
+    text-decoration: none; transition: opacity 0.2s;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 50% 0%, rgba(0,242,255,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 80% 80%, rgba(123,92,246,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(0,242,255,0.1);
+    border: 1px solid rgba(0,242,255,0.25);
+    color: var(--accent);
+    font-size: 12px; font-weight: 600;
+    padding: 5px 14px; border-radius: 20px;
+    letter-spacing: 0.5px; margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 900;
+    line-height: 1.15;
+    max-width: 820px;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: clamp(15px, 2vw, 19px);
+    color: var(--muted);
+    max-width: 560px;
+    margin-bottom: 44px;
+  }
+  .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .btn-primary {
+    background: var(--accent); color: #000;
+    font-weight: 700; font-size: 15px;
+    padding: 14px 32px; border-radius: 10px;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 0 24px rgba(0,242,255,0.3);
+  }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text); font-size: 15px;
+    padding: 14px 32px; border-radius: 10px;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .hero-stats {
+    display: flex; gap: 48px; flex-wrap: wrap; justify-content: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--glass-border);
+    width: 100%; max-width: 600px;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 900; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SECTIONS ── */
+  section { padding: 90px 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .section-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(26px, 4vw, 40px);
+    font-weight: 800; line-height: 1.2;
+    margin-bottom: 14px;
+  }
+  .section-sub { font-size: 16px; color: var(--muted); max-width: 520px; text-wrap: balance; }
+  .hero h1 { text-wrap: balance; }
+  .hero-sub { text-wrap: balance; }
+  .cta-strip p { text-wrap: balance; }
+
+  /* ── VIDEOS ── */
+  .videos-section { background: var(--bg2); }
+  .videos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+    gap: 32px;
+    margin-top: 48px;
+  }
+  .video-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .video-card:hover { border-color: rgba(0,242,255,0.3); }
+  .video-label {
+    padding: 16px 20px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .video-label-icon {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    flex-shrink: 0;
+  }
+  .video-label-text { font-size: 13px; font-weight: 600; color: var(--text); }
+  .video-label-sub { font-size: 11px; color: var(--muted); margin-left: auto; }
+  .video-embed {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    overflow: hidden;
+  }
+  .video-embed iframe,
+  .video-embed video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: none;
+  }
+  .video-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    background: #000;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .play-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(0,242,255,0.12);
+    border: 1px solid rgba(0,242,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--accent);
+  }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 48px;
+  }
+  .feature-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 28px 24px;
+    transition: all 0.25s;
+  }
+  .feature-card:hover {
+    border-color: rgba(0,242,255,0.2);
+    background: rgba(0,242,255,0.03);
+    transform: translateY(-2px);
+  }
+  .feature-icon {
+    font-size: 28px; margin-bottom: 14px;
+  }
+  .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.55; }
+
+  /* ── AUDIENCE ── */
+  .audience-section { background: var(--bg2); }
+  .audience-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 48px;
+  }
+  .audience-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 30px 24px;
+  }
+  .audience-card.highlight {
+    border-color: rgba(0,242,255,0.25);
+    background: rgba(0,242,255,0.04);
+  }
+  .audience-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .audience-list { list-style: none; }
+  .audience-list li {
+    font-size: 14px; color: var(--muted);
+    padding: 5px 0;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .audience-list li::before {
+    content: '→'; color: var(--accent); flex-shrink: 0;
+  }
+
+  /* ── PRICING ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 48px;
+  }
+  .price-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 28px 22px;
+    position: relative;
+    transition: all 0.25s;
+  }
+  .price-card.popular {
+    border-color: rgba(0,242,255,0.4);
+    background: rgba(0,242,255,0.05);
+  }
+  .price-card:hover { transform: translateY(-3px); }
+  .price-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 12px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .price-plan { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .price-amount {
+    font-size: 36px; font-weight: 900; color: #fff;
+    margin-bottom: 4px; line-height: 1;
+  }
+  .price-amount span { font-size: 16px; font-weight: 400; color: var(--muted); }
+  .price-period { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+  .price-features { list-style: none; margin-bottom: 24px; }
+  .price-features li {
+    font-size: 13px; color: var(--muted);
+    padding: 5px 0;
+    display: flex; gap: 8px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .price-features li::before { content: '✓'; color: var(--accent); flex-shrink: 0; }
+  .price-cta {
+    display: block; text-align: center;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text); font-size: 13px; font-weight: 600;
+    padding: 11px; border-radius: 8px;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .price-card.popular .price-cta {
+    background: var(--accent); color: #000; border-color: var(--accent);
+  }
+  .price-cta:hover { opacity: 0.85; }
+
+  /* ── CTA STRIP ── */
+  .cta-strip {
+    text-align: center;
+    background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(123,92,246,0.06));
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .cta-strip h2 { font-size: clamp(22px, 3vw, 34px); font-weight: 800; margin-bottom: 12px; }
+  .cta-strip p { color: var(--muted); font-size: 16px; margin-bottom: 32px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--bg2);
+    border-top: 1px solid var(--glass-border);
+    padding: 40px 24px;
+  }
+  .footer-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 20px;
+  }
+  .footer-contacts { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-contact {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .footer-contact:hover { color: var(--accent); }
+  .footer-contact-icon { font-size: 15px; }
+  .footer-copy { font-size: 12px; color: #333; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav { padding: 12px 20px; }
+    .hero { padding: 100px 20px 60px; }
+    .hero-stats { gap: 28px; }
+    section { padding: 60px 20px; }
+    .videos-grid { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    .footer-inner { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 420px) {
+    .pricing-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Acu<span>Twin</span></a>
+  <a href="/login.html" class="nav-cta">Войти в систему →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Профессиональный инструмент · Работает в браузере</div>
+  <h1>Цифровой атлас и база знаний по иглорефлексотерапии</h1>
+  <p class="hero-sub">Диагностика, рецепты точек, атлас меридианов и видеоматериалы — всё в одном приложении. На ПК и телефоне.</p>
+  <div class="hero-btns">
+    <a href="/login.html" class="btn-primary">Попробовать бесплатно</a>
+    <a href="#videos" class="btn-outline">Смотреть демо</a>
+    <a href="/acutwin-manual.pdf" target="_blank" class="btn-outline" style="display:flex;align-items:center;gap:7px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      Инструкция для врача
+    </a>
+    <a href="/acutwin-education.pdf" target="_blank" class="btn-outline" style="display:flex;align-items:center;gap:7px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      Для учебных центров
+    </a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-num">361</div>
+      <div class="stat-label">акупунктурная точка</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">677</div>
+      <div class="stat-label">нозологий с рецептами</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">352</div>
+      <div class="stat-label">синдрома ТКМ</div>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEOS -->
+<section class="videos-section" id="videos">
+  <div class="container">
+    <div class="section-tag">Демонстрация</div>
+    <h2 class="section-title">Посмотрите, как это работает</h2>
+    <p class="section-sub">Два ролика — для практикующих специалистов и учебных центров.</p>
+    <div class="videos-grid">
+
+      <div class="video-card">
+        <div class="video-label">
+          <div class="video-label-icon"></div>
+          <span class="video-label-text">Для клиник и специалистов</span>
+          <span class="video-label-sub">~1:20</span>
+        </div>
+        <div class="video-embed">
+          <video src="/demo_clinics.mp4" controls preload="none" style="width:100%;height:100%;border-radius:8px;display:block"></video>
+        </div>
+      </div>
+
+      <div class="video-card">
+        <div class="video-label">
+          <div class="video-label-icon" style="background:#7B5CF6;box-shadow:0 0 8px #7B5CF6"></div>
+          <span class="video-label-text">Для учебных центров</span>
+          <span class="video-label-sub">~1:25</span>
+        </div>
+        <div class="video-embed">
+          <video src="/demo_education.mp4" controls preload="none" style="width:100%;height:100%;border-radius:8px;display:block"></video>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-tag">Возможности</div>
+    <h2 class="section-title">Всё необходимое в одном месте</h2>
+    <p class="section-sub">Заменяет бумажные атласы, таблицы Excel и видеозаписи на занятиях.</p>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon">🗺</div>
+        <div class="feature-title">Атлас меридианов</div>
+        <div class="feature-desc">12 меридианов, 361 точка с видеолокализацией. Каждая точка — анатомические ориентиры, показания и техника введения иглы.</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <div class="feature-title">Готовые рецепты</div>
+        <div class="feature-desc">677 нозологий с подобранными наборами точек, последовательностью воздействия и методами акупунктуры.</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🧬</div>
+        <div class="feature-title">Синдромы ТКМ</div>
+        <div class="feature-desc">352 синдрома традиционной китайской медицины — патогенез, клиническая картина, рекомендованные точки лечения.</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#9775;&#65039;</div>
+        <div class="feature-title">У-Син</div>
+        <div class="feature-desc">Интерактивная система пяти элементов: выбираете симптомы — получаете точки по теории У-Син с объяснением логики.</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔬</div>
+        <div class="feature-title">Меридиональная диагностика</div>
+        <div class="feature-desc">Вводите симптомы пациента — система анализирует избыток/недостаток меридианов и формирует обоснованный рецепт.</div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Любое устройство</div>
+        <div class="feature-desc">Работает в браузере — на ПК, планшете и телефоне. Никаких установок. Данные доступны на приёме и на учебном занятии.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- AUDIENCE -->
+<section class="audience-section" id="audience">
+  <div class="container">
+    <div class="section-tag">Для кого</div>
+    <h2 class="section-title">Кому подходит AcuTwin</h2>
+    <div class="audience-grid">
+
+      <div class="audience-card highlight">
+        <div class="audience-title">🏥 Практикующим врачам</div>
+        <ul class="audience-list">
+          <li>Быстрый подбор рецепта на приёме</li>
+          <li>История лечения пациентов в одном месте</li>
+          <li>Справочник точек всегда под рукой</li>
+          <li>Работает на телефоне в процессе лечения</li>
+        </ul>
+      </div>
+
+      <div class="audience-card highlight">
+        <div class="audience-title">🎓 Учебным центрам</div>
+        <ul class="audience-list">
+          <li>Интерактивный учебник вместо бумажного атласа</li>
+          <li>Видео локализации точек на занятиях</li>
+          <li>Студент видит логику диагноза, а не просто список</li>
+          <li>Единая база знаний для всего курса</li>
+        </ul>
+      </div>
+
+
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-tag">Тарифы</div>
+    <h2 class="section-title">Прозрачные цены</h2>
+    <p class="section-sub">Начните бесплатно. Платите только когда нужны расширенные возможности.</p>
+    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+
+      <div class="price-card">
+        <div class="price-plan">Старт</div>
+        <div class="price-amount">0 <span>₽</span></div>
+        <div class="price-period">без ограничений по времени</div>
+        <ul class="price-features">
+          <li>1 врач</li>
+          <li>До 30 записей</li>
+          <li>Атлас 361 точки</li>
+          <li>Тактика лечения</li>
+          <li>Карточка пациента</li>
+        </ul>
+        <a href="/login.html" class="price-cta">Начать бесплатно</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-plan">Практик</div>
+        <div class="price-amount">990 <span>₽</span></div>
+        <div class="price-period">в месяц</div>
+        <ul class="price-features">
+          <li>1 врач</li>
+          <li>Без лимита записей</li>
+          <li>Атлас 361 точки</li>
+          <li>Тактика лечения</li>
+          <li>Карточка пациента</li>
+          <li>PDF-отчёты</li>
+        </ul>
+        <a href="/login.html" class="price-cta">Подключить</a>
+      </div>
+
+      <div class="price-card popular">
+        <div class="price-badge">Рекомендуемый</div>
+        <div class="price-plan">Клиника S</div>
+        <div class="price-amount">3 900 <span>₽</span></div>
+        <div class="price-period">в месяц</div>
+        <ul class="price-features">
+          <li>До 3 врачей</li>
+          <li>Без лимита записей</li>
+          <li>Все функции Практика</li>
+          <li>Панель руководителя</li>
+        </ul>
+        <a href="/login.html" class="price-cta">Подключить</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-plan">Клиника M</div>
+        <div class="price-amount">5 990 <span>₽</span></div>
+        <div class="price-period">в месяц</div>
+        <ul class="price-features">
+          <li>До 5 врачей</li>
+          <li>Без лимита записей</li>
+          <li>Все функции Практика</li>
+          <li>Панель руководителя</li>
+        </ul>
+        <a href="/login.html" class="price-cta">Подключить</a>
+      </div>
+
+      <div class="price-card">
+        <div class="price-plan">Клиника Pro</div>
+        <div class="price-amount">7 900 <span>₽</span></div>
+        <div class="price-period">в месяц</div>
+        <ul class="price-features">
+          <li>Неограниченно врачей</li>
+          <li>Без лимита записей</li>
+          <li>Все функции Практика</li>
+          <li>Панель руководителя</li>
+        </ul>
+        <a href="/login.html" class="price-cta">Обсудить</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA STRIP -->
+<section class="cta-strip">
+  <div class="container">
+    <h2>Попробуйте AcuTwin прямо сейчас</h2>
+    <p>Пробный доступ — бесплатно. Регистрация занимает 30 секунд.</p>
+    <a href="/login.html" class="btn-primary">Войти в систему →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <a href="#" class="footer-logo">AcuTwin</a>
+      <div style="font-size:12px;color:#333;margin-top:4px">acutwin.ru</div>
+    </div>
+    <div class="footer-contacts">
+      <a href="tel:+79037926074" class="footer-contact">
+        <span class="footer-contact-icon">📞</span>
+        +7 (903) 792-60-74
+      </a>
+      <a href="mailto:gavrilovgb@gmail.com" class="footer-contact">
+        <span class="footer-contact-icon">✉</span>
+        gavrilovgb@gmail.com
+      </a>
+    </div>
+    <div class="footer-copy">© 2026 AcuTwin</div>
+  </div>
+</footer>
+
+</body>
+</html>

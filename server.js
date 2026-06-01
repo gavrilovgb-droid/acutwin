@@ -370,6 +370,23 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { ok: true });
   }
 
+  // GET /api/patient-status/:name
+  if (method === 'GET' && endpoint.startsWith('/api/patient-status/')) {
+    const user = requireAuth(req, res); if (!user) return;
+    const name = decodeURIComponent(endpoint.slice('/api/patient-status/'.length));
+    return json(res, 200, { status: db.getPatientStatus(name) });
+  }
+
+  // PATCH /api/patient-status/:name
+  if (method === 'PATCH' && endpoint.startsWith('/api/patient-status/')) {
+    const user = requireAuth(req, res); if (!user) return;
+    const name = decodeURIComponent(endpoint.slice('/api/patient-status/'.length));
+    const { status } = await readBody(req);
+    if (!['', 'started', 'active', 'completed'].includes(status)) return json(res, 400, { error: 'Invalid status' });
+    db.setPatientStatus(name, status);
+    return json(res, 200, { ok: true });
+  }
+
   return json(res, 404, { error: 'Endpoint not found' });
 }
 

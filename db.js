@@ -23,6 +23,11 @@ try { db.exec("ALTER TABLE records ADD COLUMN needle_type TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN stimulation TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN exposure INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN deqi INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec(`CREATE TABLE IF NOT EXISTS patient_statuses (
+  patient    TEXT PRIMARY KEY,
+  status     TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+)`); } catch(e) {}
 
 // ── Создаём таблицы ────────────────────────────────────────
 db.exec(`
@@ -123,6 +128,12 @@ const _updOutcome = db.prepare('UPDATE records SET outcome=? WHERE id=?');
 module.exports.updateOutcome  = (id, outcome) => _updOutcome.run(outcome, id);
 const _updStatus  = db.prepare('UPDATE records SET status=? WHERE id=?');
 module.exports.updateStatus   = (id, status)  => _updStatus.run(status, id);
+
+// ── PATIENT STATUSES (курс лечения) ───────────────────────
+const _getPatientStatus = db.prepare('SELECT status FROM patient_statuses WHERE patient=?');
+const _setPatientStatus = db.prepare('INSERT OR REPLACE INTO patient_statuses (patient, status, updated_at) VALUES (?,?,datetime("now"))');
+module.exports.getPatientStatus = name => (_getPatientStatus.get(name) || {}).status || '';
+module.exports.setPatientStatus = (name, status) => _setPatientStatus.run(name, status);
 
 // ── CLINIC ─────────────────────────────────────────────────
 const _getClinic  = db.prepare('SELECT key,value FROM clinic');

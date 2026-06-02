@@ -801,16 +801,25 @@ async function refresh() {
 await refresh();
 
 // ─── Переключение вкладок ────────────────────────────────
-const TAB_STYLES = {
-  active:   (color) => `px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[${color}]/15 text-[${color}] border border-[${color}]/40 relative`,
-  inactive: () => 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10 relative',
-};
+const TAB_COLORS = { clients: '#0A84FF', doctors: '#34C759', requests: '#FF9F0A' };
+
+function applyTabStyle(btn, color, isActive) {
+  btn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border relative';
+  if (isActive) {
+    btn.style.background = `${color}26`;   // ~15% opacity
+    btn.style.color      = color;
+    btn.style.borderColor = `${color}66`;  // ~40% opacity
+  } else {
+    btn.style.background  = '';
+    btn.style.color       = '#8b90a0';
+    btn.style.borderColor = 'transparent';
+  }
+}
 
 window.switchTab = function(tab) {
-  const tabs = { clients: '#0A84FF', doctors: '#34C759', requests: '#FF9F0A' };
-  Object.keys(tabs).forEach(t => {
+  Object.keys(TAB_COLORS).forEach(t => {
     const btn = document.getElementById(`tab-${t}`);
-    if (btn) btn.className = t === tab ? TAB_STYLES.active(tabs[t]) : TAB_STYLES.inactive();
+    if (btn) applyTabStyle(btn, TAB_COLORS[t], t === tab);
   });
   document.getElementById('btn-add-client').classList.toggle('hidden', tab !== 'clients');
   document.getElementById('btn-add-doctor').classList.toggle('hidden', tab !== 'doctors');

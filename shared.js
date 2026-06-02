@@ -350,7 +350,7 @@ export function buildSidebar(activePage, session) {
       ${doctorBlock}
     </aside>
     <nav id="mobile-nav">
-      ${items.map(i => `
+      ${items.filter(i => i.id !== 'divider').map(i => `
         <a href="${i.href}" class="${activePage===i.id ? 'mob-active' : ''}">
           <span class="material-symbols-outlined">${i.icon}</span>
           <span>${i.label}</span>

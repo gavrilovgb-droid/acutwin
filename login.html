@@ -219,7 +219,7 @@ if (!window.isSecureContext) {
 await seedIfEmpty();
 
 const _s = getSession();
-if (_s && getToken()) { window.location.href = _s.role === 'admin' ? 'admin.html' : 'index.html'; }
+if (_s && getToken()) { window.location.href = 'index.html'; }
 
 // Если залогинен admin — показываем расширенный выбор ролей в форме регистрации
 if (_s && _s.role === 'admin') {
@@ -280,7 +280,7 @@ window.submitLogin = async (e) => {
     if (result.ok) {
       await seedIfEmpty(); // сидируем клинику и записи с токеном
       const s = getSession();
-      window.location.href = s?.role === 'admin' ? 'admin.html' : 'index.html';
+      window.location.href = 'index.html';
     } else showError(result.error);
   } catch (err) {
     showError(err.message || 'Ошибка авторизации. Проверьте подключение.');

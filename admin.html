@@ -365,7 +365,7 @@ select.glass-input option { background:#1f1f1f; }
 <script type="module">
 import { buildSidebar, initElementClock, esc } from './shared.js';
 import { requireAdmin } from './auth.js';
-import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus } from './api.js';
+import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus } from './api.js?v=3';
 
 const session = await requireAdmin();
 if (!session) throw new Error('redirect');

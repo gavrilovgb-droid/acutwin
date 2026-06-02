@@ -247,7 +247,12 @@ export function displayCode(code) {
 export function buildSidebar(activePage, session) {
   const isAdmin = session && session.role === 'admin';
   const items = isAdmin ? [
-    { id:'admin', href:'admin.html', icon:'admin_panel_settings', label:'Клиенты и оплата' },
+    { id:'index',     href:'index.html',       icon:'edit_calendar',        label:'Новый приём' },
+    { id:'treatment', href:'treatment.html',   icon:'medical_services',     label:'Тактика лечения' },
+    { id:'atlas',     href:'atlas.html',       icon:'menu_book',            label:'Атлас точек' },
+    { id:'history',   href:'history.html',     icon:'history',              label:'История приёмов' },
+    { id:'divider' },
+    { id:'admin',     href:'admin.html',       icon:'admin_panel_settings', label:'Клиенты и оплата' },
   ] : [
     { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' },
     { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' },
@@ -255,7 +260,7 @@ export function buildSidebar(activePage, session) {
     { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' },
   ];
   const doctorBlock = session ? `
-    <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2">
+    <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0">
       <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:18px;zoom:1">stethoscope</span>
       <div class="flex-1 min-w-0">
         <div class="text-xs font-semibold text-[#e2e2e2] truncate">${esc(session.name)}</div>
@@ -286,9 +291,11 @@ export function buildSidebar(activePage, session) {
         <img src="vitruvian-digital.png" alt="Digital Twin"
              style="height:5rem;width:5rem;object-fit:cover;border-radius:8px;opacity:0.9;flex-shrink:0"/>
       </div>
-      <nav class="flex-1 flex flex-col py-3 px-2 gap-0.5 overflow-y-auto min-h-0">
-        ${items.map(i => `
-          <a href="${i.href}"
+      <div class="flex-1 overflow-y-auto min-h-0 flex flex-col">
+      <nav class="flex flex-col py-3 px-2 gap-0.5">
+        ${items.map(i => i.id === 'divider'
+          ? `<div style="height:1px;background:rgba(255,255,255,0.08);margin:6px 8px"></div>`
+          : `<a href="${i.href}"
              class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200
                     ${activePage===i.id
                       ? 'bg-[#00F2FF]/10 text-[#00F2FF] border-r-2 border-[#00F2FF]'
@@ -298,14 +305,14 @@ export function buildSidebar(activePage, session) {
             <span style="font-family:'Inter',sans-serif;font-weight:600">${i.label}</span>
           </a>`).join('')}
       </nav>
-      <div style="padding:10px 16px 6px;display:flex;justify-content:center;flex-shrink:0">
+      <div style="padding:5px 16px 4px;display:flex;justify-content:center;margin-top:auto">
         <img src="wuxing.png" alt="У-Син"
-             style="width:210px;height:210px;object-fit:cover;border-radius:50%;
+             style="width:150px;height:150px;object-fit:cover;border-radius:50%;
                     opacity:0.95;
                     filter:saturate(1.3) brightness(1.13) contrast(1.1);
                     box-shadow:0 0 32px rgba(0,242,255,0.2)"/>
       </div>
-      <div style="padding:0 10px 10px;flex-shrink:0">
+      <div style="padding:0 10px 8px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
           <div id="ec-metal"  style="border-radius:8px;border:1px solid #5a8fa855;background:#5a8fa810;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#5a8fa8;line-height:1.3">Металл</div>
@@ -339,13 +346,16 @@ export function buildSidebar(activePage, session) {
           </div>
         </div>
       </div>
-      ${doctorBlock}
-      <div style="padding:8px 14px 14px;flex-shrink:0;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px">
-        <p style="font-size:8.5px;color:#555a6a;line-height:1.5;text-align:center">
-          Только для специалистов с медицинским образованием. Не заменяет консультацию врача и не является основанием для самолечения. Применение методов рефлексотерапии должно осуществляться в соответствии с действующими клиническими протоколами.
-        </p>
       </div>
-    </aside>`;
+      ${doctorBlock}
+    </aside>
+    <nav id="mobile-nav">
+      ${items.map(i => `
+        <a href="${i.href}" class="${activePage===i.id ? 'mob-active' : ''}">
+          <span class="material-symbols-outlined">${i.icon}</span>
+          <span>${i.label}</span>
+        </a>`).join('')}
+    </nav>`;
 }
 
 const _EC = {
@@ -410,20 +420,30 @@ window._showAbout = function() {
     ]},
   ];
 
-  const litHtml = litItems.map(g => `
-    <div style="font-size:0.72rem;color:#cbd5e1;text-transform:uppercase;
-                letter-spacing:.06em;margin:14px 0 8px">${g.group}</div>
-    ${g.books.map((b, i) => `
-      <div style="color:#94a3b8;font-size:0.82rem;padding:4px 0 4px 12px;
-                  border-left:2px solid rgba(0,242,255,0.25);margin-bottom:3px;
-                  line-height:1.4">${b}</div>
+  const litHtml = `
+    <div style="font-size:0.82rem;color:#94a3b8;line-height:1.6;margin-bottom:14px;
+                padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.07);
+                font-style:italic">
+      Рефлексотерапия — живая традиция, которой тысячи лет. При разработке AcuTwin
+      мы опирались на труды, ставшие фундаментом современной практики:
+    </div>
+  ` + litItems.map(g => `
+    <div style="font-size:0.68rem;color:#cbd5e1;text-transform:uppercase;
+                letter-spacing:.06em;margin:10px 0 6px">${g.group}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
+    ${g.books.map(b => `
+      <div style="color:#94a3b8;font-size:0.75rem;padding:3px 0 3px 10px;
+                  border-left:2px solid rgba(0,242,255,0.25);
+                  line-height:1.35">${b}</div>
     `).join('')}
+    </div>
   `).join('');
 
   modal.innerHTML = `
     <div style="background:#111827;border:1px solid rgba(0,242,255,0.2);border-radius:18px;
                 max-width:520px;width:100%;padding:28px 32px;position:relative;
-                box-shadow:0 0 60px rgba(0,242,255,0.08)">
+                box-shadow:0 0 60px rgba(0,242,255,0.08);
+                max-height:85vh;overflow-y:auto">
       <button onclick="document.getElementById('about-modal').remove()"
               style="position:absolute;top:16px;right:18px;background:none;border:none;
                      color:#8b90a0;font-size:22px;cursor:pointer;line-height:1">×</button>
@@ -445,8 +465,10 @@ window._showAbout = function() {
         <button id="tab-features" onclick="
           document.getElementById('pane-features').style.display='block';
           document.getElementById('pane-lit').style.display='none';
+          document.getElementById('pane-disc').style.display='none';
           document.getElementById('tab-features').style.cssText+=';${TAB_ACTIVE}';
           document.getElementById('tab-lit').style.cssText+=';${TAB_IDLE}';
+          document.getElementById('tab-disc').style.cssText+=';${TAB_IDLE}';
         " style="flex:1;padding:7px 0;border-radius:8px;border:1px solid;cursor:pointer;
                  font-size:0.82rem;font-family:inherit;transition:all .18s;${TAB_ACTIVE}">
           Возможности
@@ -454,11 +476,24 @@ window._showAbout = function() {
         <button id="tab-lit" onclick="
           document.getElementById('pane-features').style.display='none';
           document.getElementById('pane-lit').style.display='block';
+          document.getElementById('pane-disc').style.display='none';
           document.getElementById('tab-lit').style.cssText+=';${TAB_ACTIVE}';
           document.getElementById('tab-features').style.cssText+=';${TAB_IDLE}';
+          document.getElementById('tab-disc').style.cssText+=';${TAB_IDLE}';
         " style="flex:1;padding:7px 0;border-radius:8px;border:1px solid;cursor:pointer;
                  font-size:0.82rem;font-family:inherit;transition:all .18s;${TAB_IDLE}">
           📚 Литература
+        </button>
+        <button id="tab-disc" onclick="
+          document.getElementById('pane-features').style.display='none';
+          document.getElementById('pane-lit').style.display='none';
+          document.getElementById('pane-disc').style.display='block';
+          document.getElementById('tab-disc').style.cssText+=';${TAB_ACTIVE}';
+          document.getElementById('tab-features').style.cssText+=';${TAB_IDLE}';
+          document.getElementById('tab-lit').style.cssText+=';${TAB_IDLE}';
+        " style="flex:1;padding:7px 0;border-radius:8px;border:1px solid;cursor:pointer;
+                 font-size:0.82rem;font-family:inherit;transition:all .18s;${TAB_IDLE}">
+          ⚠️ Важно
         </button>
       </div>
 
@@ -467,7 +502,7 @@ window._showAbout = function() {
         <div style="display:flex;flex-direction:column;gap:13px">
           ${[
             ['🧭','Меридиональная диагностика','Введите симптомы — система за секунды определяет поражённые меридианы и предлагает тактику лечения.'],
-            ['☯️','У-Синь диагностика','Учитывает пол, время суток и сезон. Рекомендации по всем канонам традиционной китайской медицины.'],
+            ['☯️','У-Син диагностика','Учитывает пол, время суток и сезон. Рекомендации по всем канонам традиционной китайской медицины.'],
             ['📋','Готовые рецепты по диагнозу','Протокол с точками и техникой введения. Видео по каждой точке и меридиану. Печать бланка в один клик.'],
             ['🗂️','Карточка пациента','Все приёмы и назначения в одном месте. Доступно с любого устройства в любой момент.'],
             ['🎬','Атлас точек с видео','Справочник всех акупунктурных точек с описаниями, показаниями и обучающими видео.'],
@@ -492,6 +527,21 @@ window._showAbout = function() {
       <div id="pane-lit" style="display:none">
         ${litHtml}
       </div>
+
+      <!-- Вкладка: Важно / Дисклеймер -->
+      <div id="pane-disc" style="display:none">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:18px;
+                    background:rgba(255,180,0,0.06);border:1px solid rgba(255,180,0,0.2);
+                    border-radius:12px">
+          <span style="font-size:1.6rem;flex-shrink:0;line-height:1">⚠️</span>
+          <p style="color:#94a3b8;font-size:0.85rem;line-height:1.7;margin:0">
+            Только для специалистов с медицинским образованием. Не заменяет консультацию
+            врача и не является основанием для самолечения. Применение методов
+            рефлексотерапии должно осуществляться в соответствии с действующими
+            клиническими протоколами.
+          </p>
+        </div>
+      </div>
     </div>
   `;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
@@ -513,4 +563,63 @@ export function initElementClock() {
   }
   tick();
   setInterval(tick, 60000);
+}
+
+// ── Мобильная кнопка пользователя в шапке ─────────────────
+function _injectMobileUser() {
+  const header = document.querySelector('header');
+  if (!header || document.getElementById('mob-user-btn')) return;
+  let session = null;
+  try { session = JSON.parse(sessionStorage.getItem('acutwin_session')); } catch {}
+  if (!session) return;
+  const initials = (session.name || session.username)
+    .split(/\s+/).map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+  const wrap = document.createElement('div');
+  wrap.id = 'mob-user-btn';
+  wrap.style.cssText = 'display:none;margin-left:auto;position:relative;flex-shrink:0';
+  wrap.innerHTML = `
+    <button id="mob-user-avatar"
+      onclick="document.getElementById('mob-user-panel').classList.toggle('mob-panel-open')"
+      style="width:36px;height:36px;border-radius:50%;
+             background:rgba(0,242,255,0.15);border:1.5px solid rgba(0,242,255,0.4);
+             color:#00F2FF;font-weight:700;font-size:12px;cursor:pointer;
+             display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      ${initials}
+    </button>
+    <div id="mob-user-panel"
+      style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:9999;
+             background:#1f1f1f;border:1px solid #414755;border-radius:12px;
+             padding:14px 16px;min-width:190px;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+      <div style="font-size:13px;font-weight:600;color:#e2e2e2;margin-bottom:2px;white-space:nowrap">${esc(session.name)}</div>
+      <div style="font-size:11px;color:#8b90a0;margin-bottom:14px">${esc(session.username)}</div>
+      <button onclick="if(confirm('Выйти из системы?')){sessionStorage.clear();location.href='login.html'}"
+        style="width:100%;padding:9px 12px;background:rgba(255,180,171,0.1);
+               border:1px solid rgba(255,180,171,0.3);border-radius:8px;
+               color:#ffb4ab;font-size:13px;font-weight:600;cursor:pointer;
+               display:flex;align-items:center;gap:8px">
+        <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
+        Выйти
+      </button>
+    </div>`;
+  // Закрытие панели при клике вне
+  document.addEventListener('click', e => {
+    const panel = document.getElementById('mob-user-panel');
+    if (!panel) return;
+    if (!wrap.contains(e.target)) panel.classList.remove('mob-panel-open');
+  });
+  header.appendChild(wrap);
+}
+
+// mob-panel-open управляет видимостью панели
+document.addEventListener('click', () => {}); // dummy to ensure listener attached
+const _mobUserStyle = document.createElement('style');
+_mobUserStyle.textContent = `
+  #mob-user-panel.mob-panel-open { display: block !important; }
+`;
+document.head && document.head.appendChild(_mobUserStyle);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _injectMobileUser);
+} else {
+  _injectMobileUser();
 }

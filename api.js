@@ -119,3 +119,13 @@ export async function apiDeleteTenant(id) {
   const r = await req('DELETE', `/api/tenants/${id}`);
   return r?.data || { ok: false };
 }
+
+export async function apiGetTrialRequests() {
+  const r = await req('GET', '/api/trial-requests');
+  return r?.data || [];
+}
+
+export async function apiUpdateTrialStatus(id, status) {
+  const r = await req('PATCH', `/api/trial-request/${id}`, { status });
+  return r?.data || { ok: false };
+}

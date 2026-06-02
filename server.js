@@ -443,6 +443,17 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, db.getTrialRequests());
   }
 
+  // PATCH /api/trial-request/:id (admin only)
+  if (method === 'PATCH' && /^\/api\/trial-request\/\d+$/.test(endpoint)) {
+    const user = requireAdmin(req, res); if (!user) return;
+    const id = parseInt(endpoint.split('/').pop(), 10);
+    const VALID = ['new', 'contacted', 'granted'];
+    const { status } = await readBody(req);
+    if (!VALID.includes(status)) return json(res, 400, { error: 'Недопустимый статус' });
+    db.updateTrialStatus(id, status);
+    return json(res, 200, { ok: true });
+  }
+
   return json(res, 404, { error: 'Endpoint not found' });
 }
 

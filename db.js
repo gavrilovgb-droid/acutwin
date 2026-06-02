@@ -215,5 +215,7 @@ const _addTrialRequest = db.prepare(
 );
 module.exports.addTrialRequest = (method, contact, ip) => _addTrialRequest.run(method, contact, ip);
 
-const _getTrialRequests = db.prepare("SELECT * FROM trial_requests ORDER BY created_at DESC");
-module.exports.getTrialRequests = () => _getTrialRequests.all();
+const _getTrialRequests   = db.prepare("SELECT * FROM trial_requests ORDER BY created_at DESC");
+const _updateTrialStatus  = db.prepare("UPDATE trial_requests SET status=? WHERE id=?");
+module.exports.getTrialRequests  = () => _getTrialRequests.all();
+module.exports.updateTrialStatus = (id, status) => _updateTrialStatus.run(status, id);

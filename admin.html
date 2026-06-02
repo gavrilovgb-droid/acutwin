@@ -53,6 +53,12 @@ select.glass-input option { background:#1f1f1f; }
         <span class="material-symbols-outlined" style="font-size:13px;zoom:1;vertical-align:-2px">stethoscope</span>
         Врачи
       </button>
+      <button id="tab-requests" onclick="switchTab('requests')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10 relative">
+        <span class="material-symbols-outlined" style="font-size:13px;zoom:1;vertical-align:-2px">mark_email_unread</span>
+        Заявки
+        <span id="requests-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FF453A] text-white text-[9px] font-black flex items-center justify-center leading-none"></span>
+      </button>
     </div>
     <div class="ml-auto flex items-center gap-2">
       <div id="mrr-badge" class="text-xs font-mono px-3 py-1 rounded-lg bg-[#34C759]/10 border border-[#34C759]/30 text-[#34C759]"></div>
@@ -130,6 +136,38 @@ select.glass-input option { background:#1f1f1f; }
         <span class="text-sm font-semibold">Ближайшие платежи (30 дней)</span>
       </div>
       <div id="upcoming-payments" class="space-y-2"></div>
+    </div>
+
+    <!-- Панель заявок на триал -->
+    <div id="section-requests" class="hidden space-y-4">
+      <div class="glass-panel rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-white/10 flex items-center gap-3">
+          <span class="material-symbols-outlined text-[#FF9F0A]" style="font-size:16px;zoom:1">mark_email_unread</span>
+          <span class="text-sm font-semibold">Заявки на триал</span>
+          <div class="ml-auto flex gap-2">
+            <select id="req-filter-status" onchange="renderRequests()" class="glass-input" style="width:auto;padding:4px 8px;font-size:.75rem">
+              <option value="">Все</option>
+              <option value="new">Новые</option>
+              <option value="contacted">Связались</option>
+              <option value="granted">Выдан доступ</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-white/10 text-[#8b90a0] text-[11px] uppercase tracking-wider">
+                <th class="px-4 py-2.5 text-left font-semibold">Дата</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Метод</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Контакт</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Статус</th>
+                <th class="px-3 py-2.5 text-right font-semibold">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="requests-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Панель врачей (скрыта по умолчанию) -->
@@ -327,7 +365,7 @@ select.glass-input option { background:#1f1f1f; }
 <script type="module">
 import { buildSidebar, initElementClock, esc } from './shared.js';
 import { requireAdmin } from './auth.js';
-import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser } from './api.js';
+import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus } from './api.js';
 
 const session = await requireAdmin();
 if (!session) throw new Error('redirect');
@@ -763,26 +801,27 @@ async function refresh() {
 await refresh();
 
 // ─── Переключение вкладок ────────────────────────────────
-const _clientSections = ['stats-row', 'section-clients-wrap', 'section-upcoming'];
+const TAB_STYLES = {
+  active:   (color) => `px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[${color}]/15 text-[${color}] border border-[${color}]/40 relative`,
+  inactive: () => 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10 relative',
+};
+
 window.switchTab = function(tab) {
-  const isClients = tab === 'clients';
-  // Шапка: кнопки
-  document.getElementById('tab-clients').className = isClients
-    ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[#0A84FF]/15 text-[#0A84FF] border border-[#0A84FF]/40'
-    : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10';
-  document.getElementById('tab-doctors').className = !isClients
-    ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-[#34C759]/15 text-[#34C759] border border-[#34C759]/40'
-    : 'px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-[#8b90a0] border border-transparent hover:border-white/10';
-  // Кнопки добавления
-  document.getElementById('btn-add-client').classList.toggle('hidden', !isClients);
-  document.getElementById('btn-add-doctor').classList.toggle('hidden', isClients);
-  // Секции
-  document.getElementById('stats-row').classList.toggle('hidden', !isClients);
-  document.getElementById('section-upcoming').classList.toggle('hidden', !isClients);
+  const tabs = { clients: '#0A84FF', doctors: '#34C759', requests: '#FF9F0A' };
+  Object.keys(tabs).forEach(t => {
+    const btn = document.getElementById(`tab-${t}`);
+    if (btn) btn.className = t === tab ? TAB_STYLES.active(tabs[t]) : TAB_STYLES.inactive();
+  });
+  document.getElementById('btn-add-client').classList.toggle('hidden', tab !== 'clients');
+  document.getElementById('btn-add-doctor').classList.toggle('hidden', tab !== 'doctors');
+  document.getElementById('stats-row').classList.toggle('hidden', tab !== 'clients');
+  document.getElementById('section-upcoming').classList.toggle('hidden', tab !== 'clients');
   const clientsWrap = document.getElementById('section-clients-wrap');
-  if (clientsWrap) clientsWrap.classList.toggle('hidden', !isClients);
-  document.getElementById('section-doctors').classList.toggle('hidden', isClients);
-  if (!isClients) renderUsers();
+  if (clientsWrap) clientsWrap.classList.toggle('hidden', tab !== 'clients');
+  document.getElementById('section-doctors').classList.toggle('hidden', tab !== 'doctors');
+  document.getElementById('section-requests').classList.toggle('hidden', tab !== 'requests');
+  if (tab === 'doctors')  renderUsers();
+  if (tab === 'requests') renderRequests();
 };
 
 // ─── Управление пользователями ───────────────────────────
@@ -849,6 +888,114 @@ window.deleteUser = async function(username) {
   if (!confirm(`Удалить пользователя «${username}»?\nВсе его записи останутся в базе.`)) return;
   await apiDeleteUser(username);
   renderUsers();
+};
+
+// ─── Заявки на триал ─────────────────────────────────────
+const REQ_STATUS = {
+  new:       { label: 'Новая',         cls: 'bg-[#FF453A]/15 text-[#FF453A] border-[#FF453A]/40' },
+  contacted: { label: 'Связались',     cls: 'bg-[#0A84FF]/12 text-[#0A84FF] border-[#0A84FF]/40' },
+  granted:   { label: 'Доступ выдан',  cls: 'bg-[#34C759]/12 text-[#34C759] border-[#34C759]/40' },
+};
+const METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
+const METHOD_ICON  = { telegram: 'send', max: 'account_balance_wallet', phone: 'phone', card: 'credit_card' };
+
+let _reqCache = [];
+
+window.renderRequests = async function(force = true) {
+  if (force) _reqCache = await apiGetTrialRequests().catch(() => []);
+  const filter = document.getElementById('req-filter-status')?.value || '';
+  const rows = filter ? _reqCache.filter(r => r.status === filter) : _reqCache;
+
+  // Бейдж с количеством новых на кнопке вкладки
+  const newCount = _reqCache.filter(r => r.status === 'new').length;
+  const badge = document.getElementById('requests-badge');
+  if (badge) {
+    badge.textContent = newCount || '';
+    badge.classList.toggle('hidden', newCount === 0);
+  }
+
+  const tbody = document.getElementById('requests-tbody');
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-[#8b90a0]">
+      ${filter ? 'Нет заявок с таким статусом' : 'Заявок пока нет'}
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const st  = REQ_STATUS[r.status] || REQ_STATUS.new;
+    const dt  = r.created_at ? r.created_at.replace('T',' ').slice(0,16) : '—';
+    const icon = METHOD_ICON[r.method] || 'contact_phone';
+    const mLabel = METHOD_LABEL[r.method] || r.method;
+    return `<tr class="border-b border-white/5 hover:bg-white/3 transition-colors">
+      <td class="px-4 py-3 text-[#8b90a0] tabular-nums whitespace-nowrap">${esc(dt)}</td>
+      <td class="px-3 py-3 whitespace-nowrap">
+        <span class="inline-flex items-center gap-1">
+          <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:13px;zoom:1">${icon}</span>
+          ${esc(mLabel)}
+        </span>
+      </td>
+      <td class="px-3 py-3 font-mono font-bold text-[#00F2FF]">${esc(r.contact)}</td>
+      <td class="px-3 py-3">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}">${st.label}</span>
+      </td>
+      <td class="px-3 py-3 text-right whitespace-nowrap">
+        ${r.status !== 'granted' ? `
+          <button onclick="grantAccess(${r.id}, '${esc(r.contact)}', '${esc(r.method)}')"
+                  class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#34C759] border border-[#34C759]/30 hover:bg-[#34C759]/10 transition-colors mr-1">
+            Выдать доступ
+          </button>` : ''}
+        ${r.status === 'new' ? `
+          <button onclick="setReqStatus(${r.id}, 'contacted')"
+                  class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#0A84FF] border border-[#0A84FF]/30 hover:bg-[#0A84FF]/10 transition-colors">
+            Связались
+          </button>` : ''}
+        ${r.status === 'granted' ? `<span class="text-[10px] text-[#414755]">готово</span>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+window.setReqStatus = async function(id, status) {
+  await apiUpdateTrialStatus(id, status);
+  await renderRequests();
+};
+
+window.grantAccess = function(id, contact, method) {
+  // Предзаполняем модал создания пользователя
+  const suggestedLogin = contact
+    .replace(/^@/, '')
+    .replace(/[^a-zA-Z0-9_]/g, '')
+    .toLowerCase()
+    .slice(0, 20) || 'doctor';
+
+  document.getElementById('u-name').value = contact;
+  document.getElementById('u-username').value = suggestedLogin;
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-role').value = 'doctor';
+  document.getElementById('u-error').classList.add('hidden');
+  document.getElementById('user-modal').classList.remove('hidden');
+
+  // После успешного создания — отмечаем заявку как granted
+  const origSave = window.saveUser.toString();
+  window._pendingGrantId = id;
+};
+
+// Перехватываем saveUser чтобы после создания врача пометить заявку granted
+const _origSaveUser = window.saveUser;
+window.saveUser = async function() {
+  await _origSaveUser();
+  // Если модал закрылся — значит создание прошло успешно
+  const isModalHidden = document.getElementById('user-modal').classList.contains('hidden');
+  if (isModalHidden && window._pendingGrantId != null) {
+    await apiUpdateTrialStatus(window._pendingGrantId, 'granted');
+    window._pendingGrantId = null;
+    if (!document.getElementById('section-requests').classList.contains('hidden')) {
+      await renderRequests();
+    }
+  }
 };
 
 </script>

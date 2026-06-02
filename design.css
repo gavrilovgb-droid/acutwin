@@ -27,6 +27,113 @@ input, textarea, select, button { font-size: inherit; }
 /* prevent horizontal overflow in all content pages */
 .md\:ml-64 { overflow-x: hidden; max-width: calc(100vw - 16rem); }
 
+/* ── Mobile navigation bar ───────────────────────────────── */
+#mobile-nav {
+  display: none !important;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 64px;
+  background: rgba(14,14,14,0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  z-index: 100;
+  align-items: stretch;
+}
+#mobile-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-decoration: none;
+  color: #8b90a0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+  padding: 6px 4px 8px;
+}
+#mobile-nav a .material-symbols-outlined { font-size: 22px; }
+#mobile-nav a.mob-active {
+  color: #00F2FF;
+}
+#mobile-nav a.mob-active .material-symbols-outlined {
+  text-shadow: 0 0 12px rgba(0,242,255,0.6);
+}
+
+/* ── Mobile layout overrides (< 768px) ──────────────────── */
+@media (max-width: 767px) {
+  #sidebar   { display: none !important; }
+  #mobile-nav { display: flex !important; }
+  #body-bg   { left: 0 !important; }
+
+  /* full-width content on mobile */
+  .md\:ml-64 { max-width: 100vw !important; }
+
+  /* room for bottom nav */
+  .md\:ml-64 { padding-bottom: 4.5rem; }
+
+  /* Atlas: master-detail sliding panels */
+  #panel-catalog {
+    position: relative;
+    overflow: hidden;
+  }
+  #panel-catalog > div:first-child {
+    width: 100% !important;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    transition: transform 0.28s ease;
+    background: #131313;
+  }
+  #panel-catalog.detail-open > div:first-child {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+  #panel-catalog > div:nth-child(2) {
+    width: 100% !important;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+    background: #131313;
+  }
+  #panel-catalog.detail-open > div:nth-child(2) {
+    transform: translateX(0);
+  }
+}
+
+/* Fixed bottom panels: raise above mobile nav bar */
+@media (max-width: 767px) {
+  #diag-bottom-bar,
+  #confirmed-panel { bottom: 64px !important; }
+}
+
+/* Mobile user button in header */
+@media (max-width: 767px) {
+  #mob-user-btn { display: flex !important; align-items: center; }
+}
+
+/* Back button — visible only on mobile */
+.atlas-mob-back {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 14px;
+  color: #00F2FF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+@media (max-width: 767px) {
+  .atlas-mob-back { display: flex; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -98,6 +205,93 @@ input, textarea, select, button { font-size: inherit; }
 .sym-check-wrap label { cursor: pointer; user-select: none; }
 .sym-check-wrap:hover { background: rgba(255,255,255,0.05); }
 
+/* Master-detail sliding panels (< 1024px — covers Fold 6 unfolded ~968px) */
+.mob-back-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #00F2FF;
+  flex-shrink: 0;
+}
+@media (max-width: 1023px) {
+  .mob-back-btn { display: flex; }
+
+  .mob-master-detail {
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  .mob-master-detail > div:first-child {
+    width: 100% !important;
+    position: absolute !important;
+    inset: 0;
+    z-index: 1;
+    transition: transform 0.28s ease;
+    background: #131313;
+    border-radius: 0.75rem;
+  }
+  .mob-master-detail.detail-open > div:first-child {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+  .mob-master-detail > div:nth-child(2) {
+    width: 100% !important;
+    position: absolute !important;
+    inset: 0;
+    z-index: 2;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+    background: #131313;
+    border-radius: 0.75rem;
+  }
+  .mob-master-detail.detail-open > div:nth-child(2) {
+    transform: translateX(0);
+  }
+}
+
+/* Mobile atlas filter chips */
+.mob-atlas-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #8b90a0;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.mob-mer-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 3px 8px;
+  border-radius: 16px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #8b90a0;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+@media (max-width: 767px) {
+  #mob-atlas-nav { display: flex !important; }
+}
+
 /* Step indicator */
 .step-circle {
   width:32px; height:32px; border-radius:50%;
@@ -124,3 +318,66 @@ input, textarea, select, button { font-size: inherit; }
   transition: background 0.4s;
 }
 .step-line.done { background: #0A84FF; }
+
+/* ══════════════════════════════════════════════
+   iOS Safari fixes
+   ══════════════════════════════════════════════ */
+
+/* 1. Убрать синюю вспышку при тапе на iOS */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* 2. Сглаживание шрифтов как на macOS/iOS */
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* 3. Нативные инпуты: iOS рисует их по-своему — только инпуты, не кнопки */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  -webkit-appearance: none;
+}
+input[type="date"] { border-radius: 8px; }
+select            { border-radius: 9999px; }
+
+/* 4. Чекбоксы на iOS */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  -webkit-appearance: none;
+}
+
+/* 5. aspect-ratio fallback для iOS < 15 */
+@supports not (aspect-ratio: 16/9) {
+  .vid-wrap {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+  }
+  .vid-wrap video,
+  .vid-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* 6. Safe area — iPhone с чёлкой/Dynamic Island */
+#mobile-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(64px + env(safe-area-inset-bottom));
+}
+@media (max-width: 767px) {
+  /* Контент не уходит за home indicator */
+  .md\:ml-64 { padding-bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+  /* Фиксированные панели тоже поднимаем */
+  #diag-bottom-bar,
+  #confirmed-panel { bottom: calc(64px + env(safe-area-inset-bottom)) !important; }
+}
+
+/* 7. 100vh fix — iOS Safari считает vh с адресной строкой */
+#sidebar { height: 100vh; height: 100dvh; }
+.min-h-screen { min-height: 100vh; min-height: 100dvh; }
+
+/* 8. Momentum scrolling на iOS (плавный скролл) */
+.overflow-y-auto, .overflow-x-auto, [class*="overflow-y"] {
+  -webkit-overflow-scrolling: touch;
+}

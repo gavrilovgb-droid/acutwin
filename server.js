@@ -480,6 +480,20 @@ async function handleAPI(method, endpoint, req, res) {
     const user = requireAdmin(req, res); if (!user) return;
     const id = endpoint.slice('/api/tenants/'.length);
     const body = await readBody(req);
+
+    // Если врач добавлен в эту клинику — убрать его из других тенантов
+    const existing = db.getTenant(id);
+    const newLogins = body.doctorLogins || [];
+    const oldLogins = existing?.doctorLogins || [];
+    const added = newLogins.filter(l => !oldLogins.includes(l));
+    if (added.length > 0) {
+      for (const t of db.getTenants().filter(t => t.id !== id)) {
+        const filtered = (t.doctorLogins || []).filter(l => !added.includes(l));
+        if (filtered.length !== (t.doctorLogins || []).length)
+          db.updateTenant({ ...t, doctorLogins: filtered });
+      }
+    }
+
     db.updateTenant({ ...body, id });
     return json(res, 200, { ok: true });
   }

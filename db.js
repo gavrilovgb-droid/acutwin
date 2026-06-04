@@ -205,15 +205,25 @@ module.exports.updateTenant= t => _updTenant.run({ ...t,
 });
 module.exports.deleteTenant= id => _delTenant.run(id);
 module.exports.findTenantByDoctor = username => {
-  return _getTenants.all().map(parseTenant)
-    .find(t => (t.doctorLogins||[]).includes(username)) || null;
+  const matches = _getTenants.all().map(parseTenant)
+    .filter(t => (t.doctorLogins||[]).includes(username));
+  if (!matches.length) return null;
+  // Если врач в нескольких тенантах — вернуть наиболее привилегированный
+  const order = { active: 3, trial: 2, suspended: 1, expired: 0 };
+  return matches.sort((a, b) => {
+    const sa = order[a.status] ?? 0, sb = order[b.status] ?? 0;
+    if (sa !== sb) return sb - sa;
+    return (b.paidUntil || '') > (a.paidUntil || '') ? 1 : -1;
+  })[0];
 };
 
 // ── TRIAL REQUESTS ─────────────────────────────────────────
+try { db.exec("ALTER TABLE trial_requests ADD COLUMN email TEXT"); } catch(e) {}
+
 const _addTrialRequest = db.prepare(
-  "INSERT INTO trial_requests (method, contact, ip) VALUES (?, ?, ?)"
+  "INSERT INTO trial_requests (method, contact, ip, email) VALUES (?, ?, ?, ?)"
 );
-module.exports.addTrialRequest = (method, contact, ip) => _addTrialRequest.run(method, contact, ip);
+module.exports.addTrialRequest = (method, contact, ip, email) => _addTrialRequest.run(method, contact, ip, email || null);
 
 const _getTrialRequests   = db.prepare("SELECT * FROM trial_requests ORDER BY created_at DESC");
 const _updateTrialStatus  = db.prepare("UPDATE trial_requests SET status=? WHERE id=?");

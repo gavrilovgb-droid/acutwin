@@ -129,3 +129,8 @@ export async function apiUpdateTrialStatus(id, status) {
   const r = await req('PATCH', `/api/trial-request/${id}`, { status });
   return r?.data || { ok: false };
 }
+
+export async function apiSendCredentials(email, login, password) {
+  const r = await req('POST', '/api/send-credentials', { email, login, password });
+  return r?.data || { ok: false };
+}

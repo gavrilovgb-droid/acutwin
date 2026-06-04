@@ -195,16 +195,17 @@ html, body {
     </div>
     <!-- ИРТ-поля сессии -->
     <div id="irt-fields" class="hidden flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 mb-3 bg-[#1a1a2e]/60 border border-[#414755]/50 rounded-xl flex-shrink-0 text-xs text-[#8b90a0]">
-      <label class="flex items-center gap-1.5">
-        <span>Боль до</span>
-        <input id="irt-nrs-before" type="number" min="0" max="10" placeholder="0–10"
-               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
-      </label>
-      <label class="flex items-center gap-1.5">
-        <span>Боль после</span>
-        <input id="irt-nrs-after" type="number" min="0" max="10" placeholder="0–10"
-               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
-      </label>
+      <div class="flex items-center gap-2">
+        <span>Прогресс</span>
+        <input type="hidden" id="irt-nrs-before"/>
+        <div class="flex gap-1" id="progress-btns">
+          <button type="button" data-v="1" onclick="setProgress(1)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#ff453a]/60" style="color:#ff453a">Плохо</button>
+          <button type="button" data-v="2" onclick="setProgress(2)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FF9F0A]/60" style="color:#FF9F0A">Неудовл.</button>
+          <button type="button" data-v="3" onclick="setProgress(3)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FFD60A]/60" style="color:#FFD60A">Средне</button>
+          <button type="button" data-v="4" onclick="setProgress(4)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#30D158]/60" style="color:#30D158">Хорошо</button>
+          <button type="button" data-v="5" onclick="setProgress(5)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#5AC85A]/60" style="color:#5AC85A">Отлично</button>
+        </div>
+      </div>
       <label class="flex items-center gap-1.5">
         <span>Воздействие</span>
         <select id="irt-treatment-type"
@@ -230,11 +231,6 @@ html, body {
         <span>Экспозиция, мин</span>
         <input id="irt-exposure" type="number" min="1" max="120" placeholder="20"
                class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
-      </label>
-      <label class="flex items-center gap-2 cursor-pointer select-none" title="Де-ци — ощущение тяжести, онемения или тепла у пациента при правильном попадании иглы">
-        <input id="irt-deqi" type="checkbox"
-               class="w-3.5 h-3.5 accent-[#0A84FF] cursor-pointer"/>
-        <span class="border-b border-dashed border-[#8b90a0]">Де-ци</span>
       </label>
     </div>
     <div class="flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden">
@@ -1265,23 +1261,6 @@ window.selectTcm = (idx) => {
         </button>
       </div>
     </div>`;
-  const tcmManualHtml = `
-    <div class="border-t border-white/10 pt-4">
-      <div class="flex items-center gap-2">
-        <button onclick="toggleManualBuilder()" id="manual-builder-toggle"
-                class="flex-1 flex items-center gap-2 text-xs font-bold text-[#8b90a0] hover:text-[#00F2FF] transition-colors group">
-          <span class="material-symbols-outlined text-sm">edit_calendar</span>
-          Составить курс вручную
-          <span class="ml-auto text-[10px] text-[#414755] group-hover:text-[#00F2FF]">по дням</span>
-          <span class="material-symbols-outlined text-sm" id="manual-toggle-icon">expand_more</span>
-        </button>
-        <button onclick="addManualDay()" id="manual-add-day-btn"
-                class="hidden items-center gap-1 text-xs text-[#8b90a0] hover:text-[#00F2FF] transition-colors px-2 py-1 border border-dashed border-[#414755] hover:border-[#00F2FF]/40 rounded-lg">
-          <span class="material-symbols-outlined text-sm">add</span>День
-        </button>
-      </div>
-      <div id="manual-builder" class="hidden mt-3"></div>
-    </div>`;
 
   if (window.innerWidth < 1024) {
     document.getElementById('tcm-panels')?.classList.add('detail-open');
@@ -1369,7 +1348,6 @@ window.selectTcm = (idx) => {
         <p class="text-sm text-[#c1c6d7] leading-relaxed">${ptLinks(r.method)}</p>
       </div>` : ''}
       ${tcmNotesHtml}
-      ${tcmManualHtml}
     </div>`;
 
   appendAddRecipeBtn('tcm-detail');
@@ -1586,23 +1564,6 @@ window.selectDisease = (idx) => {
     </div>` : '';
 
 
-  const manualHtml = `
-    <div class="border-t border-white/10 pt-4">
-      <div class="flex items-center gap-2">
-        <button onclick="toggleManualBuilder()" id="manual-builder-toggle"
-                class="flex-1 flex items-center gap-2 text-xs font-bold text-[#8b90a0] hover:text-[#00F2FF] transition-colors group">
-          <span class="material-symbols-outlined text-sm">edit_calendar</span>
-          Составить курс вручную
-          <span class="ml-auto text-[10px] text-[#414755] group-hover:text-[#00F2FF]">по дням</span>
-          <span class="material-symbols-outlined text-sm" id="manual-toggle-icon">expand_more</span>
-        </button>
-        <button onclick="addManualDay()" id="manual-add-day-btn"
-                class="hidden items-center gap-1 text-xs text-[#8b90a0] hover:text-[#00F2FF] transition-colors px-2 py-1 border border-dashed border-[#414755] hover:border-[#00F2FF]/40 rounded-lg">
-          <span class="material-symbols-outlined text-sm">add</span>День
-        </button>
-      </div>
-      <div id="manual-builder" class="hidden mt-3"></div>
-    </div>`;
 
   const savedNote = localStorage.getItem('acunote_' + k) || '';
   const notesHtml = `
@@ -1619,6 +1580,24 @@ window.selectDisease = (idx) => {
           <span class="material-symbols-outlined" style="font-size:14px">save</span>Сохранить
         </button>
       </div>
+    </div>`;
+
+  const manualHtml = `
+    <div class="border-t border-white/10 pt-4">
+      <div class="flex items-center gap-2">
+        <button onclick="toggleManualBuilder()" id="manual-builder-toggle"
+                class="flex-1 flex items-center gap-2 text-xs font-bold text-[#8b90a0] hover:text-[#00F2FF] transition-colors group">
+          <span class="material-symbols-outlined text-sm">edit_calendar</span>
+          Составить курс вручную
+          <span class="ml-auto text-[10px] text-[#414755] group-hover:text-[#00F2FF]">по дням</span>
+          <span class="material-symbols-outlined text-sm" id="manual-toggle-icon">expand_more</span>
+        </button>
+        <button onclick="addManualDay()" id="manual-add-day-btn"
+                class="hidden items-center gap-1 text-xs text-[#8b90a0] hover:text-[#00F2FF] transition-colors px-2 py-1 border border-dashed border-[#414755] hover:border-[#00F2FF]/40 rounded-lg">
+          <span class="material-symbols-outlined text-sm">add</span>День
+        </button>
+      </div>
+      <div id="manual-builder" class="hidden mt-3"></div>
     </div>`;
 
   if (window.innerWidth < 1024) {
@@ -1948,10 +1927,9 @@ window.saveNote = () => {
 
 function getIrtFields() {
   const nrsBefore = document.getElementById('irt-nrs-before')?.value;
-  const nrsAfter  = document.getElementById('irt-nrs-after')?.value;
   return {
     nrs_before:     nrsBefore !== '' && nrsBefore != null ? parseInt(nrsBefore) : null,
-    nrs_after:      nrsAfter  !== '' && nrsAfter  != null ? parseInt(nrsAfter)  : null,
+    nrs_after:      null,
     treatment_type: document.getElementById('irt-treatment-type')?.value || null,
     stimulation:    document.getElementById('irt-needle-type')?.value    || null,
     exposure:       parseInt(document.getElementById('irt-exposure')?.value) || null,
@@ -1959,9 +1937,24 @@ function getIrtFields() {
   };
 }
 
+const PROGRESS_COLORS = { 1:'#ff453a', 2:'#FF9F0A', 3:'#FFD60A', 4:'#30D158', 5:'#5AC85A' };
+window.setProgress = function(v) {
+  document.getElementById('irt-nrs-before').value = v;
+  document.querySelectorAll('.progress-btn').forEach(b => {
+    const bv = Number(b.dataset.v);
+    const c = PROGRESS_COLORS[bv];
+    b.style.background = bv === v ? c + '22' : '';
+    b.style.borderColor = bv === v ? c : '';
+    b.style.opacity = '1';
+  });
+};
+
 function resetIrtFields() {
-  ['irt-nrs-before','irt-nrs-after','irt-exposure'].forEach(id => {
+  ['irt-nrs-before','irt-exposure'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.querySelectorAll('.progress-btn').forEach(b => {
+    b.style.background = ''; b.style.borderColor = '';
   });
   ['irt-treatment-type','irt-needle-type'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';

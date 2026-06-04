@@ -858,7 +858,7 @@
     <button class="modal-close" onclick="closeTrialModal()">×</button>
     <div id="modal-form">
       <div class="modal-title">Хочу попробовать</div>
-      <div class="modal-sub">Выберите удобный способ связи — вышлем данные для входа</div>
+      <div class="modal-sub">Выберите мессенджер и укажите email — на него придут логин и пароль</div>
       <div class="method-grid" style="grid-template-columns:1fr 1fr 1fr">
         <button class="method-btn" onclick="selectMethod('telegram')" id="btn-telegram">
           <span class="method-icon">✈️</span>
@@ -877,12 +877,16 @@
         <input id="contact-input" type="text" placeholder="" autocomplete="off"/>
         <div class="contact-hint" id="contact-hint"></div>
       </div>
+      <div class="contact-wrap" id="email-wrap" style="display:none">
+        <input id="email-input" type="email" placeholder="ваш@email.ru" autocomplete="email"/>
+        <div class="contact-hint">На этот адрес придут логин и пароль</div>
+      </div>
       <button class="modal-submit" id="modal-submit-btn" onclick="submitTrialRequest()" disabled>Отправить заявку</button>
     </div>
     <div id="modal-success" class="modal-success" style="display:none">
       <span class="modal-success-icon">✅</span>
       <div class="modal-success-title">Заявка принята!</div>
-      <div class="modal-success-sub">Мы свяжемся с вами и вышлем данные для входа.<br>Проверьте указанный контакт.</div>
+      <div class="modal-success-sub">Пришлём логин и пароль на вашу почту.<br>Обычно это занимает несколько часов.</div>
     </div>
   </div>
 </div>
@@ -970,6 +974,8 @@
     document.getElementById('contact-input').value = '';
     document.getElementById('contact-hint').textContent = '';
     document.getElementById('contact-hint').style.color = '';
+    document.getElementById('email-input').value = '';
+    document.getElementById('email-wrap').style.display = 'none';
     document.getElementById('modal-submit-btn').disabled = true;
     document.getElementById('modal-form').style.display = '';
     document.getElementById('modal-success').style.display = 'none';
@@ -986,19 +992,26 @@
     document.getElementById('contact-hint').textContent = cfg.hint;
     document.getElementById('contact-hint').style.color = '';
     document.getElementById('contact-wrap').style.display = '';
+    document.getElementById('email-wrap').style.display = '';
     inp.focus();
-    document.getElementById('modal-submit-btn').disabled = !inp.value.trim();
+    updateSubmitBtn();
+  }
+
+  function updateSubmitBtn() {
+    const contact = document.getElementById('contact-input').value.trim();
+    const email   = document.getElementById('email-input').value.trim();
+    document.getElementById('modal-submit-btn').disabled = !trialMethod || !contact || !email || !email.includes('@');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('contact-input').addEventListener('input', e => {
-      document.getElementById('modal-submit-btn').disabled = !e.target.value.trim();
-    });
+    document.getElementById('contact-input').addEventListener('input', updateSubmitBtn);
+    document.getElementById('email-input').addEventListener('input', updateSubmitBtn);
   });
 
   async function submitTrialRequest() {
+    const email   = document.getElementById('email-input').value.trim();
     const contact = document.getElementById('contact-input').value.trim();
-    if (!contact || !trialMethod) return;
+    if (!email || !email.includes('@')) return;
     const btn = document.getElementById('modal-submit-btn');
     btn.disabled = true;
     btn.textContent = 'Отправляем…';
@@ -1006,7 +1019,7 @@
       const r = await fetch('/api/trial-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: trialMethod, contact })
+        body: JSON.stringify({ method: trialMethod || 'email', contact: contact || email, email })
       });
       if (r.ok) {
         document.getElementById('modal-form').style.display = 'none';
@@ -1015,8 +1028,9 @@
         btn.disabled = false;
         btn.textContent = 'Отправить заявку';
         const hint = document.getElementById('contact-hint');
-        hint.textContent = '⚠️ Этот контакт уже подавал заявку';
+        hint.textContent = '⚠️ Заявка с этим email уже существует';
         hint.style.color = '#ff6b6b';
+        document.getElementById('contact-wrap').style.display = '';
       } else {
         throw new Error();
       }

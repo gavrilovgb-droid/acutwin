@@ -32,6 +32,14 @@ export function isAdmin(session) {
   return session && session.role === 'admin';
 }
 
+// Декодирует JWT без проверки подписи (только для чтения exp)
+function _parseJwtExp(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.exp ? payload.exp * 1000 : null;
+  } catch { return null; }
+}
+
 export async function requireAuth() {
   const session = getSession();
   if (!session || !getToken()) {
@@ -46,12 +54,37 @@ export async function requireAuth() {
       window.location.href = 'login.html';
     }
   });
-  // bfcache: браузер восстановил страницу кнопкой «назад» — проверяем токен
-  window.addEventListener('pageshow', e => {
-    if (e.persisted && !getToken()) {
-      window.location.replace('login.html');
+  // bfcache + visibilitychange: проверяем токен при любом возврате на страницу
+  const _checkToken = () => { if (!getToken()) window.location.replace('login.html'); };
+  window.addEventListener('pageshow', e => { if (e.persisted) _checkToken(); });
+  window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') _checkToken(); });
+
+  // Предупреждение за 5 минут до истечения JWT
+  const exp = _parseJwtExp(getToken());
+  if (exp) {
+    const warnAt = exp - 5 * 60 * 1000;
+    const delay  = warnAt - Date.now();
+    if (delay > 0) {
+      setTimeout(() => {
+        if (!getToken()) return;
+        const bar = document.createElement('div');
+        bar.id = 'jwt-warn-bar';
+        bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9999;background:#FF9500;color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px';
+        bar.innerHTML = '<span>⏱ Сессия истекает через 5 минут. Сохраните данные.</span><button onclick="this.closest(\'#jwt-warn-bar\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;line-height:1">×</button>';
+        document.body.appendChild(bar);
+        setTimeout(() => bar.remove(), 60_000);
+      }, delay);
     }
-  });
+    // Авто-выход по истечению токена
+    const logoutDelay = exp - Date.now();
+    if (logoutDelay > 0) {
+      setTimeout(() => {
+        clearToken();
+        window.location.replace('login.html');
+      }, logoutDelay);
+    }
+  }
+
   return session;
 }
 

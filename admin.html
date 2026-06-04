@@ -160,6 +160,7 @@ select.glass-input option { background:#1f1f1f; }
                 <th class="px-4 py-2.5 text-left font-semibold">Дата</th>
                 <th class="px-3 py-2.5 text-left font-semibold">Метод</th>
                 <th class="px-3 py-2.5 text-left font-semibold">Контакт</th>
+                <th class="px-3 py-2.5 text-left font-semibold">Email</th>
                 <th class="px-3 py-2.5 text-left font-semibold">Статус</th>
                 <th class="px-3 py-2.5 text-right font-semibold">Действия</th>
               </tr>
@@ -226,6 +227,38 @@ select.glass-input option { background:#1f1f1f; }
       <button onclick="closeUserModal()" class="flex-1 py-2.5 rounded-xl border border-white/10 text-[#8b90a0] hover:text-white text-xs font-bold transition-colors">Отмена</button>
       <button onclick="saveUser()" class="flex-1 py-2.5 rounded-xl bg-[#34C759]/15 hover:bg-[#34C759]/25 border border-[#34C759]/40 text-[#34C759] text-xs font-bold transition-colors">Создать</button>
     </div>
+  </div>
+</div>
+
+<!-- ── МОДАЛ: Учётные данные выданы ── -->
+<div id="creds-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-[#181818] border border-white/10 rounded-2xl w-80 p-6 shadow-2xl">
+    <div class="text-center mb-5">
+      <div class="text-2xl mb-2">✅</div>
+      <div class="text-base font-bold text-[#e2e2e2]">Аккаунт создан</div>
+      <div class="text-xs text-[#8b90a0] mt-1">Скопируйте и отправьте клиенту</div>
+    </div>
+    <div class="space-y-3 mb-5">
+      <div class="bg-[#1f1f1f] border border-[#414755] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-0.5">Логин</div>
+          <div id="creds-login" class="font-mono font-bold text-[#00F2FF] text-sm"></div>
+        </div>
+        <button onclick="copyText('creds-login',this)" class="text-[10px] text-[#8b90a0] hover:text-[#00F2FF] border border-[#414755] hover:border-[#00F2FF]/40 rounded-lg px-2 py-1 transition-colors">Копировать</button>
+      </div>
+      <div class="bg-[#1f1f1f] border border-[#414755] rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-0.5">Пароль</div>
+          <div id="creds-pass" class="font-mono font-bold text-[#FFD60A] text-sm"></div>
+        </div>
+        <button onclick="copyText('creds-pass',this)" class="text-[10px] text-[#8b90a0] hover:text-[#FFD60A] border border-[#414755] hover:border-[#FFD60A]/40 rounded-lg px-2 py-1 transition-colors">Копировать</button>
+      </div>
+    </div>
+    <div id="creds-mail-status" class="text-center text-xs mb-4"></div>
+    <button onclick="document.getElementById('creds-modal').classList.add('hidden')"
+            class="w-full py-2.5 rounded-xl bg-[#34C759]/15 hover:bg-[#34C759]/25 border border-[#34C759]/40 text-[#34C759] text-xs font-bold transition-colors">
+      Готово
+    </button>
   </div>
 </div>
 
@@ -365,7 +398,7 @@ select.glass-input option { background:#1f1f1f; }
 <script type="module">
 import { buildSidebar, initElementClock, esc } from './shared.js';
 import { requireAdmin } from './auth.js';
-import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus } from './api.js?v=3';
+import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus, apiSendCredentials } from './api.js?v=4';
 
 const session = await requireAdmin();
 if (!session) throw new Error('redirect');
@@ -947,12 +980,16 @@ window.renderRequests = async function(force = true) {
         </span>
       </td>
       <td class="px-3 py-3 font-mono font-bold text-[#00F2FF]">${esc(r.contact)}</td>
+      <td class="px-3 py-3 text-[#c1c6d7] text-xs">${r.email ? esc(r.email) : '<span class="text-[#414755]">—</span>'}</td>
       <td class="px-3 py-3">
         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${st.cls}">${st.label}</span>
       </td>
       <td class="px-3 py-3 text-right whitespace-nowrap">
         ${r.status !== 'granted' ? `
-          <button onclick="grantAccess(${r.id}, '${esc(r.contact)}', '${esc(r.method)}')"
+          <input id="trial-days-${r.id}" type="number" min="1" max="365" value="14"
+                 class="w-12 text-center text-xs bg-[#1a1f2e] border border-[#414755] rounded px-1 py-0.5 text-[#c1c6d7] mr-1"
+                 title="Дней триала">
+          <button onclick="grantAccess(${r.id}, '${esc(r.contact)}', '${esc(r.method)}', '${esc(r.email||'')}')"
                   class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#34C759] border border-[#34C759]/30 hover:bg-[#34C759]/10 transition-colors mr-1">
             Выдать доступ
           </button>` : ''}
@@ -972,39 +1009,86 @@ window.setReqStatus = async function(id, status) {
   await renderRequests();
 };
 
-window.grantAccess = function(id, contact, method) {
-  // Предзаполняем модал создания пользователя
-  const suggestedLogin = contact
+function genLogin(contact, method) {
+  const base = contact
     .replace(/^@/, '')
-    .replace(/[^a-zA-Z0-9_]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
     .toLowerCase()
-    .slice(0, 20) || 'doctor';
+    .slice(0, 3) || 'dr';
+  return base + Math.floor(10 + Math.random() * 90);
+}
 
-  document.getElementById('u-name').value = contact;
-  document.getElementById('u-username').value = suggestedLogin;
-  document.getElementById('u-password').value = '';
-  document.getElementById('u-role').value = 'doctor';
-  document.getElementById('u-error').classList.add('hidden');
-  document.getElementById('user-modal').classList.remove('hidden');
+function genPassword() {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const pick = s => s[Math.floor(Math.random() * s.length)];
+  const chars = [pick(upper), pick(upper), pick(lower), pick(lower), pick(digits), pick(digits)];
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join('');
+}
 
-  // После успешного создания — отмечаем заявку как granted
-  const origSave = window.saveUser.toString();
-  window._pendingGrantId = id;
+window.copyText = function(elId, btn) {
+  const text = document.getElementById(elId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Скопировано';
+    setTimeout(() => { btn.textContent = 'Копировать'; }, 1500);
+  });
 };
 
-// Перехватываем saveUser чтобы после создания врача пометить заявку granted
-const _origSaveUser = window.saveUser;
-window.saveUser = async function() {
-  await _origSaveUser();
-  // Если модал закрылся — значит создание прошло успешно
-  const isModalHidden = document.getElementById('user-modal').classList.contains('hidden');
-  if (isModalHidden && window._pendingGrantId != null) {
-    await apiUpdateTrialStatus(window._pendingGrantId, 'granted');
-    window._pendingGrantId = null;
-    if (!document.getElementById('section-requests').classList.contains('hidden')) {
-      await renderRequests();
-    }
+window.grantAccess = async function(id, contact, method, email) {
+  const login    = genLogin(contact, method);
+  const password = genPassword();
+  const btn = document.querySelector(`button[onclick*="grantAccess(${id},"]`);
+  const daysInput = document.getElementById(`trial-days-${id}`);
+  const days = Math.max(1, parseInt(daysInput?.value || '14', 10));
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  const result = await apiAddUser(login, contact, password, 'doctor').catch(e => ({ ok: false, error: e.message }));
+  if (!result?.ok) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Выдать доступ'; }
+    alert('Ошибка: ' + (result?.error || 'не удалось создать пользователя'));
+    return;
   }
+
+  const trialEnd = new Date();
+  trialEnd.setDate(trialEnd.getDate() + days);
+  const paidUntil = trialEnd.toISOString().slice(0, 10);
+  await apiAddTenant({
+    id: crypto.randomUUID(),
+    clinic: contact,
+    plan: 'trial',
+    status: 'trial',
+    doctorLogins: [login],
+    paidUntil,
+    type: 'clinic',
+    price: 0,
+    contact,
+    phone: '',
+    email: email || '',
+    notes: `Пробный доступ ${days} дн.`,
+    payments: [],
+  });
+
+  await apiUpdateTrialStatus(id, 'granted');
+
+  const mailEl = document.getElementById('creds-mail-status');
+  if (email) {
+    const sent = await apiSendCredentials(email, login, password).catch(() => ({ ok: false }));
+    if (mailEl) mailEl.textContent = sent?.ok ? `✉ Письмо отправлено на ${email}` : '⚠ Письмо не отправлено';
+    if (mailEl) mailEl.style.color = sent?.ok ? '#30D158' : '#FF9F0A';
+  } else {
+    if (mailEl) mailEl.textContent = 'Email не указан — письмо не отправлялось';
+    if (mailEl) mailEl.style.color = '#8b90a0';
+  }
+
+  await renderRequests();
+  document.getElementById('creds-login').textContent = login;
+  document.getElementById('creds-pass').textContent  = password;
+  document.getElementById('creds-modal').classList.remove('hidden');
 };
 
 </script>

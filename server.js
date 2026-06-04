@@ -254,6 +254,11 @@ async function handleAPI(method, endpoint, req, res) {
     // Проверка арендатора
     const tenant = db.findTenantByDoctor(user.username);
     if (tenant && user.role === 'doctor') {
+      const today = new Date().toISOString().slice(0, 10);
+      if (tenant.paidUntil && tenant.paidUntil < today) {
+        db.updateTenant({ ...tenant, status: 'expired' });
+        return json(res, 403, { error: 'Срок пробного доступа истёк.' });
+      }
       if (tenant.status === 'expired')   return json(res, 403, { error: 'Срок действия подписки истёк.' });
       if (tenant.status === 'suspended') return json(res, 403, { error: 'Доступ приостановлен.' });
     }

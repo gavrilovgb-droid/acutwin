@@ -17,14 +17,63 @@ try {
 
 const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN || '';
 const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID   || '';
-
 const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
 
-function sendTgNotify(contactMethod, contact, ip) {
+async function sendCredentialsMail(to, login, password) {
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#f9f9f9;border-radius:12px">
+      <h2 style="color:#0a0a0a;margin-bottom:8px">Добро пожаловать в AcuTwin</h2>
+      <p style="color:#555;margin-bottom:24px">Ваш пробный доступ активирован. Войдите по ссылке ниже:</p>
+      <a href="https://acutwin.ru" style="display:inline-block;background:#00c2cc;color:#000;font-weight:700;padding:12px 28px;border-radius:8px;text-decoration:none;margin-bottom:28px">Открыть AcuTwin</a>
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:20px">
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Логин</div>
+          <div style="font-family:monospace;font-size:20px;font-weight:700;color:#0a0a0a">${login}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Пароль</div>
+          <div style="font-family:monospace;font-size:20px;font-weight:700;color:#0a0a0a">${password}</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#999">Если вы не запрашивали доступ — просто проигнорируйте это письмо.</p>
+    </div>`;
+
+  const body = JSON.stringify({
+    from:    'AcuTwin <info@acutwin.ru>',
+    to,
+    subject: 'Ваши данные для входа в AcuTwin',
+    html,
+  });
+
+  await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.resend.com',
+      path:     '/emails',
+      method:   'POST',
+      headers:  {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type':  'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+        else reject(new Error(`Resend ${res.statusCode}: ${data}`));
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function sendTgNotify(contactMethod, contact, ip, email) {
   if (!TG_TOKEN || !TG_CHAT_ID) return;
   const label = TG_METHOD_LABEL[contactMethod] || contactMethod;
   const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-  const text = `🔔 Новая заявка на триал АкуПро\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`;
+  const text = `🔔 Новая заявка на триал АкуПро\nEmail: ${email || '—'}\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`;
   const body = JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
   const req = https.request({
     hostname: 'api.telegram.org',
@@ -149,18 +198,35 @@ async function handleAPI(method, endpoint, req, res) {
 
   // POST /api/trial-request
   if (method === 'POST' && endpoint === '/api/trial-request') {
-    const { method: contactMethod, contact } = await readBody(req);
-    const VALID_METHODS = ['telegram', 'max', 'phone', 'card'];
-    if (!VALID_METHODS.includes(contactMethod) || !contact || !contact.trim())
+    const { method: contactMethod, contact, email } = await readBody(req);
+    const VALID_METHODS = ['telegram', 'max', 'phone', 'card', 'email'];
+    if (!contact || !contact.trim())
       return json(res, 400, { error: 'Некорректные данные' });
+    if (!email || !email.trim() || !email.includes('@'))
+      return json(res, 400, { error: 'Укажите email' });
+    const safeMethod = VALID_METHODS.includes(contactMethod) ? contactMethod : 'email';
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
     try {
-      db.addTrialRequest(contactMethod, contact.trim(), ip);
-      sendTgNotify(contactMethod, contact.trim(), ip);
+      db.addTrialRequest(safeMethod, contact.trim(), ip, email.trim());
+      sendTgNotify(safeMethod, contact.trim(), ip, email.trim());
       return json(res, 200, { ok: true });
     } catch (e) {
       if (e.message && e.message.includes('UNIQUE')) return json(res, 409, { error: 'Дубликат' });
       return json(res, 500, { error: 'Ошибка сервера' });
+    }
+  }
+
+  // POST /api/send-credentials
+  if (method === 'POST' && endpoint === '/api/send-credentials') {
+    const user = requireAdmin(req, res); if (!user) return;
+    const { email, login, password } = await readBody(req);
+    if (!email || !login || !password) return json(res, 400, { error: 'Нет данных' });
+    try {
+      await sendCredentialsMail(email, login, password);
+      return json(res, 200, { ok: true });
+    } catch (e) {
+      console.error('[mail error]', e.message);
+      return json(res, 500, { error: 'Не удалось отправить письмо: ' + e.message });
     }
   }
 

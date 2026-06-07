@@ -5513,7 +5513,7 @@ function sndSelectTrack(id) {
 function sndPlay() {
   if (!_sndTrackId) return;
   const el = _sndEl;
-  const url = `${SND_BASE}/${el}/${_sndTrackId}.mp3`;
+  const url = `${SND_BASE}/${el}/${_sndTrackId}.mp3?v=3`;
   _sndAudio = new Audio(url);
   _sndAudio.volume = parseFloat(document.getElementById('snd-volume').value);
   _sndAudio.play().catch(e => {

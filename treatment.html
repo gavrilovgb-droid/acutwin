@@ -16,6 +16,16 @@
 <script src="html2canvas.min.js"></script>
 <script src="jspdf.umd.min.js"></script>
 <style>
+/* ── Sound therapy ── */
+.snd-el-btn { transition: all 0.2s; border-radius: 10px; padding: 5px 10px; font-size: 11px; font-weight: 700; border: 1.5px solid; cursor: pointer; opacity: 0.55; }
+.snd-el-btn.active-el { opacity: 1; box-shadow: 0 0 10px rgba(255,255,255,0.15); }
+.snd-track-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+.snd-track-row:hover { background: rgba(255,255,255,0.06); }
+.snd-track-row.active-track { background: rgba(0,242,255,0.08); border-color: rgba(0,242,255,0.3); }
+.snd-play-btn { width: 52px; height: 52px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+.snd-play-btn:hover { transform: scale(1.08); }
+#sound-panel { transition: transform 0.3s ease, opacity 0.3s ease; }
+#sound-panel.hidden { transform: translateY(20px); opacity: 0; pointer-events: none; }
 .path-btn { transition: all 0.2s; }
 .path-btn.active { border-color: rgba(0,242,255,0.5) !important; background: rgba(0,242,255,0.08) !important; }
 .path-btn.active .path-icon { color: #00F2FF; }
@@ -134,6 +144,96 @@ html, body {
   <div id="body-bg-overlay" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
 </div>
 
+<!-- Video lesson modal -->
+<div id="video-lesson-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+     onclick="if(event.target===this)closeVideoLesson()">
+  <div class="glass-panel rounded-2xl mx-4 flex flex-col" style="width:min(860px,96vw);max-height:92vh">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);color:#FF9F0A">▶ Видеоурок</span>
+        <span id="vl-title" class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif"></span>
+      </div>
+      <button onclick="closeVideoLesson()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex-1 p-4 overflow-hidden flex flex-col" style="min-height:0">
+      <video id="vl-player" controls class="w-full rounded-xl flex-1" style="min-height:0;background:#000;max-height:calc(92vh - 120px)"
+             onerror="document.getElementById('vl-error').classList.remove('hidden');this.style.display='none'"></video>
+      <div id="vl-error" class="hidden text-center py-10 text-[#8b90a0] text-sm">
+        <span class="material-symbols-outlined text-4xl block mb-2 text-[#414755]">videocam_off</span>
+        Видеофайл не найден — запустите конвертацию MPG → MP4
+      </div>
+    </div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right">© П. В. Белоусов — zhong-yi.narod.ru</div>
+  </div>
+</div>
+
+<!-- ══ Sound Therapy Panel ══ -->
+<div id="sound-panel" class="glass-panel rounded-2xl shadow-2xl" style="position:fixed;bottom:20px;right:20px;z-index:200;width:390px;max-height:82vh;display:none;flex-direction:column;border:1px solid rgba(255,255,255,0.12)">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-5 py-3 border-b border-white/10 flex-shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[#30D158]" style="font-size:18px;zoom:1">music_note</span>
+      <span class="font-bold text-sm" style="font-family:'Hanken Grotesk',sans-serif">Звукотерапия</span>
+      <span id="snd-playing-badge" class="hidden items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style="background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.4);color:#30D158">
+        <span style="width:6px;height:6px;border-radius:50%;background:#30D158;display:inline-block;animation:pulse 1.2s infinite"></span>
+        ИГРАЕТ
+      </span>
+    </div>
+    <button onclick="toggleSoundPanel()" class="text-[#8b90a0] hover:text-white transition-colors">
+      <span class="material-symbols-outlined" style="font-size:18px;zoom:1">close</span>
+    </button>
+  </div>
+  <!-- Element selector -->
+  <div class="flex gap-1.5 p-3 flex-shrink-0">
+    <button class="snd-el-btn active-el" data-el="wood"   onclick="selectElement('wood')"  style="color:#5AC85A;border-color:#5AC85A;background:rgba(90,200,90,0.12)">Дерево</button>
+    <button class="snd-el-btn"            data-el="fire"   onclick="selectElement('fire')"  style="color:#FF453A;border-color:#FF453A;background:rgba(255,69,58,0.08)">Огонь</button>
+    <button class="snd-el-btn"            data-el="earth"  onclick="selectElement('earth')" style="color:#FFD60A;border-color:#FFD60A;background:rgba(255,214,10,0.08)">Земля</button>
+    <button class="snd-el-btn"            data-el="metal"  onclick="selectElement('metal')" style="color:#E5E5EA;border-color:#E5E5EA;background:rgba(229,229,234,0.06)">Металл</button>
+    <button class="snd-el-btn"            data-el="water"  onclick="selectElement('water')" style="color:#0A84FF;border-color:#0A84FF;background:rgba(10,132,255,0.08)">Вода</button>
+  </div>
+  <!-- Hz badge + duration -->
+  <div class="flex items-center gap-3 px-4 pb-3 flex-shrink-0">
+    <span id="snd-hz-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(90,200,90,0.12);border:1px solid rgba(90,200,90,0.3);color:#5AC85A">528 Гц · Дерево</span>
+    <div class="flex items-center gap-1.5 ml-auto">
+      <span class="text-[10px] text-[#8b90a0]">Длит.</span>
+      <input id="snd-duration" type="number" min="5" max="120" value="30"
+             class="w-14 text-center text-xs bg-[#1f1f1f] border border-[#414755] rounded-lg px-2 py-1 text-[#e2e2e2] focus:outline-none focus:border-[#30D158] transition-all"/>
+      <span class="text-[10px] text-[#8b90a0]">мин</span>
+    </div>
+  </div>
+  <!-- Track list -->
+  <div id="snd-tracklist" class="overflow-y-auto flex-1 px-3 pb-2" style="min-height:0"></div>
+  <!-- Controls -->
+  <div class="px-4 py-3 border-t border-white/10 flex items-center gap-4 flex-shrink-0">
+    <button id="snd-play-btn" onclick="sndPlayPause()"
+            class="snd-play-btn border-[#30D158] bg-[#30D158]/15 text-[#30D158] hover:bg-[#30D158]/25">
+      <span id="snd-play-icon" class="material-symbols-outlined" style="font-size:24px;zoom:1">play_arrow</span>
+    </button>
+    <button onclick="sndStop()" class="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 text-[#8b90a0] hover:text-white hover:border-white/30 text-xs font-bold transition-all">
+      <span class="material-symbols-outlined" style="font-size:14px;zoom:1">stop</span>
+      Стоп
+    </button>
+    <div class="flex-1 flex flex-col gap-1 min-w-0">
+      <div id="snd-track-name" class="text-xs text-[#c1c6d7] truncate">Выберите трек</div>
+      <div class="flex items-center gap-2">
+        <div class="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+          <div id="snd-progress-bar" class="h-full rounded-full bg-[#30D158] transition-all" style="width:0%"></div>
+        </div>
+        <span id="snd-timer" class="text-[10px] text-[#8b90a0] flex-shrink-0 font-mono">--:--</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-1 flex-shrink-0">
+      <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:14px;zoom:1">volume_up</span>
+      <input id="snd-volume" type="range" min="0" max="1" step="0.05" value="0.8"
+             oninput="if(window._sndAudio)window._sndAudio.volume=this.value"
+             class="w-16 accent-[#30D158] cursor-pointer"/>
+    </div>
+  </div>
+</div>
+<style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
+
 <!-- Point card modal -->
 <div id="vid-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onclick="if(event.target===this)closeModal()">
   <div class="glass-panel rounded-2xl w-full max-w-xl mx-4 flex flex-col" style="max-height:90vh">
@@ -159,6 +259,11 @@ html, body {
       <div class="step-line"></div>
       <div id="si3" class="step-circle">3</div>
     </div>
+    <button onclick="toggleSoundPanel()" id="snd-header-btn"
+            class="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all flex-shrink-0">
+      <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
+      <span id="snd-btn-label">Звукотерапия</span>
+    </button>
   </header>
 
   <!-- Mobile path selector — visible only on mobile -->
@@ -187,6 +292,11 @@ html, body {
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">picture_as_pdf</span>
         PDF
       </button>
+      <button onclick="openSoapModal()" id="soap-modal-btn"
+              class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors text-xs font-bold flex-shrink-0">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">edit_note</span>
+        SOAP
+      </button>
       <button onclick="savePatientSession()" id="pc-save-btn"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3d8a5c]/20 hover:bg-[#3d8a5c]/35 text-[#5AC85A] border border-[#3d8a5c]/40 transition-colors text-xs font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>
@@ -195,9 +305,19 @@ html, body {
     </div>
     <!-- ИРТ-поля сессии -->
     <div id="irt-fields" class="hidden flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 mb-3 bg-[#1a1a2e]/60 border border-[#414755]/50 rounded-xl flex-shrink-0 text-xs text-[#8b90a0]">
+      <label class="flex items-center gap-1.5">
+        <span>Боль до</span>
+        <input id="irt-nrs-before" type="number" min="0" max="10" placeholder="0–10"
+               class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
+      <label class="flex items-center gap-1.5">
+        <span>Боль после</span>
+        <input id="irt-nrs-after" type="number" min="0" max="10" placeholder="0–10"
+               class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
       <div class="flex items-center gap-2">
         <span>Прогресс</span>
-        <input type="hidden" id="irt-nrs-before"/>
+        <input type="hidden" id="irt-progress"/>
         <div class="flex gap-1" id="progress-btns">
           <button type="button" data-v="1" onclick="setProgress(1)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#ff453a]/60" style="color:#ff453a">Плохо</button>
           <button type="button" data-v="2" onclick="setProgress(2)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FF9F0A]/60" style="color:#FF9F0A">Неудовл.</button>
@@ -231,6 +351,10 @@ html, body {
         <span>Экспозиция, мин</span>
         <input id="irt-exposure" type="number" min="1" max="120" placeholder="20"
                class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer select-none">
+        <input id="irt-deqi" type="checkbox" style="width:14px;height:14px;accent-color:#0A84FF;cursor:pointer;flex-shrink:0"/>
+        <span>Де-ци</span>
       </label>
     </div>
     <div class="flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden">
@@ -550,6 +674,14 @@ apiGetClinic().then(c => { _clinicName = c.name || ''; });
 document.getElementById('nav-mount').innerHTML = buildSidebar('treatment', session);
 initElementClock();
 
+// ── Запись расписания (если перешли из schedule.html) ──
+const _urlParams = new URLSearchParams(window.location.search);
+window._appointmentId = _urlParams.get('appointmentId') || null;
+const _urlPatient = _urlParams.get('patient');
+if (window._appointmentId && _urlPatient && !sessionStorage.getItem('acutwin_diag_patient')) {
+  sessionStorage.setItem('acutwin_diag_patient', JSON.stringify({ patient: _urlPatient, age:'', gender:'', reason:'' }));
+}
+
 // ── Пациент из записи (через sessionStorage) ────────────
 let _diagData = null; // сохраняем для printRecipe()
 try {
@@ -561,6 +693,13 @@ try {
     const pc = document.getElementById('patient-context');
     pc.classList.remove('hidden');
     document.getElementById('irt-fields').classList.remove('hidden');
+    document.getElementById('soap-modal-btn').classList.remove('hidden');
+    window._soapPatientKey = patient;
+    const _sk = patient.replace(/\s+/g,'_');
+    ['s','o','a','p'].forEach(f => {
+      const el = document.getElementById('soap-' + f);
+      if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
+    });
     document.getElementById('pc-name').textContent = patient;
     document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
     document.getElementById('pc-reason').textContent = reason;
@@ -650,6 +789,7 @@ let diseaseKeys = [];
 let points = {};
 let evidence = {};
 let ikb10 = {};
+let videosByDisease = {};
 let selectedSyms = new Set();
 let merScores = {};
 let activeDis = null;
@@ -680,11 +820,13 @@ Promise.all([
   fetch('/data/diseases.json', _authHdr()).then(r=>r.json()).catch(()=>({})),
   fetch('/data/evidence.json', _authHdr()).then(r=>r.json()).catch(()=>({})),
   fetch('/data/ikb10.json',    _authHdr()).then(r=>r.json()).catch(()=>({})),
-]).then(([pts, dis, ev, ik]) => {
+  fetch('/data/videos.json',   _authHdr()).then(r=>r.json()).catch(()=>({})),
+]).then(([pts, dis, ev, ik, vid]) => {
   points = pts;
   diseases = dis;
   evidence = ev;
   ikb10 = ik;
+  videosByDisease = vid.byDisease || {};
   diseaseKeys = Object.keys(diseases);
   buildSymGroups();
   buildGrouped();
@@ -894,6 +1036,15 @@ let activeTcm = null;
 let activeTcmSection = null;
 let tcmGroups = [];
 let expandedTcm = new Set();
+
+function getTcmVideo(name) {
+  if (!name) return null;
+  const direct = videosByDisease[name];
+  if (direct) return direct;
+  const low = name.toLowerCase();
+  const key = Object.keys(videosByDisease).find(k => k.toLowerCase().startsWith(low) || low.startsWith(k.toLowerCase().split('—')[0].trim()));
+  return key ? videosByDisease[key] : null;
+}
 
 const MUSCULO_SECTION = 'ОПОРНО-ДВИГАТЕЛЬНЫЕ БОЛЕЗНИ';
 const MUSCULO_NAMES = new Set([
@@ -1138,6 +1289,7 @@ function renderTcmList(q) {
                   ${MODERN_NAMES[r.name_ru] ? `<span class="text-[10px] text-[#8b90a0] truncate block">${MODERN_NAMES[r.name_ru]}</span>` : ''}
                 </span>
                 ${r.name_cn ? `<span class="text-[11px] text-[#8b90a0] flex-shrink-0 font-mono">${r.name_cn}</span>` : ''}
+                ${getTcmVideo(r.name_ru) ? `<span title="Есть видеоурок" style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,159,10,0.22);border:1px solid rgba(255,159,10,0.6);color:#FF9F0A;flex-shrink:0"><span class="material-symbols-outlined" style="font-size:12px;line-height:1">play_circle</span>Видео</span>` : ''}
                 ${hasChildren ? `<span class="material-symbols-outlined text-base text-[#8b90a0] flex-shrink-0"
                                       style="transition:transform .2s;transform:rotate(${isExpanded?'180deg':'0deg'})">expand_more</span>` : ''}
               </button>
@@ -1245,22 +1397,7 @@ window.selectTcm = (idx) => {
   window._currentDisName = r.name || ('ТКМ-рецепт #' + idx);
   window._currentColor   = '#FFD60A';
 
-  const tcmSavedNote = localStorage.getItem('acunote_tcm_' + idx) || '';
-  const tcmNotesHtml = `
-    <div class="border-t border-white/10 pt-4">
-      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2 flex items-center gap-1">
-        <span class="material-symbols-outlined text-xs">edit_note</span>Примечания врача
-      </div>
-      <textarea id="doc-notes" rows="3"
-                placeholder="Особенности пациента, метод воздействия, результаты..."
-                class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#00F2FF]/50 resize-none">${tcmSavedNote}</textarea>
-      <div class="flex justify-end mt-1">
-        <button id="save-note-btn" onclick="saveNote()"
-                class="text-[10px] text-[#8b90a0] hover:text-[#00F2FF] transition-colors flex items-center gap-1">
-          <span class="material-symbols-outlined" style="font-size:14px">save</span>Сохранить
-        </button>
-      </div>
-    </div>`;
+  const tcmNotesHtml = '';
 
   if (window.innerWidth < 1024) {
     document.getElementById('tcm-panels')?.classList.add('detail-open');
@@ -1280,7 +1417,18 @@ window.selectTcm = (idx) => {
           <span class="text-[9px] font-bold px-2 py-0.5 rounded-full"
                 style="color:${secColor};background:${secColor}15;border:1px solid ${secColor}30">${r.section}</span>
         </div>
-        <h4 class="text-base font-bold text-[#e2e2e2] leading-snug" style="font-family:'Hanken Grotesk',sans-serif">${r.name_ru}</h4>
+        <div class="flex items-start gap-2">
+          <h4 class="text-base font-bold text-[#e2e2e2] leading-snug flex-1" style="font-family:'Hanken Grotesk',sans-serif">${r.name_ru}</h4>
+          ${getTcmVideo(r.name_ru) ? `<button onclick="openVideoLesson('${getTcmVideo(r.name_ru)}', '${r.name_ru.replace(/'/g,"\\'")}');event.stopPropagation()"
+            style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;
+                   background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.5);
+                   color:#FF9F0A;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;
+                   transition:all 0.15s"
+            onmouseenter="this.style.background='rgba(255,159,10,0.25)'"
+            onmouseleave="this.style.background='rgba(255,159,10,0.15)'">
+            ▶ Видео
+          </button>` : ''}
+        </div>
         ${MODERN_NAMES[r.name_ru] ? `<div class="text-xs text-[#8b90a0] mt-1">→ ${MODERN_NAMES[r.name_ru]}</div>` : ''}
         ${r.name_cn ? `<div class="text-sm text-[#414755] font-mono mt-0.5">${r.name_cn}</div>` : ''}
       </div>
@@ -1381,7 +1529,7 @@ const DIS_CATEGORIES = [
     'верхних конечн','нижних конечн','в рук','в ног',
   ]},
   { id: 'pain',    label: 'Болевые синдромы',    icon: 'healing',        keywords: ['боль','болевой','болезненн','невралг','радикул','мигрен','головная боль'] },
-  { id: 'neuro',   label: 'Неврологические',     icon: 'neurology',      keywords: ['парез','паралич','неврит','невроз','судорог','тремор','головокружен','обморок','энцефал','менингит','эпилепс','инсульт','нейро','рассеянн'] },
+  { id: 'neuro',   label: 'Неврологические',     icon: 'neurology',      keywords: ['парез','паралич','неврит','невроз','судорог','тремор','головокружен','обморок','энцефал','менингит','эпилепс','инсульт','нейро','рассеянн','апоплекс','гемиплег','кровоизлиян','мозговой'] },
   { id: 'cardio',  label: 'Сердечно-сосудистые', icon: 'cardiology',     keywords: ['сердц','гипертон','гипотон','аритм','стенокард','тахикард','брадикард','атеросклер','варикоз','тромб','сосуд','давлен','инфаркт'] },
   { id: 'digest',  label: 'Пищеварительные',     icon: 'gastroenterology',keywords: ['желудок','кишечник','гастрит','колит','запор','диарея','понос','гепатит','печень','желчн','поджелудоч','язва','панкреатит','холецист','геморрой','дисбактериоз','пищевод','рвота','тошнот','вздутие'] },
   { id: 'resp',    label: 'Дыхательные',         icon: 'pulmonology',    keywords: ['бронхит','астма','ринит','синусит','гайморит','трахеит','ларингит','кашель','бронх','легк','плеврит','пневмон','носоглотк','горл','насморк'] },
@@ -1449,6 +1597,7 @@ function disItemHtml(i) {
       <span class="flex items-center gap-1.5 flex-shrink-0">
         ${ikb10[k] ? `<span class="text-[10px] font-mono text-[#8b90a0]">${ikb10[k]}</span>` : ''}
         ${gradeHtml(k, true)}
+        ${videosByDisease[k] ? `<span title="Есть видеоурок" style="display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,159,10,0.22);border:1px solid rgba(255,159,10,0.6);color:#FF9F0A;flex-shrink:0"><span class="material-symbols-outlined" style="font-size:12px;line-height:1">play_circle</span>Видео</span>` : ''}
         ${ptCount ? `<span class="text-[10px] font-mono text-[#414755]">${ptCount}т</span>` : ''}
       </span>
     </button>`;
@@ -1565,22 +1714,7 @@ window.selectDisease = (idx) => {
 
 
 
-  const savedNote = localStorage.getItem('acunote_' + k) || '';
-  const notesHtml = `
-    <div class="border-t border-white/10 pt-4">
-      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2 flex items-center gap-1">
-        <span class="material-symbols-outlined text-xs">edit_note</span>Примечания врача
-      </div>
-      <textarea id="doc-notes" rows="3"
-                placeholder="Особенности пациента, метод воздействия, результаты..."
-                class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#00F2FF]/50 resize-none">${savedNote}</textarea>
-      <div class="flex justify-end mt-1">
-        <button id="save-note-btn" onclick="saveNote()"
-                class="text-[10px] text-[#8b90a0] hover:text-[#00F2FF] transition-colors flex items-center gap-1">
-          <span class="material-symbols-outlined" style="font-size:14px">save</span>Сохранить
-        </button>
-      </div>
-    </div>`;
+  const notesHtml = '';
 
   const manualHtml = `
     <div class="border-t border-white/10 pt-4">
@@ -1617,7 +1751,18 @@ window.selectDisease = (idx) => {
           <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest">Рецепт</div>
           ${ikb10[k] ? `<span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#0A84FF]/10 text-[#0A84FF] border border-[#0A84FF]/30">МКБ-10: ${ikb10[k]}</span>` : ''}
         </div>
-        <h4 class="text-base font-bold text-[#e2e2e2] mb-2" style="font-family:'Hanken Grotesk',sans-serif">${k}</h4>
+        <div class="flex items-center gap-3 mb-2">
+          <h4 class="text-base font-bold text-[#e2e2e2] flex-1" style="font-family:'Hanken Grotesk',sans-serif">${k}</h4>
+          ${videosByDisease[k] ? `<button onclick="openVideoLesson('${videosByDisease[k].replace(/'/g,"\\'")}', '${k.replace(/'/g,"\\'")}');event.stopPropagation()"
+            style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;
+                   background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.5);
+                   color:#FF9F0A;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;
+                   transition:all 0.15s"
+            onmouseenter="this.style.background='rgba(255,159,10,0.25)'"
+            onmouseleave="this.style.background='rgba(255,159,10,0.15)'">
+            ▶ Видео
+          </button>` : ''}
+        </div>
         ${(() => {
           const ev = evidence[k];
           if (!ev) return '';
@@ -1910,10 +2055,27 @@ window.addFirstResult = (dayIdx) => {
   dd.querySelector('button')?.click();
 };
 
+window.openSoapModal = () => {
+  const modal = document.getElementById('soap-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.getElementById('soap-s')?.focus();
+};
+window.closeSoapModal = () => {
+  const modal = document.getElementById('soap-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+};
+document.getElementById('soap-modal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('soap-modal')) closeSoapModal();
+});
+
 window.saveNote = () => {
-  const k   = window._currentDisKey || '';
-  const val = document.getElementById('doc-notes')?.value || '';
-  safeSetItem('acunote_' + k, val);
+  const k = (window._soapPatientKey || 'unknown').replace(/\s+/g,'_');
+  ['s','o','a','p'].forEach(f => {
+    const val = document.getElementById('soap-' + f)?.value || '';
+    safeSetItem('acunote_soap_' + f + '_' + k, val);
+  });
   const btn = document.getElementById('save-note-btn');
   if (btn) {
     btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Сохранено';
@@ -1929,17 +2091,18 @@ function getIrtFields() {
   const nrsBefore = document.getElementById('irt-nrs-before')?.value;
   return {
     nrs_before:     nrsBefore !== '' && nrsBefore != null ? parseInt(nrsBefore) : null,
-    nrs_after:      null,
+    nrs_after:      (() => { const v = document.getElementById('irt-nrs-after')?.value; return v !== '' && v != null ? parseInt(v) : null; })(),
     treatment_type: document.getElementById('irt-treatment-type')?.value || null,
     stimulation:    document.getElementById('irt-needle-type')?.value    || null,
     exposure:       parseInt(document.getElementById('irt-exposure')?.value) || null,
     deqi:           document.getElementById('irt-deqi')?.checked ? 1 : 0,
+    progress:       (() => { const v = document.getElementById('irt-progress')?.value; return v !== '' && v != null ? parseInt(v) : null; })(),
   };
 }
 
 const PROGRESS_COLORS = { 1:'#ff453a', 2:'#FF9F0A', 3:'#FFD60A', 4:'#30D158', 5:'#5AC85A' };
 window.setProgress = function(v) {
-  document.getElementById('irt-nrs-before').value = v;
+  document.getElementById('irt-progress').value = v;
   document.querySelectorAll('.progress-btn').forEach(b => {
     const bv = Number(b.dataset.v);
     const c = PROGRESS_COLORS[bv];
@@ -1950,7 +2113,7 @@ window.setProgress = function(v) {
 };
 
 function resetIrtFields() {
-  ['irt-nrs-before','irt-exposure'].forEach(id => {
+  ['irt-nrs-before','irt-nrs-after','irt-exposure','irt-progress','soap-s','soap-o','soap-a','soap-p'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.querySelectorAll('.progress-btn').forEach(b => {
@@ -1974,7 +2137,12 @@ window.savePatientSession = async () => {
   const gender   = parts[0] || '';
   const age      = parts[1] ? parseInt(parts[1]) : '';
   const reason   = document.getElementById('pc-reason')?.textContent?.trim() || '';
-  const notes    = document.getElementById('doc-notes')?.value?.trim() || '';
+  const soap = {
+    soap_s: document.getElementById('soap-s')?.value?.trim() || null,
+    soap_o: document.getElementById('soap-o')?.value?.trim() || null,
+    soap_a: document.getElementById('soap-a')?.value?.trim() || null,
+    soap_p: document.getElementById('soap-p')?.value?.trim() || null,
+  };
 
   // ── Если есть подтверждённые рецепты — сохраняем каждый отдельно ──
   if (confirmedRecipes.length > 0) {
@@ -1987,7 +2155,7 @@ window.savePatientSession = async () => {
       const pts      = [recipe.ownPt, ...(recipe.ebPts||[]), ...(recipe.distPts||[])].filter(Boolean);
       const points   = [...new Set(pts)];
       const meridians = [...new Set(points.map(p => p.replace(/\d+/g,'')).filter(Boolean))];
-      const recNote  = `${recipe.mer} — ${recipe.isExcess ? 'Избыток' : 'Недостаток'} (${recipe.sourceLabel})${notes ? ' · ' + notes : ''}`;
+      const recNote  = `${recipe.mer} — ${recipe.isExcess ? 'Избыток' : 'Недостаток'} (${recipe.sourceLabel})`;
       await apiAddRecord({
         id: uniqueId(),
         doctor: session.username, doctorName: session.name,
@@ -1995,7 +2163,8 @@ window.savePatientSession = async () => {
         patient: patientName, age, gender, reason,
         notes: recNote, points, meridians,
         type: 'Акупунктура', outcome: 'neutral',
-        ...irt,
+        ...irt, ...soap,
+        appointmentId: window._appointmentId || null,
       });
     }
     window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
@@ -2033,9 +2202,10 @@ window.savePatientSession = async () => {
   const rec = {
     id: uniqueId(), doctor: session.username, doctorName: session.name,
     date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
-    patient: patientName, age, gender, reason, notes, points, meridians,
+    patient: patientName, age, gender, reason, points, meridians,
     type: 'Акупунктура', outcome: 'neutral',
-    ...getIrtFields(),
+    ...getIrtFields(), ...soap,
+    appointmentId: window._appointmentId || null,
   };
   await apiAddRecord(rec);
   window._currentPts = [];
@@ -2060,7 +2230,12 @@ window.savePatientSession = async () => {
 // ─── HEADER SAVE (без контекста пациента) ─────────────────
 async function doSaveRecord(patientName, age, gender, reason) {
   if (confirmedRecipes.length > 0) { window.savePatientSession(); return; }
-  const notes = document.getElementById('doc-notes')?.value?.trim() || '';
+  const soap = {
+    soap_s: document.getElementById('soap-s')?.value?.trim() || null,
+    soap_o: document.getElementById('soap-o')?.value?.trim() || null,
+    soap_a: document.getElementById('soap-a')?.value?.trim() || null,
+    soap_p: document.getElementById('soap-p')?.value?.trim() || null,
+  };
   const manualPts = (typeof manualSessions !== 'undefined')
     ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
   const points = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
@@ -2070,8 +2245,10 @@ async function doSaveRecord(patientName, age, gender, reason) {
   await apiAddRecord({
     id: uniqueId(), doctor: session.username, doctorName: session.name,
     date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
-    patient: patientName, age, gender, reason, notes, points, meridians,
+    patient: patientName, age, gender, reason, points, meridians,
     type: 'Акупунктура', outcome: 'neutral',
+    ...soap,
+    appointmentId: window._appointmentId || null,
   });
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
@@ -3069,6 +3246,7 @@ window.openVid = (code) => {
                oncontextmenu="return false"
                onerror="this.closest('.glass-panel').style.display='none'"></video>
       </div>
+      <div style="font-size:10px;color:#6b7280;text-align:right;margin-top:6px">© П. В. Белоусов — zhong-yi.narod.ru</div>
     </div>` : ''}
   `;
   document.getElementById('vid-modal').classList.remove('hidden');
@@ -3090,6 +3268,26 @@ window.openVidMer = (mer) => {
 window.closeModal = () => {
   document.getElementById('vid-modal').classList.add('hidden');
   document.getElementById('pt-modal-body').querySelectorAll('video').forEach(v => { v.pause(); v.src = ''; });
+};
+
+window.openVideoLesson = (file, title) => {
+  const modal = document.getElementById('video-lesson-modal');
+  const player = document.getElementById('vl-player');
+  const err    = document.getElementById('vl-error');
+  document.getElementById('vl-title').textContent = title;
+  err.classList.add('hidden');
+  player.style.display = '';
+  player.src = `/media/videos/${encodeURIComponent(file)}`;
+  modal.classList.remove('hidden');
+  player.play().catch(()=>{});
+};
+
+window.closeVideoLesson = () => {
+  const modal = document.getElementById('video-lesson-modal');
+  const player = document.getElementById('vl-player');
+  modal.classList.add('hidden');
+  player.pause();
+  player.src = '';
 };
 
 // ─── У-СИНЬ ДВИЖОК ──────────────────────────────────────
@@ -4718,5 +4916,660 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
+
+<!-- SOAP Modal -->
+<div id="soap-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)">
+  <div class="w-full max-w-lg bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+      <div class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
+        <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:18px">edit_note</span>
+        SOAP-заметки
+      </div>
+      <button onclick="closeSoapModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px">close</span>
+      </button>
+    </div>
+    <div class="p-5 grid grid-cols-2 gap-3">
+      <div>
+        <div class="text-[10px] font-bold text-[#8b90a0] mb-1.5">S — Жалобы</div>
+        <textarea id="soap-s" rows="4" placeholder="Что беспокоит пациента..."
+                  class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#0A84FF]/60 resize-none transition-colors"></textarea>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="text-[10px] font-bold text-[#8b90a0]">O — Объективно</div>
+          <div style="display:flex;gap:5px">
+            <button onclick="openTongueAtlas()" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#00F2FF;border:1px solid rgba(0,242,255,0.35);border-radius:8px;padding:3px 10px;background:rgba(0,242,255,0.08);cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(0,242,255,0.18)';this.style.borderColor='rgba(0,242,255,0.6)'" onmouseout="this.style.background='rgba(0,242,255,0.08)';this.style.borderColor='rgba(0,242,255,0.35)'">
+              <span class="material-symbols-outlined" style="font-size:13px">search</span>Язык
+            </button>
+            <button onclick="openPulseAtlas()" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#BF5AF2;border:1px solid rgba(191,90,242,0.35);border-radius:8px;padding:3px 10px;background:rgba(191,90,242,0.08);cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(191,90,242,0.18)';this.style.borderColor='rgba(191,90,242,0.6)'" onmouseout="this.style.background='rgba(191,90,242,0.08)';this.style.borderColor='rgba(191,90,242,0.35)'">
+              <span class="material-symbols-outlined" style="font-size:13px">favorite</span>Пульс
+            </button>
+          </div>
+        </div>
+        <textarea id="soap-o" rows="4" placeholder="Осмотр, пульс, язык..."
+                  class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#0A84FF]/60 resize-none transition-colors"></textarea>
+      </div>
+      <div>
+        <div class="text-[10px] font-bold text-[#8b90a0] mb-1.5">A — Оценка</div>
+        <textarea id="soap-a" rows="4" placeholder="Диагноз, синдром ТКМ..."
+                  class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#0A84FF]/60 resize-none transition-colors"></textarea>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="text-[10px] font-bold text-[#8b90a0]">P — План</div>
+          <button onclick="openHerbAtlas()" style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#30D158;border:1px solid rgba(48,209,88,0.35);border-radius:8px;padding:3px 10px;background:rgba(48,209,88,0.08);cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(48,209,88,0.18)';this.style.borderColor='rgba(48,209,88,0.6)'" onmouseout="this.style.background='rgba(48,209,88,0.08)';this.style.borderColor='rgba(48,209,88,0.35)'">
+            <span class="material-symbols-outlined" style="font-size:13px">local_florist</span>Фито
+          </button>
+        </div>
+        <textarea id="soap-p" rows="4" placeholder="Следующий сеанс, рекомендации..."
+                  class="w-full bg-[#1f1f1f] border border-[#414755] rounded-xl text-xs text-[#c1c6d7] p-3 placeholder-[#414755] focus:outline-none focus:border-[#0A84FF]/60 resize-none transition-colors"></textarea>
+      </div>
+    </div>
+    <div class="flex items-center justify-between px-5 py-3 border-t border-white/10">
+      <button id="save-note-btn" onclick="saveNote()"
+              class="text-xs text-[#8b90a0] hover:text-[#00F2FF] transition-colors flex items-center gap-1.5">
+        <span class="material-symbols-outlined" style="font-size:16px">save</span>Сохранить черновик
+      </button>
+      <button onclick="closeSoapModal()"
+              class="px-4 py-1.5 rounded-xl bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 text-xs font-bold transition-colors">
+        Закрыть
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Herb Atlas Modal -->
+<div id="herb-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeHerbAtlas()">
+  <div class="w-full max-w-3xl bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl flex flex-col" style="max-height:90vh">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
+        <span class="material-symbols-outlined" style="font-size:18px;color:#30D158">local_florist</span>
+        Атлас трав (272 растения)
+      </div>
+      <button onclick="closeHerbAtlas()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px">close</span>
+      </button>
+    </div>
+    <!-- Поиск и фильтры -->
+    <div class="px-5 py-3 border-b border-white/10 flex-shrink-0" style="display:flex;flex-direction:column;gap:8px">
+      <input id="herb-search" type="text" placeholder="Поиск по названию, каналу, показанию..."
+        oninput="renderHerbs()" autocomplete="off"
+        style="width:100%;background:#1a1a2a;border:1px solid #414755;border-radius:10px;padding:7px 12px;font-size:12px;color:#c1c6d7;outline:none">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <select id="herb-prop" onchange="renderHerbs()" style="background:#1a1a2a;border:1px solid #414755;border-radius:8px;padding:3px 8px;font-size:11px;color:#8b90a0;cursor:pointer">
+          <option value="">Все свойства</option>
+          <option>холод</option><option>прохлада</option><option>нейтральный</option><option>тепло</option><option>жара</option>
+        </select>
+        <select id="herb-chan" onchange="renderHerbs()" style="background:#1a1a2a;border:1px solid #414755;border-radius:8px;padding:3px 8px;font-size:11px;color:#8b90a0;cursor:pointer">
+          <option value="">Все каналы</option>
+          <option>легких</option><option>сердца</option><option>перикарда</option><option>желудка</option>
+          <option>селезенки</option><option>печени</option><option>желчного пузыря</option>
+          <option>почек</option><option>мочевого пузыря</option><option>толстого кишечника</option>
+          <option>тонкого кишечника</option><option>тройного обогревателя</option>
+        </select>
+        <span id="herb-count" style="font-size:11px;color:#8b90a0;padding:3px 8px;align-self:center"></span>
+      </div>
+    </div>
+    <div id="herb-grid" class="overflow-y-auto p-4" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
+    <!-- Копирайт -->
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#414755;text-align:right">
+      © П. В. Белоусов — <a href="http://zhong-yi.narod.ru/" target="_blank" style="color:#30D158;text-decoration:none">zhong-yi.narod.ru</a>
+    </div>
+  </div>
+</div>
+
+<style>
+.herb-card { cursor:pointer; background:#1a1a2a; border:1px solid #414755; border-radius:12px; overflow:hidden; transition:border-color .15s,transform .15s; }
+.herb-card:hover { border-color:#30D158; transform:translateY(-2px); }
+.herb-card img { width:100%; height:80px; object-fit:cover; display:block; }
+.herb-card-body { padding:8px; }
+.herb-card-name { font-size:11px; font-weight:700; color:#e2e2e2; line-height:1.3; }
+.herb-card-pinyin { font-size:10px; color:#30D158; margin-top:2px; }
+.herb-card-prop { font-size:10px; color:#8b90a0; margin-top:2px; }
+</style>
+
+<script>
+let _herbsData = null;
+
+async function loadHerbs() {
+  if (_herbsData) return _herbsData;
+  const r = await fetch('/data/herbs.json', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('acutwin_token') || '') } });
+  _herbsData = await r.json();
+  return _herbsData;
+}
+
+async function openHerbAtlas() {
+  const sm = document.getElementById('soap-modal');
+  if (sm && !sm.classList.contains('hidden')) { closeSoapModal(); window._atlasFromSoap = true; }
+  const m = document.getElementById('herb-modal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+  if (!_herbsData) {
+    document.getElementById('herb-grid').innerHTML = '<div style="color:#8b90a0;font-size:12px;padding:20px">Загрузка...</div>';
+    await loadHerbs();
+  }
+  renderHerbs();
+  document.getElementById('herb-search').focus();
+}
+
+function closeHerbAtlas() {
+  const m = document.getElementById('herb-modal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+  if (window._atlasFromSoap) { window._atlasFromSoap = false; openSoapModal(); }
+}
+
+function renderHerbs() {
+  if (!_herbsData) return;
+  const q = (document.getElementById('herb-search').value || '').toLowerCase();
+  const prop = (document.getElementById('herb-prop').value || '').toLowerCase();
+  const chan = (document.getElementById('herb-chan').value || '').toLowerCase();
+
+  const filtered = _herbsData.filter(h => {
+    if (prop && !h.property.toLowerCase().includes(prop)) return false;
+    if (chan && !h.channels.toLowerCase().includes(chan)) return false;
+    if (q) {
+      const hay = (h.name_ru + ' ' + h.pinyin_en + ' ' + h.pinyin_ru + ' ' + h.indications.join(' ') + ' ' + h.channels).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('herb-count').textContent = filtered.length + ' из 272';
+
+  const propColor = { 'холод':'#0A84FF','прохлада':'#64D2FF','нейтральный':'#8b90a0','тепло':'#FF9F0A','жара':'#FF453A' };
+  function getPropColor(p) {
+    const k = Object.keys(propColor).find(k => p.toLowerCase().includes(k));
+    return k ? propColor[k] : '#8b90a0';
+  }
+
+  document.getElementById('herb-grid').innerHTML = filtered.map(h => `
+    <div class="herb-card" onclick="insertHerb('${h.id}')">
+      <img src="/herbs/${h.image}" alt="${h.name_ru}" loading="lazy" onerror="this.style.display='none'">
+      <div class="herb-card-body">
+        <div class="herb-card-name">${h.name_ru}</div>
+        <div class="herb-card-pinyin">${h.pinyin_ru || h.pinyin_en}</div>
+        <div class="herb-card-prop" style="color:${getPropColor(h.property)}">${h.property.replace('.','')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function insertHerb(id) {
+  const h = _herbsData.find(x => x.id === id);
+  if (!h) return;
+  const dose = h.dose ? ' — ' + h.dose.split('.')[0] + '.' : '';
+  const text = `Фитотерапия: ${h.name_ru} (${h.pinyin_ru || h.pinyin_en})${dose}`;
+  const ta = document.getElementById('soap-p');
+  if (!ta) return;
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + '\n' + text : text;
+  ta.dispatchEvent(new Event('input'));
+  closeHerbAtlas();
+  ta.scrollTop = ta.scrollHeight;
+}
+</script>
+
+<!-- Pulse Atlas Modal -->
+<div id="pulse-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closePulseAtlas()">
+  <div class="w-full max-w-2xl bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl flex flex-col" style="max-height:85vh">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
+        <span class="material-symbols-outlined" style="font-size:18px;color:#BF5AF2">favorite</span>
+        Диагностика по пульсу
+      </div>
+      <button onclick="closePulseAtlas()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px">close</span>
+      </button>
+    </div>
+    <div class="flex gap-1 px-5 pt-3 pb-2 flex-shrink-0">
+      <button onclick="switchPulseCat('yang')" id="pcat-yang" class="pulse-cat-btn active-pcat px-3 py-1 rounded-lg text-xs font-bold transition-colors">Янские (9)</button>
+      <button onclick="switchPulseCat('yin')"  id="pcat-yin"  class="pulse-cat-btn px-3 py-1 rounded-lg text-xs font-bold transition-colors">Иньские (18)</button>
+    </div>
+    <div class="text-[10px] text-[#8b90a0] px-5 pb-2 flex-shrink-0">Нажмите на карточку — описание добавится в поле «O»</div>
+    <div id="pulse-grid" class="overflow-y-auto p-4 grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))"></div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#414755;text-align:right">© Гаваа Лувсан — «Традиционные и современные аспекты восточной рефлексотерапии»</div>
+  </div>
+</div>
+
+<style>
+.pulse-cat-btn { background:transparent; color:#8b90a0; border:1px solid #414755; }
+.pulse-cat-btn:hover { color:#e2e2e2; border-color:#6b7280; }
+.pulse-cat-btn.active-pcat { background:rgba(191,90,242,0.12); color:#BF5AF2; border-color:rgba(191,90,242,0.4); }
+.pulse-card { cursor:pointer; background:#1a1a2a; border:1px solid #414755; border-radius:12px; padding:12px; transition:border-color .15s,transform .15s; }
+.pulse-card:hover { border-color:#BF5AF2; transform:translateY(-2px); }
+.pulse-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+.pulse-card-name { font-size:12px; font-weight:700; color:#e2e2e2; }
+.pulse-card-ch { font-size:10px; color:#BF5AF2; font-weight:600; }
+.pulse-card-sign { font-size:10px; color:#8b90a0; line-height:1.4; }
+.pulse-badge { font-size:9px; font-weight:700; padding:1px 6px; border-radius:4px; }
+.pulse-badge-yang { background:rgba(255,159,10,0.15); color:#FF9F0A; }
+.pulse-badge-yin  { background:rgba(100,120,255,0.15); color:#6478FF; }
+</style>
+
+<script>
+const PULSE_DATA = {
+  yang: [
+    { name:'Поверхностный', ch:'浮 (фу)', badge:'yang', sign:'Наружный синдром, осень', insert:'Пульс поверхностный (фу) — ощущается при лёгком надавливании. Наружный синдром; сильный — лихорадка и холод; слабый — малокровие.' },
+    { name:'Частый', ch:'数 (шу)', badge:'yang', sign:'Ослабление Инь, расцвет Ян', insert:'Пульс частый (шу) — 6 ударов за цикл вдох-выдох, слабый и поспешный. Синдром жары, ослабление Инь.' },
+    { name:'Полный', ch:'實 (ши)', badge:'yang', sign:'Синдром жары Ян', insert:'Пульс полный (ши) — большой, длинный, сильный и плотный на всех позициях. Синдром жары Ян, внутренний огонь.' },
+    { name:'Длинный', ch:'長 (чан)', badge:'yang', sign:'Сильный жар, эпилепсия', insert:'Пульс длинный (чан) — волна превышает все позиции пальпации, стабильный, струнный. Сильный жар, эпилепсия.' },
+    { name:'Большой', ch:'洪 (хун)', badge:'yang', sign:'Расцвет жизненных сил / огня', insert:'Пульс большой (хун) — широкая волна, приход пышный, уход длинный и слабый. Летом — норма; у больного — избыток огня.' },
+    { name:'Напряжённый', ch:'緊 (цзинь)', badge:'yang', sign:'Влияние холода', insert:'Пульс напряжённый (цзинь) — как туго натянутая верёдка, сильный приход и уход. Вредное влияние холода, боль.' },
+    { name:'Скрытый', ch:'牢 (лао)', badge:'yang', sign:'Холод внутри, застой', insert:'Пульс скрытый (лао) — полный, большой, струнный, ощущается только при глубоком нажатии. Болезни от внешнего холода, судороги, запор.' },
+    { name:'Движущийся', ch:'動 (дун)', badge:'yang', sign:'Боль, сильный испуг', insert:'Пульс движущийся (дун) — похож на форму боба в точке Гуань, торопливый, иногда с паузой. Болевые синдромы, испуг, судороги.' },
+    { name:'Торопливый', ch:'促 (цзу)', badge:'yang', sign:'Избыток Ян, жар', insert:'Пульс торопливый (цзу) — частый, с нерегулярными паузами. Крайний избыток Ян, внутренний огонь; жар, застой крови, флегма.' },
+  ],
+  yin: [
+    { name:'Глубокий', ch:'沉 (чэнь)', badge:'yin', sign:'Внутренний синдром', insert:'Пульс глубокий (чэнь) — ощущается только при сильном нажатии. Внутренний синдром Инь, накопление воды.' },
+    { name:'Редкий', ch:'遲 (чи)', badge:'yin', sign:'Синдром холода', insert:'Пульс редкий (чи) — 3 удара за цикл вдох-выдох, медленный. Внутренний синдром холода, скопление флегмы.' },
+    { name:'Свободный', ch:'滑 (хуа)', badge:'yin', sign:'Беременность, флегма, жар', insert:'Пульс свободный (хуа) — плавный, как перекатывание жемчуга, 6 волн за цикл. У женщин — возможная беременность; у больных — флегма, жар.' },
+    { name:'Вяжущий', ch:'澀 (сэ)', badge:'yin', sign:'Застой крови, истощение', insert:'Пульс вяжущий (сэ) — тонкий, редкий, короткий, как строгание бамбука ножом. Нарушение циркуляции крови, малокровие, застой.' },
+    { name:'Пустой', ch:'虛 (сюй)', badge:'yin', sign:'Недостаток Ци и крови', insert:'Пульс пустой (сюй) — большой и мягкий, но слабый при нажатии. Недостаток Ци и крови, ослабление Инь, повышенная температура летом.' },
+    { name:'Короткий', ch:'短 (дуань)', badge:'yin', sign:'Нарушение кровообращения', insert:'Пульс короткий (дуань) — волна не достигает крайних позиций, как бы возвращается на полпути. Нарушение кровообращения, отравление.' },
+    { name:'Слабый', ch:'微 (вэй)', badge:'yin', sign:'Истощение жизненных сил', insert:'Пульс слабый (вэй) — крайне тонкий, едва ощутимый. Полное истощение жизненных сил, ослабление Ян и Инь.' },
+    { name:'Медленный', ch:'緩 (хуань)', badge:'yin', sign:'Ветер, пустота Ци', insert:'Пульс медленный (хуань) — мягкий, 4 волны за цикл, как колыхание ивы. Истощение крови, скопление газов, пустота Ци селезёнки.' },
+    { name:'Лукообразный', ch:'芤 (гэ)', badge:'yin', sign:'Потеря крови', insert:'Пульс лукообразный (гэ) — поверхностный, большой, в середине пустой, как кожура лука. Недостаточность циркуляции крови, начало потери крови.' },
+    { name:'Струнный', ch:'弦 (сянь)', badge:'yin', sign:'Болезни печени, боль', insert:'Пульс струнный (сянь) — длинный, как натянутая струна, волна не движется. Болезни печени и селезёнки, боль, колики.' },
+    { name:'Кожаный', ch:'革 (гэ)', badge:'yin', sign:'Пустота, холод', insert:'Пульс кожаный (гэ) — поверхностный, струнный, при нажатии внутри пустой, как кожа барабана. Синдром холода, бессонница, у женщин — нарушение цикла.' },
+    { name:'Незаметный', ch:'濡 (гуань)', badge:'yin', sign:'Истощение крови и Ци', insert:'Пульс незаметный (гуань) — очень мягкий, тонкий, поверхностный, исчезает при надавливании. Истощение крови и Ци, кислородная недостаточность.' },
+    { name:'Слабый мягкий', ch:'弱 (жо)', badge:'yin', sign:'Ухудшение качества крови', insert:'Пульс слабый мягкий (жо) — только при сильном нажатии, мягкий и тонкий. Резкое ухудшение качества крови, Ян опускается в Инь.' },
+    { name:'Рассеянный', ch:'散 (сань)', badge:'yin', sign:'Истощение Ян Ци', insert:'Пульс рассеянный (сань) — большой, рассеянный, без чётких границ, при нажатии не ощущается. Крайнее истощение Ян Ци, тяжёлый прогноз.' },
+    { name:'Тонкий', ch:'細 (си)', badge:'yin', sign:'Истощение крови, дефицит Ян', insert:'Пульс тонкий (си) — как нить, ясно ощутим, непрерывный, слабый. Истощение крови, недостаток Ян; у молодых — плохое здоровье.' },
+    { name:'Скрытый глубокий', ch:'伏 (фу-иньск.)', badge:'yin', sign:'Сильная боль, коллапс', insert:'Пульс скрытый глубокий (фу) — залегает очень глубоко, неясный. Сильная боль в животе, холера, ослабление и истощение Ян.' },
+    { name:'Крепкий', ch:'結 (цзе)', badge:'yin', sign:'Застой крови и газов, холод', insert:'Пульс крепкий (цзе) — медленный с нерегулярными паузами. Застой крови и газов, влияние холода, накопление флегмы, запор.' },
+    { name:'Замерзающий', ch:'代 (дай)', badge:'yin', sign:'Истощение питательной Ци', insert:'Пульс замерзающий (дай) — регулярные паузы с медленным восстановлением. Крайнее истощение питательной Ци, тяжёлый прогноз; у женщин — беременность >3 мес.' },
+  ]
+};
+
+let _pulseCat = 'yang';
+
+function openPulseAtlas() {
+  const sm = document.getElementById('soap-modal');
+  if (sm && !sm.classList.contains('hidden')) { closeSoapModal(); window._atlasFromSoap = true; }
+  const m = document.getElementById('pulse-modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  renderPulseGrid(_pulseCat);
+}
+
+function closePulseAtlas() {
+  const m = document.getElementById('pulse-modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  if (window._atlasFromSoap) { window._atlasFromSoap = false; openSoapModal(); }
+}
+
+function switchPulseCat(cat) {
+  _pulseCat = cat;
+  document.querySelectorAll('.pulse-cat-btn').forEach(b => b.classList.remove('active-pcat'));
+  document.getElementById('pcat-' + cat).classList.add('active-pcat');
+  renderPulseGrid(cat);
+}
+
+function renderPulseGrid(cat) {
+  const grid = document.getElementById('pulse-grid');
+  grid.innerHTML = PULSE_DATA[cat].map((p, i) => `
+    <div class="pulse-card" onclick="insertPulse('${cat}',${i})">
+      <div class="pulse-card-top">
+        <span class="pulse-card-name">${p.name}</span>
+        <span class="pulse-badge pulse-badge-${p.badge}">${p.badge === 'yang' ? 'Ян' : 'Инь'}</span>
+      </div>
+      <div class="pulse-card-ch">${p.ch}</div>
+      <div class="pulse-card-sign" style="margin-top:4px">${p.sign}</div>
+    </div>`).join('');
+}
+
+function insertPulse(cat, idx) {
+  const text = PULSE_DATA[cat][idx].insert;
+  const ta = document.getElementById('soap-o');
+  if (!ta) return;
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + '\n' + text : text;
+  ta.dispatchEvent(new Event('input'));
+  closePulseAtlas();
+  ta.scrollTop = ta.scrollHeight;
+}
+</script>
+
+<!-- Tongue Atlas Modal -->
+<div id="tongue-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeTongueAtlas()">
+  <div class="w-full max-w-2xl bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl flex flex-col" style="max-height:85vh">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
+        <span class="material-symbols-outlined text-[#00F2FF]" style="font-size:18px">search</span>
+        Диагностика по языку
+      </div>
+      <button onclick="closeTongueAtlas()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px">close</span>
+      </button>
+    </div>
+    <div class="flex gap-1 px-5 pt-3 pb-2 flex-shrink-0">
+      <button onclick="switchTongueCat('color')" id="tcat-color" class="tongue-cat-btn active-cat px-3 py-1 rounded-lg text-xs font-bold transition-colors">Цвет</button>
+      <button onclick="switchTongueCat('shape')" id="tcat-shape" class="tongue-cat-btn px-3 py-1 rounded-lg text-xs font-bold transition-colors">Форма</button>
+      <button onclick="switchTongueCat('coat')"  id="tcat-coat"  class="tongue-cat-btn px-3 py-1 rounded-lg text-xs font-bold transition-colors">Налёт</button>
+    </div>
+    <div class="text-[10px] text-[#8b90a0] px-5 pb-2 flex-shrink-0">Нажмите на карточку — описание добавится в поле «O»</div>
+    <div id="tongue-grid" class="overflow-y-auto p-4 grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))"></div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right">© П. В. Белоусов — zhong-yi.narod.ru</div>
+  </div>
+</div>
+
+<style>
+.tongue-cat-btn { background:transparent; color:#8b90a0; border:1px solid #414755; }
+.tongue-cat-btn:hover { color:#e2e2e2; border-color:#6b7280; }
+.tongue-cat-btn.active-cat { background:rgba(0,242,255,0.12); color:#00F2FF; border-color:rgba(0,242,255,0.4); }
+.tongue-card { cursor:pointer; background:#1a1a2a; border:1px solid #414755; border-radius:12px; overflow:hidden; transition:border-color .15s,transform .15s; }
+.tongue-card:hover { border-color:#00F2FF; transform:translateY(-2px); }
+.tongue-card img { width:100%; height:90px; object-fit:cover; display:block; }
+.tongue-card-body { padding:8px; }
+.tongue-card-name { font-size:11px; font-weight:700; color:#e2e2e2; line-height:1.3; }
+.tongue-card-sign { font-size:10px; color:#8b90a0; margin-top:2px; line-height:1.3; }
+</style>
+
+<script>
+const TONGUE = {
+  color: [
+    { file:'img015.jpg', name:'Нормальный язык', sign:'Бледно-розовый, умеренно влажный', insert:'Язык бледно-розовый, нормальный, умеренно влажный, тонкий белесый налёт.' },
+    { file:'img016.jpg', name:'Светлый (тонкий)', sign:'Недостаток Ци и крови', insert:'Язык светлый, тело истончено — синдром недостатка Ци и крови.' },
+    { file:'img017.jpg', name:'Светлый сухой', sign:'Недостаток Ян', insert:'Язык светлый, сухой — недостаток Ян.' },
+    { file:'img018.jpg', name:'Светлый утолщённый', sign:'Недостаток Ян + сырость', insert:'Язык светлый, утолщён, с отпечатками зубов, влажный — недостаток Ян с внутренним скоплением сырости.' },
+    { file:'img019.jpg', name:'Красный (избыток)', sign:'Жар типа избытка', insert:'Язык красный — внутренний жар типа избытка.' },
+    { file:'img020.jpg', name:'Красный сухой', sign:'Недостаток Инь', insert:'Язык красный, сухой, налёт скудный — возгорание огня при недостатке Инь.' },
+    { file:'img021.jpg', name:'Красный с трещинами', sign:'Повреждение Инь желудка', insert:'Язык красный, глубокие трещины — повреждение Инь желудка.' },
+    { file:'img022.jpg', name:'Красный утончённый', sign:'Жар с повреждением жидкостей', insert:'Язык красный, утончён, сухой — жар с повреждением жидкостей тела.' },
+    { file:'img023.jpg', name:'Красный кончик', sign:'Огонь сердца', insert:'Кончик языка покрасневший — возгорание огня сердца.' },
+    { file:'img024.jpg', name:'Красные края', sign:'Жар печени и жёлчного', insert:'Края языка покрасневшие — жар в печени и жёлчном пузыре.' },
+    { file:'img025.jpg', name:'Тёмно-красный', sign:'Восприятие внешнего жара', insert:'Язык тёмно-красный — патогенный жар проник в питательную Ци и кровь.' },
+    { file:'img026.jpg', name:'Тёмно-красный + трещины', sign:'Недостаток Инь — огонь', insert:'Язык тёмно-красный, трещины, без налёта или скудный налёт — возгорание огня при недостатке Инь.' },
+    { file:'img027.jpg', name:'Тёмно-красный зеркальный', sign:'Истощение Инь желудка/почек', insert:'Язык тёмно-красный, блестящий, без налёта — истощение Инь желудка и почек.' },
+    { file:'img028.jpg', name:'Светло-фиолетовый', sign:'Застой крови — холод', insert:'Язык светло-фиолетовый, влажный — застой крови на фоне недостатка Ян и скопления холода.' },
+    { file:'img029.jpg', name:'Тёмно-фиолетовый', sign:'Застой крови — жар', insert:'Язык тёмно-фиолетовый, сухой — застой крови на фоне активации жара.' },
+  ],
+  shape: [
+    { file:'img030.jpg', name:'Утолщённый мягкий', sign:'Недостаток Ян селезёнки/почек', insert:'Язык утолщённый, мягкий, светлый, с отпечатками зубов — недостаток Ян селезёнки и почек, застой флегмы-сырости.' },
+    { file:'img031.jpg', name:'Отёчный тёмно-красный', sign:'Жар сердца и селезёнки', insert:'Язык отёчный, тёмно-красный — активация жара сердца и селезёнки.' },
+    { file:'img032.jpg', name:'Отёчный фиолетовый', sign:'Отравление', insert:'Язык отёчный, фиолетовый — отравление.' },
+    { file:'img033.jpg', name:'Тонкий светлый', sign:'Недостаток Ци и крови', insert:'Язык тонкий, светлый — недостаток Ци и крови.' },
+    { file:'img034.jpg', name:'Тонкий тёмно-красный', sign:'Недостаток Инь — огонь', insert:'Язык тонкий, тёмно-красный, сухой — активация огня при недостатке Инь.' },
+    { file:'img035.jpg', name:'Потрескавшийся светлый', sign:'Недостаток крови', insert:'Язык светлый, трещины на поверхности — недостаток крови.' },
+    { file:'img036.jpg', name:'Потрескавшийся красный', sign:'Жар в цзанфу (избыток)', insert:'Язык красный, трещины, тонкий жёлтый налёт — жар типа избытка в цзанфу-органах.' },
+    { file:'img037.jpg', name:'Потрескавшийся фиолет.', sign:'Истощение Инь-жидкости', insert:'Язык фиолетовый, трещины, без налёта — истощение жидкостей при недостатке Инь.' },
+    { file:'img038.jpg', name:'Трещины (норма)', sign:'Врождённый вариант', insert:'Язык бледно-розовый, неглубокие врождённые трещины — вариант нормы.' },
+    { file:'img039.jpg', name:'Колючий язык', sign:'Внутреннее скопление жара', insert:'Сосочки языка увеличены, шипообразные — внутреннее скопление патогенного жара.' },
+    { file:'img040.jpg', name:'Отпечатки зубов (светлый)', sign:'Недостаток Ци селезёнки + холод-сырость', insert:'Язык светлый, утолщённый, отпечатки зубов по краям — недостаток Ци селезёнки, скопление холода-сырости.' },
+    { file:'img041.jpg', name:'Отпечатки зубов (красный)', sign:'Сырость-жар + флегма', insert:'Язык красный, отёчный, с отпечатками зубов — внутреннее скопление сырости-жара и флегмы.' },
+    { file:'img042.jpg', name:'Отклонённый в сторону', sign:'Апоплексия / предвестники', insert:'Язык отклонён в сторону — апоплексия или её предвестники.' },
+    { file:'img043.jpg', name:'Жёсткий язык', sign:'Жар в перикарде / флегма', insert:'Язык жёсткий, малоподвижный — проникновение жара в перикард или внутреннее скопление флегмы.' },
+    { file:'img044.jpg', name:'Вялый светлый', sign:'Истощение Ци и крови', insert:'Язык светлый, вялый, малоподвижный — истощение Ци и крови.' },
+    { file:'img045.jpg', name:'Вялый тёмно-красный', sign:'Крайняя степень недостатка Инь', insert:'Язык тёмно-красный, вялый — крайнее истощение Инь.' },
+    { file:'img046.jpg', name:'Укороченный светлый', sign:'Сгущение холода', insert:'Язык светлый, укорочен и напряжён — сгущение холода в сухожилиях.' },
+  ],
+  coat: [
+    { file:'img047.jpg', name:'Тонкий налёт', sign:'Поверхностный синдром / норма', insert:'Налёт тонкий (поверхность языка просвечивает) — поверхностный синдром или норма.' },
+    { file:'img048.jpg', name:'Толстый налёт', sign:'Внутренний синдром / скопление', insert:'Налёт толстый (поверхность языка не видна) — внутреннее скопление сырости, флегмы или пищи.' },
+    { file:'img049.jpg', name:'Влажный налёт (норма)', sign:'Достаточность жидкостей', insert:'Налёт умеренно влажный — жидкости в норме.' },
+    { file:'img050.jpg', name:'Сухой налёт (жидкости)', sign:'Истощение жидкостей', insert:'Налёт сухой — истощение жидкостей тела (лихорадка, потение, рвота).' },
+    { file:'img051.jpg', name:'Сухой налёт (застой)', sign:'Застой флегмы или крови', insert:'Налёт сухой на фоне внутреннего застоя флегмы или крови.' },
+    { file:'img052.jpg', name:'Скользкий налёт', sign:'Сырость и флегма', insert:'Налёт скользкий (слюна вытекает) — синдром сырости и флегмы, скопление холода-сырости.' },
+    { file:'img053.jpg', name:'Жирный налёт', sign:'Сырость и флегма (внутри)', insert:'Налёт жирный, мутный, липкий — внутреннее скопление сырости и флегмы.' },
+    { file:'img054.jpg', name:'Белый жирный налёт', sign:'Сырость-жар в селезёнке', insert:'Налёт толстый, белый, жирный, сладковатый привкус — скопление сырости-жара в селезёнке и желудке.' },
+    { file:'img055.jpg', name:'Жёлтый жирный налёт', sign:'Флегма-жар / сырость-жар', insert:'Налёт жёлтый, жирный — флегма-жар или сырость-жар.' },
+    { file:'img056.jpg', name:'Гнилостный налёт', sign:'Гнилостная Ци желудка', insert:'Налёт гнилостный, крупнозернистый, рыхлый, легко отделяется — аномальный подъём гнилостной Ци желудка, скопление пищи.' },
+    { file:'img057.jpg', name:'Зеркальный язык', sign:'Истощение Инь желудка', insert:'Налёт отсутствует, поверхность гладкая и блестящая («зеркальный язык») — иссушение Инь желудка, сильное повреждение Ци желудка.' },
+    { file:'img058.jpg', name:'Тонкий белый налёт', sign:'Наружный синдром холода (норма)', insert:'Налёт тонкий, белый — норма или наружный синдром холода.' },
+    { file:'img059.jpg', name:'Толстый белый налёт', sign:'Внутренний синдром холода', insert:'Налёт толстый, белый — внутренний синдром холода.' },
+    { file:'img060.jpg', name:'Светло-жёлтый налёт', sign:'Небольшой жар', insert:'Налёт светло-жёлтый — небольшой внутренний жар.' },
+    { file:'img061.jpg', name:'Тёмно-жёлтый налёт', sign:'Сильный жар', insert:'Налёт тёмно-жёлтый — выраженный внутренний жар.' },
+    { file:'img062.jpg', name:'Обгорело-жёлтый налёт', sign:'Очень сильный жар', insert:'Налёт обгорело-жёлтый — очень сильный жар.' },
+    { file:'img063.jpg', name:'Серый налёт', sign:'Жар или холод-сырость', insert:'Налёт серый — внутренний жар (сухой серый) или холод-сырость (влажный серый).' },
+    { file:'img064.jpg', name:'Жёлто-чёрный налёт', sign:'Сильный жар / тяжёлая стадия', insert:'Налёт жёлто-чёрный, сухой — тяжёлая стадия, повреждение жидкостей сильным жаром.' },
+  ]
+};
+
+let _tongueCat = 'color';
+
+function openTongueAtlas() {
+  const sm = document.getElementById('soap-modal');
+  if (sm && !sm.classList.contains('hidden')) { closeSoapModal(); window._atlasFromSoap = true; }
+  const m = document.getElementById('tongue-modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  renderTongueGrid(_tongueCat);
+}
+
+function closeTongueAtlas() {
+  const m = document.getElementById('tongue-modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  if (window._atlasFromSoap) { window._atlasFromSoap = false; openSoapModal(); }
+}
+
+function switchTongueCat(cat) {
+  _tongueCat = cat;
+  document.querySelectorAll('.tongue-cat-btn').forEach(b => b.classList.remove('active-cat'));
+  document.getElementById('tcat-' + cat).classList.add('active-cat');
+  renderTongueGrid(cat);
+}
+
+function renderTongueGrid(cat) {
+  const grid = document.getElementById('tongue-grid');
+  grid.innerHTML = TONGUE[cat].map((t, i) => `
+    <div class="tongue-card" onclick="insertTongue('${cat}',${i})">
+      <img src="/tongue/${t.file}" alt="${t.name}" loading="lazy" onerror="this.style.display='none'">
+      <div class="tongue-card-body">
+        <div class="tongue-card-name">${t.name}</div>
+        <div class="tongue-card-sign">${t.sign}</div>
+      </div>
+    </div>`).join('');
+}
+
+function insertTongue(cat, idx) {
+  const text = TONGUE[cat][idx].insert;
+  const ta = document.getElementById('soap-o');
+  if (!ta) return;
+  const cur = ta.value.trim();
+  ta.value = cur ? cur + '\n' + text : text;
+  ta.dispatchEvent(new Event('input'));
+  closeTongueAtlas();
+  ta.scrollTop = ta.scrollHeight;
+}
+
+// ═══════════════════════════════════════════
+// SOUND THERAPY
+// ═══════════════════════════════════════════
+const SND_BASE = '/media/sound';
+
+const SND_ELEMENTS = {
+  wood:  { label: 'Дерево', hz: 528, color: '#5AC85A', bg: 'rgba(90,200,90,0.12)',   border: 'rgba(90,200,90,0.35)' },
+  fire:  { label: 'Огонь',  hz: 639, color: '#FF453A', bg: 'rgba(255,69,58,0.12)',   border: 'rgba(255,69,58,0.35)' },
+  earth: { label: 'Земля',  hz: 396, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', border: 'rgba(255,214,10,0.35)' },
+  metal: { label: 'Металл', hz: 741, color: '#E5E5EA', bg: 'rgba(229,229,234,0.08)', border: 'rgba(229,229,234,0.3)' },
+  water: { label: 'Вода',   hz: 852, color: '#0A84FF', bg: 'rgba(10,132,255,0.12)',  border: 'rgba(10,132,255,0.35)' },
+};
+
+const SND_TRACKS = {
+  wood:  [
+    { id: 'wood_med1',   name: 'Медитация 528 Гц · Декагон',         type: 'Медит.',  dur: '~45 мин' },
+    { id: 'wood_med2',   name: 'Солфеджио 528 Гц · чистый тон',      type: 'Медит.',  dur: '~24 мин' },
+    { id: 'wood_class1', name: 'Бах · Сюита для виолончели №3',       type: 'Класс.',  dur: '~20 мин' },
+    { id: 'wood_class2', name: 'Вивальди · Четыре сезона',            type: 'Класс.',  dur: '~38 мин' },
+    { id: 'wood_class3', name: 'Бах · Сюита для виолончели №6',       type: 'Класс.',  dur: '~27 мин' },
+  ],
+  fire:  [
+    { id: 'fire_med1',   name: 'Медитация 639 Гц · Декагон',         type: 'Медит.',  dur: '~45 мин' },
+    { id: 'fire_med2',   name: 'Солфеджио 639 Гц · чистый тон',      type: 'Медит.',  dur: '~24 мин' },
+    { id: 'fire_class1', name: 'Бах · Сюита для виолончели №5',       type: 'Класс.',  dur: '~26 мин' },
+    { id: 'fire_class2', name: 'Бах · Сюита для виолончели №1',       type: 'Класс.',  dur: '~19 мин' },
+    { id: 'fire_class3', name: 'Бах · Сюита для виолончели №2',       type: 'Класс.',  dur: '~22 мин' },
+  ],
+  earth: [
+    { id: 'earth_med1',   name: 'Медитация 396 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
+    { id: 'earth_med2',   name: 'Солфеджио 396 Гц · чистый тон',     type: 'Медит.',  dur: '~24 мин' },
+    { id: 'earth_class1', name: 'Сати · Гимнопедии и фортепианные пьесы', type: 'Класс.', dur: '~60 мин' },
+    { id: 'earth_class2', name: 'Бах · Сюита для виолончели №1',      type: 'Класс.',  dur: '~19 мин' },
+    { id: 'earth_class3', name: 'Бах · Сюита для виолончели №4',      type: 'Класс.',  dur: '~24 мин' },
+  ],
+  metal: [
+    { id: 'metal_med1',   name: 'Медитация 741 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
+    { id: 'metal_med2',   name: 'Солфеджио 741 Гц · чистый тон',     type: 'Медит.',  dur: '~24 мин' },
+    { id: 'metal_class1', name: 'Бах · Сюита для виолончели №4',      type: 'Класс.',  dur: '~24 мин' },
+    { id: 'metal_class2', name: 'Бах · Сюита для виолончели №6',      type: 'Класс.',  dur: '~27 мин' },
+    { id: 'metal_class3', name: 'Бах · Сюита для виолончели №3',      type: 'Класс.',  dur: '~20 мин' },
+  ],
+  water: [
+    { id: 'water_med1',   name: 'Медитация 852 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
+    { id: 'water_med2',   name: 'Солфеджио 852 Гц · чистый тон',     type: 'Медит.',  dur: '~24 мин' },
+    { id: 'water_class1', name: 'Бах · Сюита для виолончели №2',      type: 'Класс.',  dur: '~22 мин' },
+    { id: 'water_class2', name: 'Бах · Сюита для виолончели №5',      type: 'Класс.',  dur: '~26 мин' },
+    { id: 'water_class3', name: 'Вивальди · Четыре сезона',           type: 'Класс.',  dur: '~38 мин' },
+  ],
+};
+
+let _sndEl = 'wood';
+let _sndTrackId = null;
+let _sndAudio = null;
+let _sndTimer = null;
+let _sndRemain = 0;
+let _sndPanelOpen = false;
+
+function toggleSoundPanel() {
+  _sndPanelOpen = !_sndPanelOpen;
+  const panel = document.getElementById('sound-panel');
+  const btn = document.getElementById('snd-header-btn');
+  if (_sndPanelOpen) {
+    panel.style.display = 'flex';
+    btn.style.background = 'rgba(48,209,88,0.2)';
+    selectElement(_sndEl);
+  } else {
+    panel.style.display = 'none';
+    btn.style.background = '';
+  }
+}
+
+function selectElement(el) {
+  _sndEl = el;
+  const meta = SND_ELEMENTS[el];
+  // Element buttons style
+  document.querySelectorAll('.snd-el-btn').forEach(b => b.classList.remove('active-el'));
+  const activeBtn = document.querySelector(`.snd-el-btn[data-el="${el}"]`);
+  if (activeBtn) activeBtn.classList.add('active-el');
+  // Hz badge
+  const badge = document.getElementById('snd-hz-badge');
+  badge.textContent = `${meta.hz} Гц · ${meta.label}`;
+  badge.style.background = meta.bg;
+  badge.style.borderColor = meta.border;
+  badge.style.color = meta.color;
+  // Play button color
+  const playBtn = document.getElementById('snd-play-btn');
+  playBtn.style.borderColor = meta.color;
+  playBtn.style.background = meta.bg;
+  playBtn.style.color = meta.color;
+  // Progress bar color
+  document.getElementById('snd-progress-bar').style.background = meta.color;
+  // Render track list
+  sndRenderTracks(el);
+  // Auto-select first track if none active
+  if (!_sndTrackId || !SND_TRACKS[el].find(t => t.id === _sndTrackId)) {
+    sndSelectTrack(SND_TRACKS[el][0].id);
+  }
+}
+
+function sndRenderTracks(el) {
+  const list = document.getElementById('snd-tracklist');
+  const meta = SND_ELEMENTS[el];
+  list.innerHTML = SND_TRACKS[el].map(t => `
+    <div class="snd-track-row ${t.id === _sndTrackId ? 'active-track' : ''}" onclick="sndSelectTrack('${t.id}')" id="tr-${t.id}">
+      <div class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
+           style="background:${meta.bg};border:1px solid ${meta.border};color:${meta.color}">${t.type}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-medium text-[#e2e2e2] truncate">${t.name}</div>
+        <div class="text-[10px] text-[#8b90a0]">${t.dur}</div>
+      </div>
+      ${t.id === _sndTrackId && _sndAudio && !_sndAudio.paused
+        ? `<span class="material-symbols-outlined text-[${meta.color}]" style="font-size:14px;zoom:1">equalizer</span>` : ''}
+    </div>`).join('');
+}
+
+function sndSelectTrack(id) {
+  const wasPlaying = _sndAudio && !_sndAudio.paused;
+  if (_sndAudio) { _sndAudio.pause(); _sndAudio.src = ''; }
+  _sndTrackId = id;
+  const el = SND_TRACKS[_sndEl].find(t => t.id === id);
+  document.getElementById('snd-track-name').textContent = el ? el.name : '';
+  document.getElementById('snd-progress-bar').style.width = '0%';
+  sndRenderTracks(_sndEl);
+  if (wasPlaying) sndPlay();
+}
+
+function sndPlay() {
+  if (!_sndTrackId) return;
+  const el = _sndEl;
+  const url = `${SND_BASE}/${el}/${_sndTrackId}.mp3`;
+  _sndAudio = new Audio(url);
+  _sndAudio.volume = parseFloat(document.getElementById('snd-volume').value);
+  _sndAudio.play().catch(() => {});
+  // Session duration countdown
+  _sndRemain = parseInt(document.getElementById('snd-duration').value, 10) * 60;
+  clearInterval(_sndTimer);
+  _sndTimer = setInterval(() => {
+    _sndRemain--;
+    sndUpdateTimer();
+    if (_sndRemain <= 0) sndStop();
+  }, 1000);
+  // Progress bar from audio
+  _sndAudio.addEventListener('timeupdate', () => {
+    if (_sndAudio.duration) {
+      document.getElementById('snd-progress-bar').style.width =
+        (_sndAudio.currentTime / _sndAudio.duration * 100) + '%';
+    }
+  });
+  _sndAudio.addEventListener('ended', () => {
+    sndStop();
+  });
+  sndSetPlayState(true);
+  sndRenderTracks(el);
+}
+
+function sndPlayPause() {
+  if (!_sndAudio || _sndAudio.paused) {
+    if (_sndAudio && _sndAudio.src) {
+      _sndAudio.play().catch(() => {});
+      clearInterval(_sndTimer);
+      _sndTimer = setInterval(() => { _sndRemain--; sndUpdateTimer(); if (_sndRemain<=0) sndStop(); }, 1000);
+      sndSetPlayState(true);
+    } else {
+      sndPlay();
+    }
+  } else {
+    _sndAudio.pause();
+    clearInterval(_sndTimer);
+    sndSetPlayState(false);
+  }
+}
+
+function sndStop() {
+  if (_sndAudio) { _sndAudio.pause(); _sndAudio.src = ''; _sndAudio = null; }
+  clearInterval(_sndTimer);
+  _sndRemain = 0;
+  document.getElementById('snd-progress-bar').style.width = '0%';
+  document.getElementById('snd-timer').textContent = '--:--';
+  sndSetPlayState(false);
+  sndRenderTracks(_sndEl);
+}
+
+function sndSetPlayState(playing) {
+  document.getElementById('snd-play-icon').textContent = playing ? 'pause' : 'play_arrow';
+  const badge = document.getElementById('snd-playing-badge');
+  if (playing) badge.classList.replace('hidden', 'inline-flex');
+  else badge.classList.replace('inline-flex', 'hidden');
+  const lbl = document.getElementById('snd-btn-label');
+  lbl.textContent = playing ? 'Играет' : 'Звукотерапия';
+}
+
+function sndUpdateTimer() {
+  const m = Math.floor(Math.abs(_sndRemain) / 60);
+  const s = Math.abs(_sndRemain) % 60;
+  document.getElementById('snd-timer').textContent = `${_sndRemain < 0 ? '-' : ''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+</script>
 </body>
 </html>

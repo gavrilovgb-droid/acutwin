@@ -5477,7 +5477,7 @@ function sndRenderTracks(el) {
   const list = document.getElementById('snd-tracklist');
   const meta = SND_ELEMENTS[el];
   list.innerHTML = SND_TRACKS[el].map(t => `
-    <div class="snd-track-row ${t.id === _sndTrackId ? 'active-track' : ''}" onclick="sndSelectTrack('${t.id}')" id="tr-${t.id}">
+    <div class="snd-track-row ${t.id === _sndTrackId ? 'active-track' : ''}" onclick="sndPlayTrack('${t.id}')" id="tr-${t.id}">
       <div class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
            style="background:${meta.bg};border:1px solid ${meta.border};color:${meta.color}">${t.type}</div>
       <div class="flex-1 min-w-0">
@@ -5487,6 +5487,16 @@ function sndRenderTracks(el) {
       ${t.id === _sndTrackId && _sndAudio && !_sndAudio.paused
         ? `<span class="material-symbols-outlined text-[${meta.color}]" style="font-size:14px;zoom:1">equalizer</span>` : ''}
     </div>`).join('');
+}
+
+function sndPlayTrack(id) {
+  if (_sndAudio) { _sndAudio.pause(); _sndAudio.src = ''; }
+  _sndTrackId = id;
+  const el = SND_TRACKS[_sndEl].find(t => t.id === id);
+  document.getElementById('snd-track-name').textContent = el ? el.name : '';
+  document.getElementById('snd-progress-bar').style.width = '0%';
+  sndRenderTracks(_sndEl);
+  sndPlay();
 }
 
 function sndSelectTrack(id) {
@@ -5506,7 +5516,11 @@ function sndPlay() {
   const url = `${SND_BASE}/${el}/${_sndTrackId}.mp3`;
   _sndAudio = new Audio(url);
   _sndAudio.volume = parseFloat(document.getElementById('snd-volume').value);
-  _sndAudio.play().catch(() => {});
+  _sndAudio.play().catch(e => {
+    sndSetPlayState(false);
+    const nm = document.getElementById('snd-track-name');
+    if (nm) nm.textContent = '⚠ Не удалось: ' + (e.message || e.name || 'ошибка');
+  });
   // Session duration countdown
   _sndRemain = parseInt(document.getElementById('snd-duration').value, 10) * 60;
   clearInterval(_sndTimer);

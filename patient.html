@@ -69,10 +69,7 @@
 <body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
 
 <div id="nav-mount"></div>
-<div id="body-bg">
-  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
-  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
-</div>
+<div id="body-bg"></div>
 
 <div class="md:ml-64 flex flex-col min-h-screen">
 
@@ -198,11 +195,11 @@
       <!-- Статы прогресса (появляются только если есть данные) -->
       <div id="nrs-stats" class="hidden grid grid-cols-3 gap-3">
         <div class="stat-card">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Прогресс (1-й сеанс)</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">NRS (1-й сеанс)</div>
           <div id="nrs-start" class="text-xl font-bold font-mono">—</div>
         </div>
         <div class="stat-card">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Прогресс (последний)</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">NRS (последний)</div>
           <div id="nrs-end" class="text-xl font-bold font-mono">—</div>
         </div>
         <div class="stat-card">
@@ -361,29 +358,28 @@ const outcomeColor = { positive:'#5AC85A', neutral:'#8b90a0', negative:'#ffb4ab'
 const outcomeIcon  = { positive:'↑', neutral:'→', negative:'↓' };
 const outcomeVal   = { positive:2, neutral:1, negative:0 };
 
-const PROGRESS_LABELS = { 1:'Плохо', 2:'Неудовл.', 3:'Средне', 4:'Хорошо', 5:'Отлично' };
-const PROGRESS_COLORS = { 1:'#ff453a', 2:'#FF9F0A', 3:'#FFD60A', 4:'#30D158', 5:'#5AC85A' };
+const nrsColor = v => v <= 2 ? '#30D158' : v <= 4 ? '#FFD60A' : v <= 6 ? '#FF9F0A' : v <= 8 ? '#ff6b35' : '#ff453a';
 
 function renderNrsChart(sorted) {
   const W = 560, H = 130, PAD_L = 54, PAD_R = 10, PAD_T = 12, PAD_B = 22;
   const chartW = W - PAD_L - PAD_R;
   const chartH = H - PAD_T - PAD_B;
-  const yFor = v => PAD_T + (1 - (v - 1) / 4) * chartH;
+  // NRS 0-10: 10 (max pain) at top, 0 (no pain) at bottom — line going down = improvement
+  const yFor = v => PAD_T + (1 - v / 10) * chartH;
 
   const pts = sorted
     .map((r, i) => ({ i, v: r.nrs_before != null ? Number(r.nrs_before) : null, r }))
-    .filter(p => p.v != null && p.v >= 1 && p.v <= 5);
+    .filter(p => p.v != null && p.v >= 0 && p.v <= 10);
   const n = pts.length;
   const xFor = i => PAD_L + (n > 1 ? i * chartW / (n - 1) : chartW / 2);
   pts.forEach((p, i) => { p.x = xFor(i); });
 
-  const grid = [1, 2, 3, 4, 5].map(v => {
+  const grid = [10, 8, 6, 4, 2, 0].map(v => {
     const y = yFor(v);
-    const label = PROGRESS_LABELS[v];
-    const color = PROGRESS_COLORS[v];
+    const color = nrsColor(v);
     return `<line x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}"
       stroke="#252535" stroke-width="0.7" stroke-dasharray="3,4"/>
-    <text x="${PAD_L - 6}" y="${y + 3.5}" text-anchor="end" font-size="8.5" fill="${color}" font-weight="600">${label}</text>`;
+    <text x="${PAD_L - 6}" y="${y + 3.5}" text-anchor="end" font-size="8.5" fill="${color}" font-weight="600">${v}</text>`;
   }).join('');
 
   const line = n >= 2
@@ -392,9 +388,8 @@ function renderNrsChart(sorted) {
 
   const dots = pts.map(p => {
     const d = new Date(p.r.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-    const c = PROGRESS_COLORS[p.v] || '#8b90a0';
-    const lbl = PROGRESS_LABELS[p.v] || p.v;
-    return `<circle cx="${p.x}" cy="${yFor(p.v)}" r="6" fill="${c}" stroke="#131313" stroke-width="2" opacity="0.95"><title>${d} · ${lbl}</title></circle>`;
+    const c = nrsColor(p.v);
+    return `<circle cx="${p.x}" cy="${yFor(p.v)}" r="6" fill="${c}" stroke="#131313" stroke-width="2" opacity="0.95"><title>${d} · NRS ${p.v}</title></circle>`;
   }).join('');
 
   const labelIdx = new Set([0, Math.floor((n - 1) / 2), n - 1]);
@@ -413,14 +408,13 @@ function renderNrsChart(sorted) {
     const first = pts[0].v;
     const last  = pts[n - 1].v;
     const delta = last - first;
-    const fc = PROGRESS_COLORS[first] || '#8b90a0';
-    const lc = PROGRESS_COLORS[last]  || '#8b90a0';
-    document.getElementById('nrs-start').textContent  = PROGRESS_LABELS[first] || first;
-    document.getElementById('nrs-start').style.color  = fc;
-    document.getElementById('nrs-end').textContent    = PROGRESS_LABELS[last]  || last;
-    document.getElementById('nrs-end').style.color    = lc;
-    document.getElementById('nrs-delta').textContent  = delta > 0 ? '+' + delta : String(delta);
-    document.getElementById('nrs-delta').style.color  = delta > 0 ? '#30D158' : delta < 0 ? '#ffb4ab' : '#8b90a0';
+    document.getElementById('nrs-start').textContent = first;
+    document.getElementById('nrs-start').style.color = nrsColor(first);
+    document.getElementById('nrs-end').textContent   = last;
+    document.getElementById('nrs-end').style.color   = nrsColor(last);
+    document.getElementById('nrs-delta').textContent = delta < 0 ? String(delta) : delta > 0 ? '+' + delta : '0';
+    // NRS: negative delta = pain decreased = improvement = green
+    document.getElementById('nrs-delta').style.color = delta < 0 ? '#30D158' : delta > 0 ? '#ffb4ab' : '#8b90a0';
   }
 }
 
@@ -604,7 +598,7 @@ tl.innerHTML = recs.map((r, idx) => {
                 <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','completed')" style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#5AC85A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#5AC85A18'" onmouseout="this.style.background='none'">● Завершён</button>
               </div>
             </div>
-            ${r.nrs_before != null ? (() => { const c = ({1:'#ff453a',2:'#FF9F0A',3:'#FFD60A',4:'#30D158',5:'#5AC85A'})[r.nrs_before] || '#8b90a0'; const l = ({1:'Плохо',2:'Неудовл.',3:'Средне',4:'Хорошо',5:'Отлично'})[r.nrs_before] || r.nrs_before; return `<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${c}18;border:1px solid ${c}44;color:${c}">${l}</span>`; })() : ''}
+            ${r.nrs_before != null ? (() => { const c = nrsColor(Number(r.nrs_before)); return `<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${c}18;border:1px solid ${c}44;color:${c}">NRS ${r.nrs_before}</span>`; })() : ''}
             ${r.stimulation ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#FFD60A10;border:1px solid #FFD60A33;color:#FFD60A">${esc(r.stimulation)}</span>` : ''}
             ${r.treatment_type ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#BF5AF210;border:1px solid #BF5AF230;color:#BF5AF2">${esc(r.treatment_type)}</span>` : ''}
           </div>

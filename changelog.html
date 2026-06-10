@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Что нового — AcuTwin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #131313;
+  --bg2:     #1a1a1a;
+  --bg3:     #222;
+  --border:  rgba(255,255,255,0.1);
+  --text:    #e2e2e2;
+  --muted:   #8b90a0;
+  --cyan:    #00F2FF;
+  --green:   #30D158;
+  --font:    'Inter', -apple-system, sans-serif;
+}
+
+html { background: var(--bg); color: var(--text); font-family: var(--font); }
+body { min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+
+/* ── Layout ── */
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  margin-bottom: 20px;
+}
+.logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; }
+.page-title {
+  font-size: clamp(26px, 6vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.5px;
+  margin-bottom: 10px;
+  line-height: 1.15;
+}
+.page-sub {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 380px;
+}
+
+/* ── Release section ── */
+.release {
+  margin-bottom: 32px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.release::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.release.new::before  { background: linear-gradient(90deg, var(--cyan), #7B7FFF); }
+.release.mid::before  { background: linear-gradient(90deg, var(--green), #00F2FF44); }
+.release.old::before  { background: linear-gradient(90deg, #8b90a0, transparent); }
+
+.release-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.badge-new  { background: rgba(0,242,255,.15); color: var(--cyan); border: 1px solid rgba(0,242,255,.3); }
+.badge-mid  { background: rgba(48,209,88,.12); color: var(--green); border: 1px solid rgba(48,209,88,.25); }
+.badge-old  { background: rgba(139,144,160,.12); color: var(--muted); border: 1px solid rgba(139,144,160,.2); }
+.release-ver {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.release-date {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.items { list-style: none; margin-bottom: 20px; }
+.items li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.items li:last-child { border-bottom: none; }
+.check {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(48,209,88,0.15);
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.check svg { display: block; }
+
+.cta-wrap { display: flex; justify-content: flex-start; }
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  text-decoration: none;
+}
+.cta:hover { background: rgba(0,242,255,.08); }
+.cta-arrow { font-size: 16px; line-height: 1; }
+
+/* ── Footer ── */
+.footer {
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  flex-wrap: wrap;
+}
+.footer-left { flex: 1; min-width: 200px; }
+.footer-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.footer-url { font-size: 13px; color: var(--cyan); }
+.footer-hint { font-size: 11px; color: var(--muted); margin-top: 12px; }
+
+.qr-wrap { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.qr-label { font-size: 10px; color: var(--muted); text-align: center; }
+#qr-canvas { border-radius: 8px; display: block; }
+
+.print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 12px;
+  font-family: var(--font);
+  width: 100%;
+  justify-content: center;
+}
+.print-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* ── Print ── */
+@page { size: A4; margin: 14mm 16mm; }
+@media print {
+  :root {
+    --bg: #fff;
+    --bg2: #f8f8f8;
+    --bg3: #f0f0f0;
+    --border: #ddd;
+    --text: #111;
+    --muted: #666;
+    --cyan: #0077CC;
+    --green: #1a8c3a;
+  }
+  html { background: #fff; }
+  .print-btn { display: none !important; }
+  .page { padding: 0; max-width: 100%; }
+  .header { padding-bottom: 14px; margin-bottom: 18px; }
+  .page-title { font-size: 20px; }
+  .page-sub { font-size: 11px; }
+  .logo { font-size: 16px; margin-bottom: 10px; }
+  .release { margin-bottom: 14px; padding: 14px 16px; border-radius: 8px; border-color: #ddd; }
+  .release::before { height: 3px; }
+  .release.new::before { background: #0077CC; }
+  .release.mid::before { background: #1a8c3a; }
+  .release.old::before { background: #999; }
+  .release-ver { font-size: 13px; }
+  .release-date { font-size: 10px; }
+  .badge { font-size: 9px; padding: 2px 7px; }
+  .badge-new  { background: #e6f4ff; color: #0077CC; border-color: #b3d9f7; }
+  .badge-mid  { background: #e8f7ed; color: #1a8c3a; border-color: #a8ddb9; }
+  .badge-old  { background: #f4f4f4; color: #666; border-color: #ccc; }
+  .items li { font-size: 11px; padding: 4px 0; }
+  .check { width: 14px; height: 14px; background: #e8f7ed; }
+  .cta { font-size: 10px; padding: 6px 12px; border-color: #0077CC; color: #0077CC; }
+  .footer { padding: 14px; border-radius: 8px; margin-top: 18px; }
+  .footer-title { font-size: 13px; }
+  .footer-url { font-size: 11px; }
+  .footer-hint { font-size: 9px; }
+  .qr-label { font-size: 9px; }
+  #qr-canvas { width: 90px !important; height: 90px !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-dot"></span>
+      AcuTwin
+    </div>
+    <h1 class="page-title">Что нового</h1>
+    <p class="page-sub">История обновлений платформы для рефлексотерапевтов</p>
+  </header>
+
+  <!-- Sprint 3 -->
+  <section class="release new">
+    <div class="release-head">
+      <span class="badge badge-new">Последнее</span>
+      <span class="release-ver">Sprint 3 — Расписание и клиника</span>
+      <span class="release-date">Июнь 2026</span>
+    </div>
+    <ul class="items">
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Атлас меридианов</b> — страница каждого меридиана с точками, ходом и клиническими симптомами</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>История пациента</b> — фильтры по дате и врачу, сортировка, SOAP-превью прямо в списке</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Защита от двойной записи</b> — конфликты приёмов блокируются на уровне сервера</span>
+      </li>
+    </ul>
+    <div class="cta-wrap">
+      <a href="https://acutwin.ru" class="cta">Попробовать <span class="cta-arrow">→</span></a>
+    </div>
+  </section>
+
+  <!-- Sprint 2 -->
+  <section class="release mid">
+    <div class="release-head">
+      <span class="badge badge-mid">Sprint 2</span>
+      <span class="release-ver">Запись и уведомления</span>
+      <span class="release-date">Май 2026</span>
+    </div>
+    <ul class="items">
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Умный поиск точек</b> — ST36, CV1, е36 — принимается любая нотация: пиньинь, цифровая, кириллица</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Видеообучение</b> — возобновление с места остановки, автоматический повтор при сбое сети</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Telegram-уведомления врачу</b> — мгновенное оповещение о новой записи и смене статуса приёма</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Мобильный лендинг</b> — страница клиники acutwin.ru адаптирована под смартфоны</span>
+      </li>
+    </ul>
+    <div class="cta-wrap">
+      <a href="https://acutwin.ru" class="cta">Попробовать <span class="cta-arrow">→</span></a>
+    </div>
+  </section>
+
+  <!-- Sprint 1 -->
+  <section class="release old">
+    <div class="release-head">
+      <span class="badge badge-old">Sprint 1</span>
+      <span class="release-ver">Основа платформы</span>
+      <span class="release-date">Апрель 2026</span>
+    </div>
+    <ul class="items">
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Сброс пароля</b> — безопасное восстановление доступа через email</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Автосохранение SOAP</b> — заметки сохраняются по мере набора, данные не теряются</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Отмена записи</b> — пациент может отменить приём через Telegram-бот @AcuTwinRemindBot</span>
+      </li>
+      <li>
+        <span class="check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1.5" stroke="#30D158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><b>Мониторинг доступности</b> — автоматическая проверка сервиса, алерты при недоступности</span>
+      </li>
+    </ul>
+    <div class="cta-wrap">
+      <a href="https://acutwin.ru" class="cta">Попробовать <span class="cta-arrow">→</span></a>
+    </div>
+  </section>
+
+  <!-- Footer with QR -->
+  <div class="footer">
+    <div class="footer-left">
+      <div class="footer-title">AcuTwin — рабочее место рефлексотерапевта</div>
+      <div class="footer-url">acutwin.ru</div>
+      <div class="footer-hint">Атлас 361 точки · Электронная карта · Расписание · Онлайн-запись</div>
+      <button class="print-btn" onclick="window.print()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="5" width="10" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M4 5V3.5A.5.5 0 014.5 3h5a.5.5 0 01.5.5V5" stroke="currentColor" stroke-width="1.4"/><rect x="4.5" y="8" width="5" height="2" rx=".5" fill="currentColor"/></svg>
+        Скачать PDF (A4)
+      </button>
+    </div>
+    <div class="qr-wrap">
+      <img id="qr-canvas" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAYAAAA5ZDbSAAAAAklEQVR4AewaftIAAAOzSURBVO3B0U4rOwIAwW5r/v+Xe3m0LJQhOQS4XlfZB45tDY6tDY6tDY6tDY6tXXxC5bdUzFRWFTOVOxUrlVnFSuWRipXKb6mYDY6tDY6tDY6tXXxBxbuoPFKxUrlT8R0q/lXFu6g8Mji2Nji2Nji2Nji2dvEilWdVvEPFSmVWsaqYqawqZiqzileoPKviWYNja4Nja4Njaxd/nMpPqVipzCr+SwbH1gbH1gbH1gbH1i7+T6isKmYqd1RmFX/Z4Nja4Nja4NjaxYsq/gqVVcWzKn5KxU8YHFsbHFsbHFsbHFu7+AKVv6RipnJHZVUxU1lVzFRmFXdUfsvg2Nrg2Nrg2Jp94A9TWVXcUZlVrFRmFbsZHFsbHFsbHFu7+ITKrOIVKrOKlcq/UllVzFReoTKrmKm8S8UdlVnFbHBsbXBsbXBsbXBs7eILVFYVz1JZVcxUZhUrlTsqs4qVykzlWRWvUHmWyqrikcGxtcGxtcGxNfvADZVXVMxU7lTcUblT8R1UnlUxU1lVzFTuVDxrcGxtcGxtcGxtcGzt4gsqVirfoeIRlTsVd1RWFTOVVcWzVGYVdypWKjOVVcUjg2Nrg2Nrg2NrF9+kYqUyq1ipzCreoWKlckdlVjFTuaOyqpipvEJlVjEbHFsbHFsbHFsbHFu7+ITKrOIVFTOVVcWzKp6lsqq4ozJTuVNxR2VWcUdlVfHI4Nja4Nja4NiafeCHqNyp+A4q71DxLJXvUPGswbG1wbG1wbG1wbG1ixep3Km4UzFTmVWsVJ5VsVKZVaxUZiqziu9QsVKZqawqHhkcWxscWxscW7v4hMqdipnKSmVWsVKZVcxUXlExU3kHle+gcqfiWYNja4Nja4Nja/aBP0xlVTFTWVXcUblTMVOZVbxCZVbxDoNja4Nja4Nja4NjaxefUPktFXdUZhWvqHgHlVnFbxkcWxscWxscW7v4gop3UXmkYqUyU1lVzFRWFTOVVcWzKp6l8h0qZoNja4Nja4Nja4NjaxcvUnlWxbNUVhV3VGYVK5V/pfJTKlYqjwyOrQ2OrQ2OrV38cRUrlVnFqmKmsqq4o/IOFXdUZirPGhxbGxxbGxxbGxxbu/gPqpipvELlTsVMZVaxUplV3FFZVcxUVhWPDI6tDY6tDY6tXbyo4q+oWKnMKlYqs4o7FXcqZiqvUPlXg2Nrg2Nrg2Nrg2NrF1+g8ltUVhUzlVXFTOUVKrOKOyqzileo3FGZVcwGx9YGx9YGx9bsA8e2BsfWBsfWBsfW/gcsNKUYFZDrZQAAAABJRU5ErkJggg==" alt="QR acutwin.ru" style="border-radius:6px;display:block;width:110px;height:110px;image-rendering:pixelated"/>
+      <div class="qr-label">Отсканируйте для входа</div>
+    </div>
+  </div>
+
+</div>
+
+
+</body>
+</html>

@@ -15,9 +15,45 @@ try {
   });
 } catch {}
 
-const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN || '';
-const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID   || '';
+const TG_TOKEN        = process.env.TELEGRAM_BOT_TOKEN || '';
+const TG_CHAT_ID      = process.env.TELEGRAM_CHAT_ID   || '';
+const PATIENT_TG_TOKEN   = process.env.PATIENT_TG_BOT_TOKEN  || '';
+const PATIENT_TG_BOT_NAME = process.env.PATIENT_TG_BOT_NAME || '';
 const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
+
+// Отправка сообщения пациенту через бота
+async function sendPatientTg(chatId, text) {
+  if (!PATIENT_TG_TOKEN || !chatId) return;
+  return new Promise(resolve => {
+    const body = JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' });
+    const req = https.request({
+      hostname: 'api.telegram.org',
+      path: `/bot${PATIENT_TG_TOKEN}/sendMessage`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, res => { res.resume(); resolve(); });
+    req.on('error', () => resolve());
+    req.write(body); req.end();
+  });
+}
+
+// Регистрация webhook при старте (если токен есть)
+function registerPatientTgWebhook(baseUrl) {
+  if (!PATIENT_TG_TOKEN || !baseUrl) return;
+  const webhookUrl = `${baseUrl}/tg-patient`;
+  const body = JSON.stringify({ url: webhookUrl });
+  const req = https.request({
+    hostname: 'api.telegram.org',
+    path: `/bot${PATIENT_TG_TOKEN}/setWebhook`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+  }, res => {
+    let d = ''; res.on('data', c => d += c);
+    res.on('end', () => console.log('[PatientBot] webhook:', d));
+  });
+  req.on('error', e => console.error('[PatientBot] webhook err:', e.message));
+  req.write(body); req.end();
+}
 
 async function sendCredentialsMail(to, login, password) {
   const html = `
@@ -84,6 +120,144 @@ function sendTgNotify(contactMethod, contact, ip, email) {
   req.on('error', (e) => console.error('[TG notify error]', e.message));
   req.write(body);
   req.end();
+}
+
+// ── Email-напоминания за день до приёма ───────────────────
+async function sendReminderEmail(appt, clinicName) {
+  if (!process.env.RESEND_API_KEY) return;
+  const dt = new Date(appt.start_at.replace(' ','T'));
+  const dateStr = dt.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f9f9f9;border-radius:12px;color:#111">
+      <h2 style="color:#0a0a0a;margin:0 0 14px">Напоминание о приёме</h2>
+      <p style="color:#444;margin:0 0 24px;font-size:15px;line-height:1.5">Здравствуйте, ${escapeHtml(appt.patient)}!<br>Напоминаем о вашей записи на приём.</p>
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:18px">
+        <div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Врач</span><br><span style="font-size:17px;font-weight:700">${escapeHtml(appt.doctorName)}</span></div>
+        ${clinicName ? `<div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Клиника</span><br><span style="font-size:15px">${escapeHtml(clinicName)}</span></div>` : ''}
+        <div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Когда</span><br><span style="font-size:16px;font-weight:600">${escapeHtml(dateStr)} в ${escapeHtml(timeStr)}</span></div>
+        ${appt.notes ? `<div><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Жалобы</span><br><span style="font-size:14px">${escapeHtml(appt.notes)}</span></div>` : ''}
+      </div>
+      <p style="font-size:13px;color:#666;line-height:1.5">Если не сможете прийти — свяжитесь с врачом${appt.patient_phone ? ' или клиникой' : ''} заранее, чтобы освободить место для других пациентов.</p>
+      <p style="font-size:11px;color:#999;margin-top:24px">Это автоматическое напоминание от платформы <a href="https://acutwin.ru" style="color:#0A84FF;text-decoration:none">AcuTwin</a></p>
+    </div>`;
+  const body = JSON.stringify({
+    from: 'AcuTwin <info@acutwin.ru>',
+    to: appt.patient_email,
+    subject: `Напоминание: завтра приём у ${appt.doctorName} в ${timeStr}`,
+    html
+  });
+  return new Promise((resolve, reject) => {
+    const r = https.request({
+      hostname: 'api.resend.com', path: '/emails', method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      }
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+        else reject(new Error(`Resend ${res.statusCode}: ${data}`));
+      });
+    });
+    r.on('error', reject);
+    r.write(body); r.end();
+  });
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function normalizeUrl(s, maxLen) {
+  let v = String(s || '').trim();
+  if (!v) return null;
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  return v.slice(0, maxLen);
+}
+
+const fmtLocal = d => {
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+};
+
+async function runDailyReminders() {
+  // Email: за день до приёма (окно: завтра 00:00 – послезавтра 00:00)
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0);
+  const dayAfter = new Date(tomorrow); dayAfter.setDate(dayAfter.getDate()+1);
+  const list = db.getAppointmentsForReminder(fmtLocal(tomorrow), fmtLocal(dayAfter));
+  console.log(`[Reminders] email tomorrow: ${list.length} pending`);
+  for (const a of list) {
+    try {
+      const tenant = db.findTenantByDoctor(a.doctor);
+      await sendReminderEmail(a, tenant ? tenant.clinic : '');
+      db.markReminderSent(a.id);
+      console.log(`[Reminders] email sent: ${a.patient} <${a.patient_email}>`);
+    } catch (e) { console.error(`[Reminders] email fail ${a.id}: ${e.message}`); }
+  }
+
+  // Telegram за 24ч: те же записи завтра, у которых есть tg_chat_id
+  if (PATIENT_TG_TOKEN) {
+    const tgList = db.getApptsForTgRemind24h(fmtLocal(tomorrow), fmtLocal(dayAfter));
+    console.log(`[Reminders] tg 24h: ${tgList.length} pending`);
+    for (const a of tgList) {
+      try {
+        const d = new Date(a.start_at.replace(' ', 'T'));
+        const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const dateStr = d.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
+        await sendPatientTg(a.tg_chat_id,
+          `🔔 <b>Напоминание о приёме</b>\n\n` +
+          `Завтра, ${dateStr} в <b>${timeStr}</b>\n` +
+          `Врач: ${a.doctorName}\n` +
+          (a.service ? `Услуга: ${a.service}\n` : '') +
+          `\nЕсли не можете прийти — сообщите врачу заранее.`
+        );
+        db.markReminderSent(a.id); // тот же флаг — чтобы не дублировать
+        console.log(`[Reminders] tg 24h sent: ${a.patient} chat=${a.tg_chat_id}`);
+      } catch (e) { console.error(`[Reminders] tg 24h fail ${a.id}: ${e.message}`); }
+    }
+  }
+}
+
+// За 1 час до приёма — Telegram
+async function runHourlyTgReminders() {
+  if (!PATIENT_TG_TOKEN) return;
+  const now = new Date();
+  const in1h = new Date(now.getTime() + 60*60*1000);
+  const in1h10 = new Date(now.getTime() + 70*60*1000); // окно 10 минут
+  const list = db.getApptsForTgRemind1h(fmtLocal(in1h), fmtLocal(in1h10));
+  for (const a of list) {
+    try {
+      const d = new Date(a.start_at.replace(' ','T'));
+      const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      await sendPatientTg(a.tg_chat_id,
+        `⏰ <b>Приём через 1 час</b>\n\n` +
+        `Сегодня в <b>${timeStr}</b> — приём у ${a.doctorName}.\n` +
+        `Не забудьте прийти вовремя!`
+      );
+      db.markTgRemind1h(a.id);
+      console.log(`[Reminders] tg 1h sent: ${a.patient}`);
+    } catch (e) { console.error(`[Reminders] tg 1h fail ${a.id}: ${e.message}`); }
+  }
+}
+
+// Планировщик: каждую минуту проверяем
+let _reminderLastRun = null;
+function scheduleReminders() {
+  setInterval(() => {
+    const now = new Date();
+    const stamp = now.toISOString().slice(0,10);
+    // Ежедневно в 10:00 — email + tg за 24ч
+    if (now.getHours() === 10 && now.getMinutes() < 5 && _reminderLastRun !== stamp) {
+      _reminderLastRun = stamp;
+      runDailyReminders().catch(e => console.error('[Reminders] crash:', e.message));
+    }
+    // Каждую минуту — tg за 1ч
+    runHourlyTgReminders().catch(e => console.error('[Reminders] 1h crash:', e.message));
+  }, 60_000);
 }
 
 const ROOT    = __dirname;
@@ -193,8 +367,141 @@ function checkRecordRate(username) {
   return r.count > 20;
 }
 
+// ── Антиспам для публичных эндпоинтов ───────────────────
+const _publicRateMap = {};
+function checkPublicRate(ip, limit=5, windowMs=60_000) {
+  const now = Date.now();
+  const r = _publicRateMap[ip] || { count: 0, window: now };
+  if (now - r.window > windowMs) { r.count = 0; r.window = now; }
+  r.count++;
+  _publicRateMap[ip] = r;
+  return r.count > limit;
+}
+
+function sendTgBookingNotify(appt, doctorName, clinicName) {
+  if (!TG_TOKEN || !TG_CHAT_ID) return;
+  const when = new Date(appt.start_at.replace(' ','T')).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+  const text = `🩺 Новая заявка на приём\n` +
+    `Врач: ${doctorName}${clinicName ? ' · '+clinicName : ''}\n` +
+    `Когда: ${when}\n` +
+    `Пациент: ${appt.patient}\n` +
+    `Телефон: ${appt.patient_phone || '—'}\n` +
+    `Email: ${appt.patient_email || '—'}\n` +
+    `Жалобы: ${appt.notes || '—'}`;
+  const body = JSON.stringify({ chat_id: TG_CHAT_ID, text });
+  const req = https.request({
+    hostname: 'api.telegram.org',
+    path: `/bot${TG_TOKEN}/sendMessage`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+  });
+  req.on('error', e => console.error('[TG booking notify]', e.message));
+  req.write(body); req.end();
+}
+
 // ── API Router ─────────────────────────────────────────────
 async function handleAPI(method, endpoint, req, res) {
+
+  // ── Public booking ──────────────────────────────────────
+
+  // GET /api/public/doctor/:slug|:username — публичная информация о враче (по slug или login)
+  if (method === 'GET' && endpoint.match(/^\/api\/public\/doctor\/[^/]+$/)) {
+    const id = decodeURIComponent(endpoint.split('/')[4]);
+    let u = db.getUserBySlug(id) || db.getUser(id);
+    if (!u || u.role !== 'doctor') return json(res, 404, { error: 'Врач не найден' });
+    const tenant = db.findTenantByDoctor(u.username);
+    return json(res, 200, {
+      username: u.username,
+      slug: u.slug,
+      name: u.name,
+      specialty: u.specialty || null,
+      photo: u.photo || null,
+      bio: u.bio || null,
+      price_default: u.price_default || null,
+      clinic: tenant ? { slug: tenant.slug, name: tenant.clinic, address: tenant.address, phone: tenant.tenant_phone, logo: tenant.logo } : null
+    });
+  }
+
+  // GET /api/public/clinic/:slug — публичная информация о клинике + список врачей
+  if (method === 'GET' && endpoint.match(/^\/api\/public\/clinic\/[^/]+$/)) {
+    const slug = decodeURIComponent(endpoint.split('/')[4]);
+    const t = db.getTenantBySlug(slug);
+    if (!t) return json(res, 404, { error: 'Клиника не найдена' });
+    const doctors = (t.doctorLogins || []).map(login => {
+      const u = db.getUser(login);
+      if (!u || u.role !== 'doctor') return null;
+      return {
+        username: u.username, slug: u.slug, name: u.name,
+        specialty: u.specialty || null, photo: u.photo || null,
+        bio: u.bio || null, price_default: u.price_default || null,
+      };
+    }).filter(Boolean);
+    return json(res, 200, {
+      slug: t.slug,
+      name: t.clinic,
+      address: t.address || null,
+      phone: t.tenant_phone || null,
+      website: t.website || null,
+      logo: t.logo || null,
+      doctors,
+    });
+  }
+
+  // GET /api/public/slots?doctor=USER&from=ISO&to=ISO
+  if (method === 'GET' && endpoint.startsWith('/api/public/slots')) {
+    const qs = req.url.split('?')[1] || '';
+    const params = new URLSearchParams(qs);
+    const doctor = params.get('doctor');
+    const from   = params.get('from');
+    const to     = params.get('to');
+    if (!doctor || !from || !to) return json(res, 400, { error: 'doctor/from/to required' });
+    const u = db.getUserBySlug(doctor) || db.getUser(doctor);
+    if (!u || u.role !== 'doctor') return json(res, 404, { error: 'Врач не найден' });
+    // Только занятые интервалы, без персданных
+    const appts = db.getAppointmentsDoctor(u.username, from, to)
+      .filter(a => a.status !== 'cancelled')
+      .map(a => ({ start_at: a.start_at, duration_min: a.duration_min }));
+    return json(res, 200, appts);
+  }
+
+  // POST /api/public/book — заявка на приём
+  if (method === 'POST' && endpoint === '/api/public/book') {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    if (checkPublicRate(ip, 5, 60_000)) return json(res, 429, { error: 'Слишком частые запросы. Подождите минуту.' });
+    const body = await readBody(req);
+    const { doctor, start_at, duration_min, patient, patient_phone, patient_email, reason } = body;
+    if (!doctor || !start_at || !patient || !patient_phone) return json(res, 400, { error: 'Заполните ФИО, телефон и выберите время' });
+    if (String(patient).trim().length < 3) return json(res, 400, { error: 'Введите ФИО полностью' });
+    if (String(patient_phone).trim().length < 6) return json(res, 400, { error: 'Некорректный телефон' });
+    const u = db.getUserBySlug(doctor) || db.getUser(doctor);
+    if (!u || u.role !== 'doctor') return json(res, 404, { error: 'Врач не найден' });
+    const dur = Math.max(15, Math.min(240, parseInt(duration_min) || 60));
+    const conflict = db.findApptConflict(u.username, start_at, dur);
+    if (conflict) return json(res, 409, { error: 'Это время только что заняли. Выберите другое.' });
+    const id = crypto.randomUUID();
+    const apptData = {
+      id, doctor: u.username, doctorName: u.name,
+      patient: String(patient).slice(0,200).trim(),
+      patient_phone: String(patient_phone).slice(0,30).trim(),
+      patient_email: patient_email ? String(patient_email).slice(0,100).trim() : null,
+      patient_telegram: null,
+      start_at,
+      duration_min: dur,
+      service: null, price: null,
+      notes: reason ? String(reason).slice(0,500).trim() : null,
+      status: 'pending',
+      created_by: 'public'
+    };
+    try {
+      db.addAppointment(apptData);
+    } catch (e) {
+      if (e.message && e.message.includes('UNIQUE')) return json(res, 409, { error: 'Это время только что заняли. Выберите другое.' });
+      throw e;
+    }
+    const tenant = db.findTenantByDoctor(u.username);
+    sendTgBookingNotify(apptData, u.name, tenant ? tenant.clinic : '');
+    return json(res, 201, { ok: true, id });
+  }
 
   // POST /api/trial-request
   if (method === 'POST' && endpoint === '/api/trial-request') {
@@ -277,6 +584,11 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { hasUsers: db.getUsers().length > 0 });
   }
 
+  // GET /api/health — алиас /api/status для мониторинга (UptimeRobot)
+  if (method === 'GET' && endpoint === '/api/health') {
+    return json(res, 200, { status: 'ok', hasUsers: db.getUsers().length > 0 });
+  }
+
   // GET /api/me
   if (method === 'GET' && endpoint === '/api/me') {
     const user = requireAuth(req, res); if (!user) return;
@@ -286,16 +598,30 @@ async function handleAPI(method, endpoint, req, res) {
   // ── Records ─────────────────────────────────────────────
 
   // GET /api/records
-  if (method === 'GET' && endpoint === '/api/records') {
+  if (method === 'GET' && endpoint.split('?')[0] === '/api/records') {
     const user = requireAuth(req, res); if (!user) return;
-    if (user.role === 'admin') return json(res, 200, db.getRecords());
-    if (user.role === 'boss') {
+    const qs = new URLSearchParams(endpoint.split('?')[1] || '');
+    const qDoctor  = qs.get('doctor')  || '';
+    const qPatient = qs.get('patient') || '';
+    const qFrom    = qs.get('from')    || '';
+    const qTo      = qs.get('to')      || '';
+    const qStatus  = qs.get('status')  || '';
+    const qSort    = qs.get('sort')    || 'desc';
+    let records;
+    if (user.role === 'admin') records = db.getRecords();
+    else if (user.role === 'boss') {
       const tenant = db.findTenantByDoctor(user.username);
-      return json(res, 200, tenant
-        ? db.getRecordsByLogins(tenant.doctorLogins)
-        : []);
+      records = tenant ? db.getRecordsByLogins(tenant.doctorLogins) : [];
+    } else {
+      records = db.getMyRecords(user.username);
     }
-    return json(res, 200, db.getMyRecords(user.username));
+    if (qDoctor)  records = records.filter(r => r.doctor  === qDoctor);
+    if (qPatient) records = records.filter(r => r.patient === qPatient);
+    if (qFrom)    records = records.filter(r => r.date >= qFrom);
+    if (qTo)      records = records.filter(r => r.date <= qTo);
+    if (qStatus)  records = records.filter(r => r.status  === qStatus);
+    if (qSort === 'asc') records = records.slice().reverse();
+    return json(res, 200, records);
   }
 
   // POST /api/records
@@ -324,8 +650,22 @@ async function handleAPI(method, endpoint, req, res) {
       stimulation:    body.stimulation    ? String(body.stimulation).slice(0,50)    : null,
       exposure:       body.exposure       != null ? Number(body.exposure)       : null,
       deqi:           body.deqi ? 1 : 0,
+      progress:       body.progress != null ? Number(body.progress) : null,
+      soap_s:         body.soap_s ? String(body.soap_s).slice(0,2000) : null,
+      soap_o:         body.soap_o ? String(body.soap_o).slice(0,2000) : null,
+      soap_a:         body.soap_a ? String(body.soap_a).slice(0,2000) : null,
+      soap_p:         body.soap_p ? String(body.soap_p).slice(0,2000) : null,
     };
     db.addRecord(rec);
+    // Связь с записью расписания: автозавершение приёма
+    if (body.appointmentId) {
+      try {
+        const appt = db.getAppointment(String(body.appointmentId));
+        if (appt && (user.role === 'admin' || user.role === 'boss' || appt.doctor === user.username)) {
+          db.linkAppointmentRecord(appt.id, rec.id);
+        }
+      } catch (e) {}
+    }
     return json(res, 201, { ok: true, id: rec.id });
   }
 
@@ -370,6 +710,246 @@ async function handleAPI(method, endpoint, req, res) {
     }
     db.deleteRecord(id);
     return json(res, 200, { ok: true });
+  }
+
+  // ── Appointments ────────────────────────────────────────
+
+  // GET /api/appointments?from=ISO&to=ISO[&doctor=username]
+  if (method === 'GET' && endpoint.startsWith('/api/appointments') && !endpoint.match(/^\/api\/appointments\/[^/]+/)) {
+    const user = requireAuth(req, res); if (!user) return;
+    const qs = (req.url.split('?')[1] || '');
+    const params = new URLSearchParams(qs);
+    const from = params.get('from');
+    const to   = params.get('to');
+    const filterDoctor = params.get('doctor');
+    if (!from || !to) return json(res, 400, { error: 'from/to required (ISO)' });
+    let rows;
+    if (user.role === 'admin') {
+      rows = filterDoctor ? db.getAppointmentsDoctor(filterDoctor, from, to) : db.getAppointmentsRange(from, to);
+    } else if (user.role === 'boss') {
+      const tenant = db.findTenantByDoctor(user.username);
+      const logins = tenant ? tenant.doctorLogins : [user.username];
+      if (filterDoctor && logins.includes(filterDoctor)) {
+        rows = db.getAppointmentsDoctor(filterDoctor, from, to);
+      } else {
+        rows = db.getAppointmentsRange(from, to).filter(a => logins.includes(a.doctor));
+      }
+    } else {
+      rows = db.getAppointmentsDoctor(user.username, from, to);
+    }
+    return json(res, 200, rows);
+  }
+
+  // POST /api/appointments
+  if (method === 'POST' && endpoint === '/api/appointments') {
+    const user = requireAuth(req, res); if (!user) return;
+    const body = await readBody(req);
+    if (!body.patient || !body.start_at) return json(res, 400, { error: 'patient и start_at обязательны' });
+    const doctorUsername = (user.role === 'admin' || user.role === 'boss') && body.doctor ? body.doctor : user.username;
+    const doctorName = body.doctorName || user.name;
+    const duration = Math.max(15, Math.min(240, parseInt(body.duration_min) || 60));
+    const conflict = db.findApptConflict(doctorUsername, body.start_at, duration);
+    if (conflict) return json(res, 409, { error: 'Время занято другим приёмом' });
+    const id = body.id || crypto.randomUUID();
+    try {
+      db.addAppointment({
+        id, doctor: doctorUsername, doctorName,
+        patient: String(body.patient).slice(0,200),
+        patient_phone: body.patient_phone ? String(body.patient_phone).slice(0,30) : null,
+        patient_email: body.patient_email ? String(body.patient_email).slice(0,100) : null,
+        patient_telegram: body.patient_telegram ? String(body.patient_telegram).slice(0,50) : null,
+        start_at: body.start_at,
+        duration_min: duration,
+        service: body.service ? String(body.service).slice(0,100) : null,
+        price: body.price != null ? Number(body.price) : null,
+        notes: body.notes ? String(body.notes).slice(0,1000) : null,
+        status: body.status || 'scheduled',
+        created_by: user.username
+      });
+    } catch (e) {
+      if (e.message && e.message.includes('UNIQUE constraint')) {
+        return json(res, 409, { error: 'SLOT_TAKEN' });
+      }
+      throw e;
+    }
+    return json(res, 201, { ok: true, id });
+  }
+
+  // PUT /api/appointments/:id
+  if (method === 'PUT' && endpoint.match(/^\/api\/appointments\/[^/]+$/)) {
+    const user = requireAuth(req, res); if (!user) return;
+    const id = endpoint.split('/')[3];
+    const cur = db.getAppointment(id);
+    if (!cur) return json(res, 404, { error: 'Запись не найдена' });
+    if (user.role !== 'admin' && user.role !== 'boss' && cur.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    const body = await readBody(req);
+    const doctorUsername = (user.role === 'admin' || user.role === 'boss') && body.doctor ? body.doctor : cur.doctor;
+    const doctorName = body.doctorName || cur.doctorName;
+    const duration = Math.max(15, Math.min(240, parseInt(body.duration_min) || cur.duration_min));
+    const startAt = body.start_at || cur.start_at;
+    const conflict = db.findApptConflict(doctorUsername, startAt, duration, id);
+    if (conflict) return json(res, 409, { error: 'Время занято другим приёмом' });
+    db.updateAppointment({
+      id, doctor: doctorUsername, doctorName,
+      patient: body.patient != null ? String(body.patient).slice(0,200) : cur.patient,
+      patient_phone: body.patient_phone != null ? String(body.patient_phone).slice(0,30) : cur.patient_phone,
+      patient_email: body.patient_email != null ? String(body.patient_email).slice(0,100) : cur.patient_email,
+      patient_telegram: body.patient_telegram != null ? String(body.patient_telegram).slice(0,50) : cur.patient_telegram,
+      start_at: startAt,
+      duration_min: duration,
+      service: body.service != null ? String(body.service).slice(0,100) : cur.service,
+      price: body.price !== undefined ? (body.price != null ? Number(body.price) : null) : cur.price,
+      notes: body.notes != null ? String(body.notes).slice(0,1000) : cur.notes,
+      status: body.status || cur.status
+    });
+    return json(res, 200, { ok: true });
+  }
+
+  // PATCH /api/appointments/:id/status
+  if (method === 'PATCH' && endpoint.match(/^\/api\/appointments\/[^/]+\/status$/)) {
+    const user = requireAuth(req, res); if (!user) return;
+    const id = endpoint.split('/')[3];
+    const { status } = await readBody(req);
+    if (!['scheduled','pending','done','cancelled'].includes(status)) return json(res, 400, { error: 'Invalid status' });
+    const cur = db.getAppointment(id);
+    if (!cur) return json(res, 404, { error: 'Не найдено' });
+    if (user.role !== 'admin' && user.role !== 'boss' && cur.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    db.setAppointmentStatus(id, status);
+    return json(res, 200, { ok: true });
+  }
+
+  // DELETE /api/appointments/:id
+  if (method === 'DELETE' && endpoint.match(/^\/api\/appointments\/[^/]+$/)) {
+    const user = requireAuth(req, res); if (!user) return;
+    const id = endpoint.split('/')[3];
+    const cur = db.getAppointment(id);
+    if (!cur) return json(res, 404, { error: 'Не найдено' });
+    if (user.role !== 'admin' && user.role !== 'boss' && cur.doctor !== user.username) return json(res, 403, { error: 'Нет доступа' });
+    db.deleteAppointment(id);
+    return json(res, 200, { ok: true });
+  }
+
+  // ── Profile ─────────────────────────────────────────────
+
+  // GET /api/profile — мой профиль + моя клиника
+  if (method === 'GET' && endpoint === '/api/profile') {
+    const user = requireAuth(req, res); if (!user) return;
+    const u = db.getUser(user.username);
+    if (!u) return json(res, 404, { error: 'Пользователь не найден' });
+    const tenant = db.findTenantByDoctor(user.username);
+    const canEditClinic = user.role === 'admin' || user.role === 'boss';
+    return json(res, 200, {
+      doctor: {
+        username: u.username, name: u.name, role: u.role,
+        slug: u.slug, specialty: u.specialty, photo: u.photo, bio: u.bio,
+        price_default: u.price_default,
+      },
+      clinic: tenant ? {
+        id: tenant.id, name: tenant.clinic, slug: tenant.slug,
+        address: tenant.address, phone: tenant.tenant_phone,
+        website: tenant.website, logo: tenant.logo,
+        canEdit: canEditClinic,
+      } : null,
+    });
+  }
+
+  // PUT /api/profile/doctor
+  if (method === 'PUT' && endpoint === '/api/profile/doctor') {
+    const user = requireAuth(req, res); if (!user) return;
+    const body = await readBody(req);
+    const slug = body.slug ? String(body.slug).trim().toLowerCase() : null;
+    if (slug && !/^[a-z0-9-]{2,60}$/.test(slug)) return json(res, 400, { error: 'Slug: только латиница, цифры, дефис (2–60 символов)' });
+    if (slug && db.isUserSlugTaken(slug, user.username)) return json(res, 409, { error: 'Этот slug уже занят' });
+    db.updateUserProfile(user.username, {
+      slug,
+      specialty: body.specialty ? String(body.specialty).slice(0,100) : null,
+      photo:     body.photo     ? normalizeUrl(body.photo, 500) : null,
+      bio:       body.bio       ? String(body.bio).slice(0,2000)      : null,
+      price_default: body.price_default != null && body.price_default !== '' ? Math.max(0, Math.min(1000000, Number(body.price_default))) : null,
+    });
+    return json(res, 200, { ok: true });
+  }
+
+  // PUT /api/profile/clinic
+  if (method === 'PUT' && endpoint === '/api/profile/clinic') {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'Только админ или руководитель клиники' });
+    const tenant = db.findTenantByDoctor(user.username);
+    if (!tenant && user.role !== 'admin') return json(res, 404, { error: 'Клиника не найдена' });
+    const body = await readBody(req);
+    const targetId = user.role === 'admin' && body.id ? body.id : (tenant ? tenant.id : null);
+    if (!targetId) return json(res, 400, { error: 'Не указана клиника' });
+    const slug = body.slug ? String(body.slug).trim().toLowerCase() : null;
+    if (slug && !/^[a-z0-9-]{2,60}$/.test(slug)) return json(res, 400, { error: 'Slug: только латиница, цифры, дефис (2–60 символов)' });
+    if (slug && db.isTenantSlugTaken(slug, targetId)) return json(res, 409, { error: 'Этот slug уже занят' });
+    db.updateTenantProfile(targetId, {
+      slug,
+      address:      body.address      ? String(body.address).slice(0,300)      : null,
+      tenant_phone: body.tenant_phone ? String(body.tenant_phone).slice(0,50)  : null,
+      website:      body.website      ? normalizeUrl(body.website, 200) : null,
+      logo:         body.logo         ? normalizeUrl(body.logo, 500) : null,
+    });
+    return json(res, 200, { ok: true });
+  }
+
+  // POST /api/appointments/run-reminders — ручной запуск рассылки (admin)
+  if (method === 'POST' && endpoint === '/api/appointments/run-reminders') {
+    const user = requireAdmin(req, res); if (!user) return;
+    runDailyReminders().catch(e => console.error('[Reminders] manual crash:', e.message));
+    return json(res, 200, { ok: true, msg: 'Запущено в фоне, смотри логи' });
+  }
+
+  // GET /api/public/tg-bot-name — имя бота для пациентов (публичный)
+  if (method === 'GET' && endpoint === '/api/public/tg-bot-name') {
+    return json(res, 200, { bot_name: PATIENT_TG_BOT_NAME || null });
+  }
+
+  // POST /api/public/appt-tg-token — генерация deep-link токена для записи (публичный)
+  if (method === 'POST' && endpoint === '/api/public/appt-tg-token') {
+    const body = await readBody(req);
+    const { appt_id } = body;
+    if (!appt_id) return json(res, 400, { error: 'appt_id required' });
+    const appt = db.getAppointment(appt_id);
+    if (!appt) return json(res, 404, { error: 'Not found' });
+    const token = crypto.randomBytes(12).toString('hex');
+    db.setApptTgToken(appt_id, token);
+    return json(res, 200, { token });
+  }
+
+  // POST /tg-patient — webhook от Telegram (бот для пациентов)
+  if (method === 'POST' && endpoint === '/tg-patient') {
+    const update = await readBody(req);
+    res.writeHead(200); res.end('ok');
+    try {
+      const msg = update.message;
+      if (!msg || !msg.text) return;
+      const chatId = String(msg.chat.id);
+      const text = msg.text.trim();
+      if (text.startsWith('/start')) {
+        const token = text.split(' ')[1] || '';
+        if (token) {
+          const appt = db.getApptByTgToken(token);
+          if (appt) {
+            db.linkPatientTelegram(token, chatId);
+            const d = new Date(appt.start_at.replace(' ','T'));
+            const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            const dateStr = d.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
+            await sendPatientTg(chatId,
+              `✅ <b>Напоминания подключены!</b>\n\n` +
+              `Ваш приём: ${dateStr} в <b>${timeStr}</b>\n` +
+              `Врач: ${appt.doctorName}\n\n` +
+              `Я напомню вам за 24 часа и за 1 час до приёма.`
+            );
+            console.log(`[PatientBot] linked chat=${chatId} appt=${appt.id}`);
+          } else {
+            await sendPatientTg(chatId, '❌ Ссылка устарела или уже использована. Запишитесь заново.');
+          }
+        } else {
+          await sendPatientTg(chatId, '👋 Привет! Я бот AcuTwin для напоминаний о приёмах.\n\nЧтобы подключить напоминания, перейдите по ссылке из страницы записи к врачу.');
+        }
+      }
+    } catch(e) { console.error('[PatientBot] webhook err:', e.message); }
+    return;
   }
 
   // ── Users (admin only) ───────────────────────────────────
@@ -567,6 +1147,26 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // Красивые публичные URL → внутренние страницы
+  // /c/<slug>          → clinic.html?slug=<slug>
+  // /d/<slug>          → book.html?doctor=<slug>
+  // /c/<slug>/d/<dr>   → book.html?doctor=<dr>&clinic=<slug>
+  const mCD = url.match(/^\/c\/([^/]+)\/d\/([^/]+)\/?$/);
+  const mC  = url.match(/^\/c\/([^/]+)\/?$/);
+  const mD  = url.match(/^\/d\/([^/]+)\/?$/);
+  if (mCD) {
+    res.writeHead(302, { Location: `/book.html?doctor=${encodeURIComponent(mCD[2])}&clinic=${encodeURIComponent(mCD[1])}` });
+    return res.end();
+  }
+  if (mC) {
+    res.writeHead(302, { Location: `/clinic.html?slug=${encodeURIComponent(mC[1])}` });
+    return res.end();
+  }
+  if (mD) {
+    res.writeHead(302, { Location: `/book.html?doctor=${encodeURIComponent(mD[1])}` });
+    return res.end();
+  }
+
   // Static files
   if (url === '/' || url === '/new/' || url === '/new') url = '/treatment.html';
   url = url.replace(/^\/new\//, '/');
@@ -574,14 +1174,17 @@ http.createServer(async (req, res) => {
   // Медиафайлы: /media/ → папка на уровень выше от ROOT
   const MEDIA_ROOT = path.join(ROOT, '..', 'media');
   if (url.startsWith('/media/')) {
-    const fp = path.resolve(MEDIA_ROOT, '.' + url.slice('/media'.length));
+    const decodedUrl = decodeURIComponent(url);
+    const fp = path.resolve(MEDIA_ROOT, '.' + decodedUrl.slice('/media'.length));
     if (!fp.startsWith(MEDIA_ROOT + path.sep)) { res.writeHead(403); return res.end('Forbidden'); }
     let stat;
     try { stat = fs.statSync(fp); } catch { res.writeHead(404); return res.end('Not found'); }
+    if (stat.isDirectory()) { res.writeHead(404); return res.end('Not found'); }
     const ext = path.extname(fp).toLowerCase();
     const mime = MIME[ext] || 'application/octet-stream';
     const total = stat.size;
     const rangeHeader = req.headers['range'];
+    const onStreamErr = (e) => { console.error('[stream error]', e.message); if (!res.headersSent) { res.writeHead(500); res.end(); } };
     if (rangeHeader) {
       const m = rangeHeader.match(/bytes=(\d*)-(\d*)/);
       // suffix range: bytes=-N means last N bytes
@@ -601,7 +1204,7 @@ http.createServer(async (req, res) => {
         'Content-Length': chunkSize,
         'Cache-Control': 'public,max-age=86400',
       });
-      fs.createReadStream(fp, { start, end }).pipe(res);
+      fs.createReadStream(fp, { start, end }).on('error', onStreamErr).pipe(res);
     } else {
       res.writeHead(200, {
         'Content-Type': mime,
@@ -609,7 +1212,7 @@ http.createServer(async (req, res) => {
         'Content-Length': total,
         'Cache-Control': 'public,max-age=86400',
       });
-      fs.createReadStream(fp).pipe(res);
+      fs.createReadStream(fp).on('error', onStreamErr).pipe(res);
     }
     return;
   }
@@ -641,6 +1244,12 @@ http.createServer(async (req, res) => {
 
 }).listen(PORT, () => {
   console.log(`AcuTwin server → http://localhost:${PORT}`);
+  scheduleReminders();
+  console.log('[Reminders] scheduled daily at 10:00');
+  if (PATIENT_TG_TOKEN) {
+    registerPatientTgWebhook('https://acutwin.ru');
+    console.log('[PatientBot] webhook registered → https://acutwin.ru/tg-patient');
+  }
 });
 
 process.on('uncaughtException',  (err) => console.error('[uncaughtException]',  err.message));

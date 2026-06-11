@@ -317,7 +317,7 @@ window.loadAudit = async function() {
     const actionLabel = ACTION_LABELS[r.action] || r.action;
     const tenantName  = tenantMap[r.tenant_id] || r.tenant_id;
     return `<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
-      <td class="px-3 py-2 text-[#8b90a0] whitespace-nowrap">${r.created_at.replace('T',' ').replace('Z','')}</td>
+      <td class="px-3 py-2 text-[#8b90a0] whitespace-nowrap">${r.created_at.replace('T',' ').replace('Z',' UTC')}</td>
       <td class="px-3 py-2 font-mono" style="color:#0A84FF">${r.actor}</td>
       <td class="px-3 py-2 font-semibold" style="color:#FFD60A">${actionLabel}</td>
       <td class="px-3 py-2 text-[#e2e2e2]" title="${r.tenant_id}">${tenantName}</td>

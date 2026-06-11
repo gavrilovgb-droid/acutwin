@@ -568,12 +568,12 @@ async function handleAPI(method, endpoint, req, res) {
     if (action === 'activate_trial') {
       if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks must be 1-4' });
       const today = new Date().toISOString().slice(0, 10);
-      const trialEnd = db.setTenantTrial(id, today, weeks);
+      const trialEnd = db.setTenantTrial(id, today, weeks, user.username);
       return json(res, 200, { ok: true, trialEnd });
     }
     if (action === 'extend_trial') {
       if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks must be 1-4' });
-      const newEnd = db.extendTenantTrial(id, weeks);
+      const newEnd = db.extendTenantTrial(id, weeks, user.username);
       return json(res, 200, { ok: true, trialEnd: newEnd });
     }
     if (action === 'set_plan') {
@@ -582,13 +582,22 @@ async function handleAPI(method, endpoint, req, res) {
       if (plan === 'trial') {
         if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks required for trial' });
         const today = new Date().toISOString().slice(0, 10);
-        const trialEnd = db.setTenantTrial(id, today, weeks);
+        const trialEnd = db.setTenantTrial(id, today, weeks, user.username);
         return json(res, 200, { ok: true, trialEnd });
       }
-      db.setTenantPlan(id, plan);
+      db.setTenantPlan(id, plan, user.username);
       return json(res, 200, { ok: true });
     }
     return json(res, 400, { error: 'unknown action' });
+  }
+
+  // GET /api/billing/audit
+  if (method === 'GET' && endpoint === '/api/billing/audit') {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'forbidden' });
+    const qs = new URLSearchParams(req.url.split('?')[1] || '');
+    const tenantFilter = qs.get('tenant') || null;
+    return json(res, 200, db.getBillingAudit(tenantFilter));
   }
 
   // ── Clinic Stats (manager/admin) ──────────────────────────

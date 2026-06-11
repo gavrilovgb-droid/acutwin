@@ -84,6 +84,12 @@ export async function apiBillingAction(id, action, opts = {}) {
   return r?.data || { ok: false };
 }
 
+export async function apiBillingAudit(tenantId = null) {
+  const qs = tenantId ? `?tenant=${tenantId}` : '';
+  const r = await req('GET', `/api/billing/audit${qs}`);
+  return r?.data || [];
+}
+
 export async function apiClinicStats(weeks = 1, tenantId = null) {
   const qs = `?weeks=${weeks}` + (tenantId ? `&tenant=${tenantId}` : '');
   const r = await req('GET', `/api/clinic-stats${qs}`);

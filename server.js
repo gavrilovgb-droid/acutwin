@@ -596,14 +596,15 @@ async function handleAPI(method, endpoint, req, res) {
   // GET /api/clinic-stats?weeks=1|2|3|4
   if (method === 'GET' && endpoint === '/api/clinic-stats') {
     const user = requireAuth(req, res); if (!user) return;
-    const weeks = Math.min(4, Math.max(1, parseInt(params.get('weeks') || '1', 10)));
+    const qs = new URLSearchParams(req.url.split('?')[1] || '');
+    const weeks = Math.min(4, Math.max(1, parseInt(qs.get('weeks') || '1', 10)));
     const fromDate = new Date();
     fromDate.setUTCDate(fromDate.getUTCDate() - weeks * 7);
     const fromISO = fromDate.toISOString().slice(0, 10) + ' 00:00:00';
 
     let tenantId;
     if (user.role === 'admin' || user.role === 'boss') {
-      tenantId = params.get('tenant') || null;
+      tenantId = qs.get('tenant') || null;
     } else if (user.role === 'manager') {
       const tenant = db.findTenantByDoctor(user.username);
       tenantId = tenant ? tenant.id : null;

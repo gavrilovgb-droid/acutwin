@@ -271,10 +271,6 @@ module.exports.addRecord    = rec => _addRecord.run({
   soap_p:         rec.soap_p         || null,
 });
 module.exports.deleteRecord   = id => _delRecord.run(id);
-const _countDoctorRecords = db.prepare('SELECT COUNT(*) as cnt FROM records WHERE doctor=?');
-module.exports.countDoctorRecords = username => _countDoctorRecords.get(username).cnt;
-const FREE_RECORD_LIMIT = 30;
-module.exports.FREE_RECORD_LIMIT = FREE_RECORD_LIMIT;
 const _getRecsByPatientDoctor = db.prepare('SELECT id FROM records WHERE patient=? AND doctor=? AND date=? LIMIT 5');
 module.exports.getRecordsByPatientDoctor = (patient, doctor, date) => _getRecsByPatientDoctor.all(patient, doctor, date);
 const _getRecord = db.prepare('SELECT * FROM records WHERE id=?');
@@ -312,6 +308,14 @@ module.exports.setClinic = obj => {
  'payments TEXT DEFAULT "[]"'].forEach(col => {
   try { db.prepare(`ALTER TABLE tenants ADD COLUMN ${col}`).run(); } catch {}
 });
+// Trial-поля
+['trial_start TEXT', 'trial_weeks INTEGER', 'trial_end TEXT'].forEach(col => {
+  try { db.prepare(`ALTER TABLE tenants ADD COLUMN ${col}`).run(); } catch {}
+});
+// Переименование планов: solo→practik, clinic→clinic_s, base→demo, free→demo
+try { db.prepare("UPDATE tenants SET plan='practik' WHERE plan='solo'").run(); } catch {}
+try { db.prepare("UPDATE tenants SET plan='clinic_s' WHERE plan='clinic'").run(); } catch {}
+try { db.prepare("UPDATE tenants SET plan='demo' WHERE plan IN ('base','free','basic')").run(); } catch {}
 
 const _getTenants = db.prepare('SELECT * FROM tenants');
 const _getTenant  = db.prepare('SELECT * FROM tenants WHERE id=?');
@@ -460,3 +464,78 @@ module.exports.linkPatientTelegram   = (token, chatId) => _linkTgChat.run(chatId
 module.exports.getApptsForTgRemind1h = (fromISO, toISO) => _getApptsTgRemind1h.all(fromISO, toISO);
 module.exports.markTgRemind1h        = id => _markTgRemind1h.run(id);
 module.exports.getApptsForTgRemind24h = (fromISO, toISO) => _getApptsTgRemind24h.all(fromISO, toISO);
+
+// ── TRIAL ──────────────────────────────────────────────────
+const PAID_PLANS = new Set(['practik', 'clinic_s', 'clinic_m', 'clinic_pro']);
+
+// trial_end = DATE at 20:59:59 UTC = 23:59:59 MSK
+function computeTrialEnd(trialStart, trialWeeks) {
+  const d = new Date(trialStart + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + Number(trialWeeks) * 7);
+  return d.toISOString().slice(0, 10) + ' 20:59:59';
+}
+
+function getTrialStatus(tenant) {
+  if (!tenant || tenant.plan === 'demo') return { status: 'demo', blocked: false, grace: false };
+  if (PAID_PLANS.has(tenant.plan)) return { status: 'paid', blocked: false, grace: false };
+  if (tenant.plan !== 'trial') return { status: 'unknown', blocked: false, grace: false };
+  if (!tenant.trial_end) return { status: 'trial_active', blocked: false, grace: false, daysLeft: null };
+
+  const now = new Date();
+  const trialEnd = new Date(tenant.trial_end.replace(' ', 'T') + 'Z');
+  const graceEnd = new Date(trialEnd.getTime() + 24 * 3600 * 1000);
+  const daysLeft = Math.max(0, Math.ceil((trialEnd - now) / 86400000));
+
+  if (now <= trialEnd) return { status: 'trial_active', blocked: false, grace: false, daysLeft, trialEnd: trialEnd.toISOString() };
+  if (now <= graceEnd) return { status: 'trial_grace', blocked: false, grace: true, daysLeft: 0, trialEnd: trialEnd.toISOString() };
+  return { status: 'trial_expired', blocked: true, grace: false, daysLeft: 0, trialEnd: trialEnd.toISOString() };
+}
+
+const _setTenantTrial = db.prepare(
+  "UPDATE tenants SET trial_start=@ts, trial_weeks=@tw, trial_end=@te, plan='trial' WHERE id=@id"
+);
+const _setTenantPlan    = db.prepare("UPDATE tenants SET plan=? WHERE id=?");
+const _clearTenantTrial = db.prepare("UPDATE tenants SET trial_start=NULL, trial_weeks=NULL, trial_end=NULL WHERE id=?");
+const _setTrialEnd      = db.prepare("UPDATE tenants SET trial_end=?, plan='trial' WHERE id=?");
+
+module.exports.computeTrialEnd = computeTrialEnd;
+module.exports.getTrialStatus  = getTrialStatus;
+
+module.exports.setTenantTrial = (id, trialStart, trialWeeks) => {
+  const te = computeTrialEnd(trialStart, trialWeeks);
+  _setTenantTrial.run({ id, ts: trialStart, tw: Number(trialWeeks), te });
+  return te;
+};
+
+module.exports.extendTenantTrial = (id, extraWeeks) => {
+  const t = parseTenant(_getTenant.get(id));
+  if (!t) return null;
+  const now = new Date();
+  let fromDate;
+  if (t.trial_end) {
+    const te = new Date(t.trial_end.replace(' ', 'T') + 'Z');
+    fromDate = now > te ? now.toISOString().slice(0, 10) : t.trial_end.slice(0, 10);
+  } else {
+    fromDate = now.toISOString().slice(0, 10);
+  }
+  const newEnd = computeTrialEnd(fromDate, extraWeeks);
+  _setTrialEnd.run(newEnd, id);
+  return newEnd;
+};
+
+module.exports.setTenantPlan = (id, plan) => {
+  _setTenantPlan.run(plan, id);
+  _clearTenantTrial.run(id);
+};
+
+// Clinic stats: записи и записи на приём по врачам за период
+module.exports.getClinicStats = (doctorLogins, fromISO) => {
+  if (!doctorLogins || doctorLogins.length === 0) return [];
+  return doctorLogins.map(login => {
+    const user = _getUser.get(login);
+    if (!user) return null;
+    const recCount = db.prepare('SELECT COUNT(*) AS c FROM records WHERE doctor=? AND created_at>=?').get(login, fromISO);
+    const apptCount = db.prepare("SELECT COUNT(*) AS c FROM appointments WHERE doctor=? AND start_at>=? AND status!='cancelled'").get(login, fromISO);
+    return { username: login, name: user.name, recordCount: recCount.c, apptCount: apptCount.c };
+  }).filter(Boolean);
+};

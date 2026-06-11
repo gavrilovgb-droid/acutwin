@@ -5591,7 +5591,7 @@ function sndUpdateTimer() {
 }
 </script>
 <!-- Grace period banner -->
-<div id="trial-grace-banner" class="hidden fixed top-0 left-0 right-0 z-[80] flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium" style="background:rgba(255,159,10,0.92);color:#1a1a1a">
+<div id="trial-grace-banner" class="hidden fixed top-0 left-0 right-0 flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium" style="background:rgba(255,159,10,0.92);color:#1a1a1a;z-index:200">
   <span class="material-symbols-outlined" style="font-size:16px;zoom:1">warning</span>
   Trial истёк — ещё 24 часа для сохранения данных. Обратитесь к администратору.
   <button onclick="document.getElementById('trial-grace-banner').classList.add('hidden')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#1a1a1a;opacity:0.6;line-height:1">×</button>

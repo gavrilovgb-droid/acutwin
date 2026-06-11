@@ -88,14 +88,22 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN tg_reminder_1h_at TEXT"); } c
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_tg_token ON appointments(tg_token) WHERE tg_token IS NOT NULL'); } catch(e) {}
 try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_unique_slot ON appointments(doctor, start_at) WHERE status != 'cancelled'"); } catch(e) {}
 
-// Sprint 7: billing audit log
+// Sprint 7: billing audit log — migrate to new schema if old columns present
+try {
+  const cols = db.prepare("PRAGMA table_info(billing_audit)").all().map(c => c.name);
+  if (cols.length && (cols.includes('meta') || cols.includes('actor'))) {
+    db.exec('DROP TABLE billing_audit');
+  }
+} catch(e) {}
 try { db.exec(`CREATE TABLE IF NOT EXISTS billing_audit (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
-  actor      TEXT NOT NULL,
+  ts         TEXT NOT NULL,
+  admin_user TEXT NOT NULL,
   action     TEXT NOT NULL,
   tenant_id  TEXT NOT NULL,
-  meta       TEXT
+  old_value  TEXT,
+  new_value  TEXT,
+  extra      TEXT
 )`); } catch(e) {}
 
 // ── Создаём таблицы ────────────────────────────────────────
@@ -507,31 +515,44 @@ const _setTenantTrial = db.prepare(
 const _setTenantPlan    = db.prepare("UPDATE tenants SET plan=? WHERE id=?");
 const _clearTenantTrial = db.prepare("UPDATE tenants SET trial_start=NULL, trial_weeks=NULL, trial_end=NULL WHERE id=?");
 const _setTrialEnd      = db.prepare("UPDATE tenants SET trial_end=?, plan='trial' WHERE id=?");
-const _logAudit         = db.prepare("INSERT INTO billing_audit (actor, action, tenant_id, meta) VALUES (?, ?, ?, ?)");
-const _getAudit         = db.prepare("SELECT * FROM billing_audit ORDER BY created_at DESC LIMIT 200");
-const _getAuditByTenant = db.prepare("SELECT * FROM billing_audit WHERE tenant_id=? ORDER BY created_at DESC LIMIT 200");
+const _logAudit = db.prepare(
+  "INSERT INTO billing_audit (ts, admin_user, action, tenant_id, old_value, new_value, extra) VALUES (?, ?, ?, ?, ?, ?, ?)"
+);
+
+function _auditLog(adminUser, action, tenantId, oldValue, newValue, extra) {
+  _logAudit.run(
+    new Date().toISOString(), adminUser, action, tenantId,
+    oldValue ?? null, newValue ?? null,
+    extra != null ? JSON.stringify(extra) : null
+  );
+}
 
 module.exports.computeTrialEnd = computeTrialEnd;
 module.exports.getTrialStatus  = getTrialStatus;
 
-module.exports.logBillingAudit = (actor, action, tenantId, meta = null) => {
-  _logAudit.run(actor, action, tenantId, meta ? JSON.stringify(meta) : null);
+module.exports.logBillingAudit = (adminUser, action, tenantId, oldValue = null, newValue = null, extra = null) => {
+  _auditLog(adminUser, action, tenantId, oldValue, newValue, extra);
 };
 
-module.exports.getBillingAudit = (tenantId = null) => {
-  return tenantId ? _getAuditByTenant.all(tenantId) : _getAudit.all();
+module.exports.getBillingAudit = ({ tenantId = null, limit = 100 } = {}) => {
+  const lim = Math.min(500, Math.max(1, parseInt(limit) || 100));
+  if (tenantId) {
+    return db.prepare("SELECT * FROM billing_audit WHERE tenant_id=? ORDER BY ts DESC LIMIT ?").all(tenantId, lim);
+  }
+  return db.prepare("SELECT * FROM billing_audit ORDER BY ts DESC LIMIT ?").all(lim);
 };
 
 module.exports.setTenantTrial = (id, trialStart, trialWeeks, actor = 'system') => {
   const te = computeTrialEnd(trialStart, trialWeeks);
   _setTenantTrial.run({ id, ts: trialStart, tw: Number(trialWeeks), te });
-  _logAudit.run(actor, 'activate_trial', id, JSON.stringify({ trialStart, trialWeeks, trialEnd: te }));
+  _auditLog(actor, 'activate_trial', id, null, te, { weeks: Number(trialWeeks) });
   return te;
 };
 
 module.exports.extendTenantTrial = (id, extraWeeks, actor = 'system') => {
   const t = parseTenant(_getTenant.get(id));
   if (!t) return null;
+  const oldTrialEnd = t.trial_end || null;
   const now = new Date();
   let fromDate;
   if (t.trial_end) {
@@ -542,14 +563,16 @@ module.exports.extendTenantTrial = (id, extraWeeks, actor = 'system') => {
   }
   const newEnd = computeTrialEnd(fromDate, extraWeeks);
   _setTrialEnd.run(newEnd, id);
-  _logAudit.run(actor, 'extend_trial', id, JSON.stringify({ extraWeeks, newTrialEnd: newEnd }));
+  _auditLog(actor, 'extend_trial', id, oldTrialEnd, newEnd, { weeks: Number(extraWeeks) });
   return newEnd;
 };
 
 module.exports.setTenantPlan = (id, plan, actor = 'system') => {
+  const current = _getTenant.get(id);
+  const oldPlan = current?.plan ?? null;
   _setTenantPlan.run(plan, id);
   _clearTenantTrial.run(id);
-  _logAudit.run(actor, 'set_plan', id, JSON.stringify({ plan }));
+  _auditLog(actor, 'change_plan', id, oldPlan, plan, null);
 };
 
 // Clinic stats: записи и записи на приём по врачам за период

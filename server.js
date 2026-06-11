@@ -596,8 +596,10 @@ async function handleAPI(method, endpoint, req, res) {
     const user = requireAuth(req, res); if (!user) return;
     if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'forbidden' });
     const qs = new URLSearchParams(req.url.split('?')[1] || '');
-    const tenantFilter = qs.get('tenant') || null;
-    return json(res, 200, db.getBillingAudit(tenantFilter));
+    return json(res, 200, db.getBillingAudit({
+      tenantId: qs.get('tenant_id') || null,
+      limit:    qs.get('limit')     || 100,
+    }));
   }
 
   // ── Clinic Stats (manager/admin) ──────────────────────────

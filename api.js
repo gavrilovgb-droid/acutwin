@@ -85,7 +85,7 @@ export async function apiBillingAction(id, action, opts = {}) {
 }
 
 export async function apiBillingAudit(tenantId = null) {
-  const qs = tenantId ? `?tenant=${tenantId}` : '';
+  const qs = tenantId ? `?tenant_id=${tenantId}` : '';
   const r = await req('GET', `/api/billing/audit${qs}`);
   return r?.data || [];
 }

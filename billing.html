@@ -53,11 +53,12 @@ select.glass-input option { background:#1f1f1f; }
 
     <!-- Audit Log -->
     <div class="mt-6">
-      <div class="flex items-center gap-3 mb-3">
+      <div class="flex items-center gap-3 mb-3 flex-wrap">
         <h2 class="text-sm font-bold text-[#e2e2e2]">Audit Log</h2>
         <select id="audit-tenant-filter" class="glass-input" style="width:220px" onchange="loadAudit()">
           <option value="">Все тенанты</option>
         </select>
+        <button id="audit-reset-btn" class="hidden btn-sm" style="background:rgba(255,69,58,.12);color:#FF453A" onclick="resetAuditFilter()">✕ Показать все</button>
         <button onclick="loadAudit()" class="btn-sm" style="background:rgba(255,255,255,.06);color:#8b90a0">↻ Обновить</button>
         <span id="audit-count" class="text-xs text-[#8b90a0]"></span>
       </div>
@@ -66,14 +67,15 @@ select.glass-input option { background:#1f1f1f; }
           <thead>
             <tr style="border-bottom:1px solid rgba(255,255,255,.08)">
               <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" style="min-width:140px">Время (UTC)</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Актор</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Администратор</th>
               <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Действие</th>
               <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Тенант</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Детали</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Было</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Стало</th>
             </tr>
           </thead>
           <tbody id="audit-tbody">
-            <tr><td colspan="5" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>
+            <tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>
           </tbody>
         </table>
       </div>
@@ -296,38 +298,57 @@ window.setPlan = async function(plan) {
 const ACTION_LABELS = {
   activate_trial: 'Активировать trial',
   extend_trial:   'Продлить trial',
-  set_plan:       'Сменить тариф',
+  change_plan:    'Сменить тариф',
 };
 
 window.loadAudit = async function() {
   const sel   = document.getElementById('audit-tenant-filter');
   const tbody = document.getElementById('audit-tbody');
   const cnt   = document.getElementById('audit-count');
-  tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>';
-  const rows = await apiBillingAudit(sel.value || null);
+  const rst   = document.getElementById('audit-reset-btn');
+  tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>';
+  const tenantId = sel.value || null;
+  rst.classList.toggle('hidden', !tenantId);
+  const rows = await apiBillingAudit(tenantId);
   cnt.textContent = rows.length ? `${rows.length} записей` : '';
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-[#8b90a0] text-center">Нет записей</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Нет записей</td></tr>';
     return;
   }
   const tenantMap = Object.fromEntries(_tenants.map(t => [t.id, t.clinic]));
   tbody.innerHTML = rows.map(r => {
-    let meta = '';
-    try { const m = JSON.parse(r.meta || 'null'); if (m) meta = Object.entries(m).map(([k,v])=>`${k}: ${v}`).join(' · '); } catch {}
     const actionLabel = ACTION_LABELS[r.action] || r.action;
     const tenantName  = tenantMap[r.tenant_id] || r.tenant_id;
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,.05)">
-      <td class="px-3 py-2 text-[#8b90a0] whitespace-nowrap">${r.created_at.replace('T',' ').replace('Z',' UTC')}</td>
-      <td class="px-3 py-2 font-mono" style="color:#0A84FF">${r.actor}</td>
+    const tsDisplay   = r.ts ? r.ts.replace('T',' ').replace('Z',' UTC') : '—';
+    const oldVal      = r.old_value ?? '—';
+    const newVal      = r.new_value ?? '—';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="filterAuditByTenant('${r.tenant_id}')">
+      <td class="px-3 py-2 text-[#8b90a0] whitespace-nowrap">${tsDisplay}</td>
+      <td class="px-3 py-2 font-mono" style="color:#0A84FF">${r.admin_user}</td>
       <td class="px-3 py-2 font-semibold" style="color:#FFD60A">${actionLabel}</td>
-      <td class="px-3 py-2 text-[#e2e2e2]" title="${r.tenant_id}">${tenantName}</td>
-      <td class="px-3 py-2 text-[#8b90a0]">${meta}</td>
+      <td class="px-3 py-2 text-[#e2e2e2] hover:underline" title="${r.tenant_id}">${tenantName}</td>
+      <td class="px-3 py-2 text-[#8b90a0]">${oldVal}</td>
+      <td class="px-3 py-2" style="color:#34C759">${newVal}</td>
     </tr>`;
   }).join('');
 };
 
+window.filterAuditByTenant = function(tenantId) {
+  const sel = document.getElementById('audit-tenant-filter');
+  sel.value = tenantId;
+  window.loadAudit();
+};
+
+window.resetAuditFilter = function() {
+  const sel = document.getElementById('audit-tenant-filter');
+  sel.value = '';
+  window.loadAudit();
+};
+
 function populateAuditFilter() {
   const sel = document.getElementById('audit-tenant-filter');
+  // clear old options (keep first "Все тенанты")
+  while (sel.options.length > 1) sel.remove(1);
   _tenants.forEach(t => {
     const opt = document.createElement('option');
     opt.value = t.id; opt.textContent = t.clinic;

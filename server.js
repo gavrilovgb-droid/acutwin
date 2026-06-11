@@ -308,12 +308,11 @@ function recordFail(username) {
 }
 function clearFail(username) { delete _attempts[username]; }
 
-// ── Freemium plan helper ───────────────────────────────────────────
-function getUserPlan(user) {
-  if (user.role === 'admin' || user.role === 'boss') return { plan: user.role, isLimited: false };
+// ── Trial status helper ────────────────────────────────────────────
+function getUserTrialStatus(user) {
+  if (user.role === 'admin' || user.role === 'boss') return { status: 'admin', blocked: false, grace: false };
   const tenant = db.findTenantByDoctor(user.username);
-  const plan = tenant ? (tenant.plan || 'free') : 'free';
-  return { plan, isLimited: plan === 'free' };
+  return db.getTrialStatus(tenant);
 }
 
 // ── Rate limiting для записей (max 20 в минуту на пользователя) ───
@@ -536,17 +535,101 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { username: user.username, name: user.name, role: user.role });
   }
 
-  // GET /api/plan — тариф и счётчик записей текущего пользователя
-  if (method === 'GET' && endpoint === '/api/plan') {
+  // GET /api/trial-status — статус trial для текущего пользователя
+  if (method === 'GET' && endpoint === '/api/trial-status') {
     const user = requireAuth(req, res); if (!user) return;
-    const planInfo = getUserPlan(user);
-    const recordCount = planInfo.isLimited ? db.countDoctorRecords(user.username) : null;
+    const ts = getUserTrialStatus(user);
+    const tenant = (user.role !== 'admin' && user.role !== 'boss') ? db.findTenantByDoctor(user.username) : null;
     return json(res, 200, {
-      plan: planInfo.plan,
-      isLimited: planInfo.isLimited,
-      recordCount,
-      recordLimit: planInfo.isLimited ? db.FREE_RECORD_LIMIT : null,
+      ...ts,
+      plan: tenant ? (tenant.plan || 'demo') : (user.role === 'admin' || user.role === 'boss' ? user.role : 'demo'),
+      trialStart: tenant?.trial_start || null,
+      trialWeeks: tenant?.trial_weeks || null,
     });
+  }
+
+  // ── Billing (admin only) ─────────────────────────────────
+
+  // GET /api/billing/tenants
+  if (method === 'GET' && endpoint === '/api/billing/tenants') {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'forbidden' });
+    const tenants = db.getTenants();
+    return json(res, 200, tenants.map(t => ({ ...t, trialStatus: db.getTrialStatus(t) })));
+  }
+
+  // PATCH /api/billing/tenants/:id
+  if (method === 'PATCH' && endpoint.startsWith('/api/billing/tenants/')) {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'forbidden' });
+    const id = endpoint.split('/').pop();
+    const body = await readBody(req);
+    const { action, weeks, plan } = body;
+    if (action === 'activate_trial') {
+      if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks must be 1-4' });
+      const today = new Date().toISOString().slice(0, 10);
+      const trialEnd = db.setTenantTrial(id, today, weeks);
+      return json(res, 200, { ok: true, trialEnd });
+    }
+    if (action === 'extend_trial') {
+      if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks must be 1-4' });
+      const newEnd = db.extendTenantTrial(id, weeks);
+      return json(res, 200, { ok: true, trialEnd: newEnd });
+    }
+    if (action === 'set_plan') {
+      const allowed = ['demo', 'trial', 'practik', 'clinic_s', 'clinic_m', 'clinic_pro'];
+      if (!allowed.includes(plan)) return json(res, 400, { error: 'invalid plan' });
+      if (plan === 'trial') {
+        if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks required for trial' });
+        const today = new Date().toISOString().slice(0, 10);
+        const trialEnd = db.setTenantTrial(id, today, weeks);
+        return json(res, 200, { ok: true, trialEnd });
+      }
+      db.setTenantPlan(id, plan);
+      return json(res, 200, { ok: true });
+    }
+    return json(res, 400, { error: 'unknown action' });
+  }
+
+  // ── Clinic Stats (manager/admin) ──────────────────────────
+
+  // GET /api/clinic-stats?weeks=1|2|3|4
+  if (method === 'GET' && endpoint === '/api/clinic-stats') {
+    const user = requireAuth(req, res); if (!user) return;
+    const weeks = Math.min(4, Math.max(1, parseInt(params.get('weeks') || '1', 10)));
+    const fromDate = new Date();
+    fromDate.setUTCDate(fromDate.getUTCDate() - weeks * 7);
+    const fromISO = fromDate.toISOString().slice(0, 10) + ' 00:00:00';
+
+    let tenantId;
+    if (user.role === 'admin' || user.role === 'boss') {
+      tenantId = params.get('tenant') || null;
+    } else if (user.role === 'manager') {
+      const tenant = db.findTenantByDoctor(user.username);
+      tenantId = tenant ? tenant.id : null;
+    } else {
+      return json(res, 403, { error: 'forbidden' });
+    }
+
+    const tenants = tenantId
+      ? [db.getTenant(tenantId)].filter(Boolean)
+      : db.getTenants();
+
+    const result = tenants.map(t => {
+      const logins = t.doctorLogins || [];
+      const doctors = db.getClinicStats(logins, fromISO);
+      const trialStatus = db.getTrialStatus(t);
+      return {
+        tenantId: t.id, tenantName: t.clinic, plan: t.plan, trialStatus,
+        period: { weeks, from: fromISO.slice(0, 10) },
+        doctors,
+        totals: {
+          recordCount: doctors.reduce((s, d) => s + d.recordCount, 0),
+          apptCount: doctors.reduce((s, d) => s + d.apptCount, 0),
+        },
+      };
+    });
+    return json(res, 200, result);
   }
 
   // ── Records ─────────────────────────────────────────────
@@ -581,15 +664,11 @@ async function handleAPI(method, endpoint, req, res) {
   // POST /api/records
   if (method === 'POST' && endpoint === '/api/records') {
     const user = requireAuth(req, res); if (!user) return;
-    if (checkRecordRate(user.username)) return json(res, 429, { error: 'Слишком много запросов. Подождите минуту.' });
+    const _tenantPlan = db.findTenantByDoctor(user.username)?.plan;
+    if (_tenantPlan !== 'demo' && checkRecordRate(user.username)) return json(res, 429, { error: 'Слишком много запросов. Подождите минуту.' });
     const body = await readBody(req);
-    const planInfo = getUserPlan(user);
-    if (planInfo.isLimited) {
-      const count = db.countDoctorRecords(user.username);
-      if (count >= db.FREE_RECORD_LIMIT) {
-        return json(res, 402, { error: 'limit', count, limit: db.FREE_RECORD_LIMIT, plan: 'free' });
-      }
-    }
+    const ts = getUserTrialStatus(user);
+    if (ts.blocked) return json(res, 402, { error: 'trial_expired' });
     const rec = {
       id:         body.id || crypto.randomUUID(),
       doctor:     user.username,

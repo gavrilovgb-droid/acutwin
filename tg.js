@@ -37,7 +37,7 @@ function tgApiPost(token, path, payload) {
       });
     });
     req.on('error', e => {
-      console.error(`[TG] Network error on ${path}:`, e.message);
+      console.error(`[TG] Network error on ${path}: code=${e.code || '?'} msg=${e.message || '(empty)'}`);
       resolve();
     });
     req.write(body);

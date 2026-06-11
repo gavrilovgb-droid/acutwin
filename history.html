@@ -20,10 +20,7 @@
 <body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
 
 <div id="nav-mount"></div>
-<div id="body-bg">
-  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
-  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
-</div>
+<div id="body-bg"></div>
 
 <div class="md:ml-64 flex flex-col min-h-screen">
 
@@ -45,8 +42,8 @@
         </div>
       </div>
     </div>
-    <!-- Date filter row -->
-    <div class="h-11 flex items-center gap-3 px-6 border-t border-white/5">
+    <!-- Date + controls filter row -->
+    <div class="flex items-center gap-3 px-6 border-t border-white/5 flex-wrap py-2">
       <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:16px;zoom:1">calendar_month</span>
       <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Период</span>
       <input id="date-from" type="date" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
@@ -55,6 +52,21 @@
       <button id="date-reset" class="hidden text-[10px] text-[#ffb4ab] hover:text-[#ff8a80] transition-colors flex items-center gap-1" onclick="resetDateFilter()">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">close</span>сбросить
       </button>
+      <span class="text-[#414755]">|</span>
+      <select id="status-filter" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
+        <option value="">Все статусы</option>
+        <option value="started">Начат</option>
+        <option value="active">В процессе</option>
+        <option value="completed">Завершён</option>
+      </select>
+      <button id="sort-toggle" onclick="toggleSort()" class="flex items-center gap-1 px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] hover:border-[#00F2FF] transition-all">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1" id="sort-icon">arrow_downward</span>
+        <span class="text-[10px]" id="sort-label">Дата</span>
+      </button>
+      <select id="page-size" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
+        <option value="50">50 / стр.</option>
+        <option value="100">100 / стр.</option>
+      </select>
     </div>
   </header>
 
@@ -238,9 +250,51 @@ window.setStatus = (id, status) => {
   });
 };
 
-const PAGE_SIZE = 50;
+let sortDir = 'desc';
+window.toggleSort = () => {
+  sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sort-icon').textContent  = sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward';
+  document.getElementById('sort-label').textContent = sortDir === 'desc' ? 'Дата ↓' : 'Дата ↑';
+  renderTimeline(document.getElementById('h-search').value);
+};
+
 let currentPage = 0;
 let lastFiltered = [];
+
+// Разбивает soap_o на: Язык / Пульс / остаток
+function splitSoapO(text) {
+  if (!text) return {tongue:'',pulse:'',other:''};
+  const ti = text.search(/\bЯзык\b/i), pi = text.search(/\bПульс\b/i);
+  if (ti === -1 && pi === -1) return {tongue:'',pulse:'',other:text};
+  let tongue='',pulse='',other='';
+  if (ti !== -1 && pi !== -1) {
+    other  = ti > 0 ? text.slice(0,ti).trim() : '';
+    tongue = text.slice(ti, pi).trim().replace(/\.?\s*$/,'');
+    pulse  = text.slice(pi).trim();
+  } else if (ti !== -1) {
+    other  = ti > 0 ? text.slice(0,ti).trim() : '';
+    tongue = text.slice(ti).trim();
+  } else {
+    other  = pi > 0 ? text.slice(0,pi).trim() : '';
+    pulse  = text.slice(pi).trim();
+  }
+  return {tongue, pulse, other};
+}
+// Разбивает soap_p на: Фитотерапия / остаток
+function splitSoapP(text) {
+  if (!text) return {phyto:'',other:''};
+  const fi = text.search(/Фитотерапия/i);
+  if (fi === -1) return {phyto:'',other:text};
+  return {phyto: text.slice(fi).trim(), other: fi>0 ? text.slice(0,fi).trim() : ''};
+}
+// Подблок с цветным заголовком внутри SOAP-поля
+function soapSub(label, text, color) {
+  if (!text) return '';
+  return `<div style="margin-top:5px;padding:5px 8px;border-radius:7px;background:${color}12;border:1px solid ${color}28">
+    <div style="font-size:9px;font-weight:800;color:${color};margin-bottom:2px;letter-spacing:.04em">${label}</div>
+    <p style="font-size:11px;color:#c1c6d7;margin:0;line-height:1.5">${esc(text)}</p>
+  </div>`;
+}
 
 function renderTimeline(filter='', page=0) {
   currentPage = page;
@@ -248,35 +302,42 @@ function renderTimeline(filter='', page=0) {
   const patientFilter = document.getElementById('patient-filter').value;
   const dateFrom      = document.getElementById('date-from').value;
   const dateTo        = document.getElementById('date-to').value;
+  const statusFilter  = document.getElementById('status-filter').value;
+  const pageSize      = parseInt(document.getElementById('page-size').value) || 50;
+  const q             = filter.toLowerCase();
   lastFiltered = sessions.filter(s => {
-    if (doctorFilter && s.doctor !== doctorFilter) return false;
+    if (doctorFilter  && s.doctor  !== doctorFilter)  return false;
     if (patientFilter && s.patient !== patientFilter) return false;
     if (dateFrom && s.date < dateFrom) return false;
     if (dateTo   && s.date > dateTo)   return false;
-    return !filter || s.patient.toLowerCase().includes(filter.toLowerCase()) ||
-      (s.reason||'').toLowerCase().includes(filter.toLowerCase()) ||
-      (s.meridians||[]).some(m => m.toLowerCase().includes(filter.toLowerCase()));
+    if (statusFilter  && s.status  !== statusFilter)  return false;
+    return !q || s.patient.toLowerCase().includes(q) ||
+      (s.reason||'').toLowerCase().includes(q) ||
+      (s.soap_s||'').toLowerCase().includes(q) ||
+      (s.meridians||[]).some(m => m.toLowerCase().includes(q));
   });
-  const filtered = lastFiltered;
+  const sorted = sortDir === 'asc'
+    ? lastFiltered.slice().reverse()
+    : lastFiltered;
 
-  document.getElementById('session-count').textContent = `${filtered.length} сессий`;
-  renderStats(filtered);
+  document.getElementById('session-count').textContent = `${sorted.length} сессий`;
+  renderStats(sorted);
 
   const tl = document.getElementById('timeline');
-  if (!filtered.length) {
-    tl.innerHTML = '<div class="pl-12 text-sm text-[#8b90a0] py-6">Записей пока нет</div>';
+  if (!sorted.length) {
+    tl.innerHTML = '<div class="pl-12 text-sm text-[#8b90a0] py-6">Записей по заданным фильтрам нет</div>';
     return;
   }
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData   = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.ceil(sorted.length / pageSize);
+  const pageData   = sorted.slice(page * pageSize, (page + 1) * pageSize);
 
   const pagerHtml = totalPages > 1 ? `
     <div class="pl-12 flex items-center gap-2 mt-4 flex-wrap">
       <button onclick="_tlPage(${page-1})" ${page===0?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">← Пред.</button>
       <span class="text-xs text-[#8b90a0] font-mono">${page+1} / ${totalPages}</span>
       <button onclick="_tlPage(${page+1})" ${page===totalPages-1?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">След. →</button>
-      <span class="text-[10px] text-[#8b90a0] ml-2">${filtered.length} записей</span>
+      <span class="text-[10px] text-[#8b90a0] ml-2">${sorted.length} записей</span>
     </div>` : '';
 
   tl.innerHTML = pageData.map((s, idx) => {
@@ -286,6 +347,7 @@ function renderTimeline(filter='', page=0) {
     const outcomeColor = outcome==='positive' ? '#3d8a5c' : outcome==='neutral' ? '#8b90a0' : '#c0392b';
     const outcomeIcon  = outcome==='positive' ? 'trending_up' : outcome==='neutral' ? 'trending_flat' : 'trending_down';
     const noteText  = s.notes || s.reason || '';
+    const hasSoap   = s.soap_s || s.soap_o || s.soap_a || s.soap_p;
     const timeText  = s.time ? ` · ${s.time}` : '';
     const metaRight = s.duration ? `<span class="text-xs font-mono text-[#8b90a0]">${s.duration}м</span>` :
                       s.gender   ? `<span class="text-xs text-[#8b90a0]">${esc(s.gender)}${s.age ? ', ' + esc(s.age) + ' л' : ''}</span>` : '';
@@ -293,8 +355,8 @@ function renderTimeline(filter='', page=0) {
     return `
       <div class="relative pl-12 group" style="animation:fadeUp 0.3s ease-out ${idx*0.05}s both">
 
-        <div class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all${noteText ? ' cursor-pointer' : ''}"
-             ${noteText ? `onclick="this.querySelector('.session-notes').classList.toggle('hidden')"` : ''}>
+        <div class="glass-panel rounded-xl p-4 hover:border-white/20 transition-all${(noteText || hasSoap) ? ' cursor-pointer' : ''}"
+             ${(noteText || hasSoap) ? `onclick="this.querySelector('.session-notes').classList.toggle('hidden')"` : ''}>
           <div class="flex items-start justify-between gap-3 mb-2">
             <div>
               <div class="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -310,6 +372,7 @@ function renderTimeline(filter='', page=0) {
                 ${renderStatusBadge(s.id, s.status)}
               </div>
               <div class="text-xs text-[#8b90a0]">${new Date(s.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</div>
+              ${s.soap_s ? `<div class="text-[10px] text-[#8b90a0] mt-0.5 truncate max-w-xs" title="${esc(s.soap_s)}" style="max-width:280px">${esc(s.soap_s.slice(0,90))}${s.soap_s.length>90?'…':''}</div>` : ''}
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
               ${renderOutcomeBtn(s.id, outcome)}
@@ -323,8 +386,33 @@ function renderTimeline(filter='', page=0) {
             </div>
           </div>
 
-          ${noteText ? `
-          <p class="text-xs text-[#c1c6d7] leading-relaxed mb-2">${esc(noteText)}</p>` : ''}
+          ${(noteText || hasSoap) ? `
+          <div class="session-notes hidden mt-2 space-y-2">
+            ${noteText ? `<p class="text-xs text-[#c1c6d7] leading-relaxed">${esc(noteText)}</p>` : ''}
+            ${hasSoap ? (() => {
+              const oSplit = splitSoapO(s.soap_o);
+              const pSplit = splitSoapP(s.soap_p);
+              const soapField = (label, text) => text
+                ? `<div><span style="font-size:10px;font-weight:700;color:#8b90a0">${label}</span><p style="font-size:11px;color:#c1c6d7;margin:3px 0 0;line-height:1.5">${esc(text)}</p></div>`
+                : '';
+              return `
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+              ${soapField('S — Жалобы', s.soap_s)}
+              ${s.soap_o ? `<div>
+                <span style="font-size:10px;font-weight:700;color:#8b90a0">O — Объективно</span>
+                ${oSplit.other ? `<p style="font-size:11px;color:#c1c6d7;margin:3px 0 0;line-height:1.5">${esc(oSplit.other)}</p>` : ''}
+                ${soapSub('🫦 Язык', oSplit.tongue, '#00F2FF')}
+                ${soapSub('💓 Пульс', oSplit.pulse, '#BF5AF2')}
+              </div>` : ''}
+              ${soapField('A — Оценка', s.soap_a)}
+              ${s.soap_p ? `<div>
+                <span style="font-size:10px;font-weight:700;color:#8b90a0">P — План</span>
+                ${pSplit.other ? `<p style="font-size:11px;color:#c1c6d7;margin:3px 0 0;line-height:1.5">${esc(pSplit.other)}</p>` : ''}
+                ${soapSub('🌿 Фитотерапия', pSplit.phyto ? pSplit.phyto.replace(/^Фитотерапия:\s*/i,'') : '', '#34C759')}
+              </div>` : ''}
+            </div>`;
+            })() : ''}
+          </div>` : ''}
 
           ${points.length ? `
           <div class="flex flex-wrap gap-1">
@@ -359,6 +447,8 @@ renderStats(sessions);
 renderTimeline();
 
 document.getElementById('h-search').addEventListener('input', e => renderTimeline(e.target.value));
+document.getElementById('status-filter').addEventListener('change', () => renderTimeline(document.getElementById('h-search').value));
+document.getElementById('page-size').addEventListener('change', () => renderTimeline(document.getElementById('h-search').value));
 </script>
 <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
 </body>

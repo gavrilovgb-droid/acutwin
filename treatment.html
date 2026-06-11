@@ -139,10 +139,7 @@ html, body {
 
 <div id="nav-mount"></div>
 <!-- Body background -->
-<div id="body-bg">
-  <img id="body-bg-img" src="body-v2.png" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
-  <div id="body-bg-overlay" style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
-</div>
+<div id="body-bg"></div>
 
 <!-- Video lesson modal -->
 <div id="video-lesson-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
@@ -259,11 +256,17 @@ html, body {
       <div class="step-line"></div>
       <div id="si3" class="step-circle">3</div>
     </div>
-    <button onclick="toggleSoundPanel()" id="snd-header-btn"
-            class="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all flex-shrink-0">
-      <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
-      <span id="snd-btn-label">Звукотерапия</span>
-    </button>
+    <div class="ml-auto flex items-center gap-2 flex-shrink-0">
+      <div id="plan-counter" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer" onclick="showUpgradeModal()" style="border:1px solid rgba(255,159,10,0.4);background:rgba(255,159,10,0.08);color:#ff9f0a">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">lock</span>
+        <span id="plan-counter-text">0/30 приёмов</span>
+      </div>
+      <button onclick="toggleSoundPanel()" id="snd-header-btn"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
+        <span id="snd-btn-label">Звукотерапия</span>
+      </button>
+    </div>
   </header>
 
   <!-- Mobile path selector — visible only on mobile -->
@@ -666,13 +669,40 @@ html, body {
 <script type="module">
 import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, OWN, EB, DIST, parseSyms, ptVideoSrc, merVideoSrc, extractPoints, esc, safeSetItem, uniqueId, displayCode } from './shared.js';
 import { requireAuth } from './auth.js';
-import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic } from './api.js';
+import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic, apiGetPlan } from './api.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 let _clinicName = '';
 apiGetClinic().then(c => { _clinicName = c.name || ''; });
 
 document.getElementById('nav-mount').innerHTML = buildSidebar('treatment', session);
 initElementClock();
+
+// ── Freemium plan counter ──────────────────────────────────
+let _planInfo = null;
+
+function updatePlanCounter(info) {
+  _planInfo = info;
+  const wrap = document.getElementById('plan-counter');
+  const text = document.getElementById('plan-counter-text');
+  if (!wrap || !info?.isLimited) return;
+  const { recordCount, recordLimit } = info;
+  text.textContent = `${recordCount}/${recordLimit} приёмов`;
+  const pct = recordCount / recordLimit;
+  const color = pct >= 1 ? '#ff453a' : pct >= 0.8 ? '#ff9f0a' : '#ff9f0a';
+  wrap.style.color = color;
+  wrap.style.borderColor = color.replace(')', ',0.4)').replace('rgb', 'rgba');
+  wrap.style.background = color.replace(')', ',0.08)').replace('rgb', 'rgba');
+  wrap.style.display = 'flex';
+}
+
+window.showUpgradeModal = () => {
+  const m = document.getElementById('upgrade-modal');
+  const cnt = document.getElementById('upgrade-count');
+  if (_planInfo) cnt.textContent = _planInfo.recordCount;
+  m.style.display = 'flex';
+};
+
+apiGetPlan().then(info => updatePlanCounter(info));
 
 // ── Запись расписания (если перешли из schedule.html) ──
 const _urlParams = new URLSearchParams(window.location.search);
@@ -2156,7 +2186,7 @@ window.savePatientSession = async () => {
       const points   = [...new Set(pts)];
       const meridians = [...new Set(points.map(p => p.replace(/\d+/g,'')).filter(Boolean))];
       const recNote  = `${recipe.mer} — ${recipe.isExcess ? 'Избыток' : 'Недостаток'} (${recipe.sourceLabel})`;
-      await apiAddRecord({
+      const res = await apiAddRecord({
         id: uniqueId(),
         doctor: session.username, doctorName: session.name,
         date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
@@ -2166,7 +2196,9 @@ window.savePatientSession = async () => {
         ...irt, ...soap,
         appointmentId: window._appointmentId || null,
       });
+      if (res?.limitReached) { _savingSession = false; showUpgradeModal(); return; }
     }
+    apiGetPlan().then(updatePlanCounter);
     window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
     confirmedRecipes.length = 0;
     window._currentPts = [];
@@ -2207,7 +2239,9 @@ window.savePatientSession = async () => {
     ...getIrtFields(), ...soap,
     appointmentId: window._appointmentId || null,
   };
-  await apiAddRecord(rec);
+  const saveRes = await apiAddRecord(rec);
+  if (saveRes?.limitReached) { _savingSession = false; showUpgradeModal(); return; }
+  apiGetPlan().then(updatePlanCounter);
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
   resetIrtFields();
@@ -2242,7 +2276,7 @@ async function doSaveRecord(patientName, age, gender, reason) {
   if (!points.length) { _savingSession = false; return; }
   const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
   const now = new Date();
-  await apiAddRecord({
+  const hdrRes = await apiAddRecord({
     id: uniqueId(), doctor: session.username, doctorName: session.name,
     date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
     patient: patientName, age, gender, reason, points, meridians,
@@ -2250,6 +2284,8 @@ async function doSaveRecord(patientName, age, gender, reason) {
     ...soap,
     appointmentId: window._appointmentId || null,
   });
+  if (hdrRes?.limitReached) { showUpgradeModal(); return; }
+  apiGetPlan().then(updatePlanCounter);
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
   const btn = document.getElementById('hdr-save-btn');
@@ -4863,15 +4899,6 @@ window.printUsinDisRecipe = function() {
 };
 
 
-// ── Body background (V1 fixed) ──
-document.addEventListener('DOMContentLoaded', function() {
-  var img = document.getElementById('body-bg-img');
-  if (img) {
-    img.style.cssText = 'position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)';
-    document.getElementById('body-bg-overlay').style.background =
-      'linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)';
-  }
-});
 </script>
 
 <!-- Оверлей и попап выбора пациента — вне шапки чтобы fixed работал корректно -->
@@ -5585,5 +5612,28 @@ function sndUpdateTimer() {
   document.getElementById('snd-timer').textContent = `${_sndRemain < 0 ? '-' : ''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 </script>
+<!-- Freemium upgrade modal -->
+<div id="upgrade-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
+  <div class="relative w-full max-w-md rounded-2xl p-8 text-center" style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.12)">
+    <div class="text-5xl mb-4">🔒</div>
+    <h2 class="text-xl font-bold mb-2" style="font-family:'Hanken Grotesk',sans-serif;color:#fff">Лимит Freemium исчерпан</h2>
+    <p class="text-sm mb-1" style="color:rgba(255,255,255,0.6)">Вы использовали <span id="upgrade-count" class="font-bold" style="color:#ff9f0a">30</span> из 30 бесплатных приёмов.</p>
+    <p class="text-sm mb-6" style="color:rgba(255,255,255,0.5)">Перейдите на тариф Solo, чтобы вести неограниченное число пациентов и записей.</p>
+    <div class="rounded-xl p-4 mb-6 text-left" style="background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.3)">
+      <div class="font-bold text-sm mb-1" style="color:#ff9f0a">Solo — 990 ₽/мес</div>
+      <ul class="text-xs space-y-1" style="color:rgba(255,255,255,0.6)">
+        <li>✓ Неограниченные записи и пациенты</li>
+        <li>✓ Полный атлас, протоколы, SOAP</li>
+        <li>✓ Расписание и онлайн-запись</li>
+      </ul>
+    </div>
+    <button onclick="document.getElementById('upgrade-modal').style.display='none'" class="w-full py-3 rounded-xl font-bold text-sm mb-3" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00);color:#fff;border:none;cursor:pointer">
+      Перейти на Solo →
+    </button>
+    <button onclick="document.getElementById('upgrade-modal').style.display='none'" class="w-full py-2 text-xs" style="color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer">
+      Закрыть
+    </button>
+  </div>
+</div>
 </body>
 </html>

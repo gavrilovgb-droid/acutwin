@@ -248,16 +248,23 @@ export function buildSidebar(activePage, session) {
   const isAdmin = session && session.role === 'admin';
   const items = isAdmin ? [
     { id:'index',     href:'index.html',       icon:'edit_calendar',        label:'Новый приём' },
+    { id:'schedule',  href:'schedule.html',    icon:'calendar_month',       label:'Расписание' },
     { id:'treatment', href:'treatment.html',   icon:'medical_services',     label:'Тактика лечения' },
     { id:'atlas',     href:'atlas.html',       icon:'menu_book',            label:'Атлас точек' },
     { id:'history',   href:'history.html',     icon:'history',              label:'История приёмов' },
+    { id:'video',     href:'video.html',       icon:'play_circle',          label:'Видеообучение' },
     { id:'divider' },
+    { id:'profile',   href:'profile.html',     icon:'badge',                label:'Профиль' },
     { id:'admin',     href:'admin.html',       icon:'admin_panel_settings', label:'Клиенты и оплата' },
   ] : [
     { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' },
+    { id:'schedule',  href:'schedule.html',  icon:'calendar_month',   label:'Расписание' },
     { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' },
     { id:'atlas',     href:'atlas.html',      icon:'menu_book',        label:'Атлас точек' },
     { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' },
+    { id:'video',     href:'video.html',      icon:'play_circle',      label:'Видеообучение' },
+    { id:'divider' },
+    { id:'profile',   href:'profile.html',    icon:'badge',            label:'Профиль' },
   ];
   const doctorBlock = session ? `
     <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0">

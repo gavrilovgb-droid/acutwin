@@ -5,6 +5,7 @@ const path    = require('path');
 const crypto  = require('crypto');
 const jwt     = require('jsonwebtoken');
 const bcrypt  = require('bcryptjs');
+const QRCode  = require('qrcode');
 const db      = require('./db');
 
 // Load .env if exists (production env vars)
@@ -15,45 +16,13 @@ try {
   });
 } catch {}
 
-const TG_TOKEN        = process.env.TELEGRAM_BOT_TOKEN || '';
-const TG_CHAT_ID      = process.env.TELEGRAM_CHAT_ID   || '';
-const PATIENT_TG_TOKEN   = process.env.PATIENT_TG_BOT_TOKEN  || '';
-const PATIENT_TG_BOT_NAME = process.env.PATIENT_TG_BOT_NAME || '';
-const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
-
-// Отправка сообщения пациенту через бота
-async function sendPatientTg(chatId, text) {
-  if (!PATIENT_TG_TOKEN || !chatId) return;
-  return new Promise(resolve => {
-    const body = JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' });
-    const req = https.request({
-      hostname: 'api.telegram.org',
-      path: `/bot${PATIENT_TG_TOKEN}/sendMessage`,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-    }, res => { res.resume(); resolve(); });
-    req.on('error', () => resolve());
-    req.write(body); req.end();
-  });
-}
-
-// Регистрация webhook при старте (если токен есть)
-function registerPatientTgWebhook(baseUrl) {
-  if (!PATIENT_TG_TOKEN || !baseUrl) return;
-  const webhookUrl = `${baseUrl}/tg-patient`;
-  const body = JSON.stringify({ url: webhookUrl });
-  const req = https.request({
-    hostname: 'api.telegram.org',
-    path: `/bot${PATIENT_TG_TOKEN}/setWebhook`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-  }, res => {
-    let d = ''; res.on('data', c => d += c);
-    res.on('end', () => console.log('[PatientBot] webhook:', d));
-  });
-  req.on('error', e => console.error('[PatientBot] webhook err:', e.message));
-  req.write(body); req.end();
-}
+const {
+  sendPatientTg, registerPatientTgWebhook,
+  sendTgNotify, sendTgBookingNotify,
+  PATIENT_TG_TOKEN, PATIENT_TG_BOT_NAME,
+} = require('./tg');
+const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN || '';
+const TG_CHAT_ID = process.env.TELEGRAM_CHAT_ID   || '';
 
 async function sendCredentialsMail(to, login, password) {
   const html = `
@@ -103,23 +72,6 @@ async function sendCredentialsMail(to, login, password) {
     req.write(body);
     req.end();
   });
-}
-
-function sendTgNotify(contactMethod, contact, ip, email) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
-  const label = TG_METHOD_LABEL[contactMethod] || contactMethod;
-  const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-  const text = `🔔 Новая заявка на триал АкуПро\nEmail: ${email || '—'}\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`;
-  const body = JSON.stringify({ chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
-  const req = https.request({
-    hostname: 'api.telegram.org',
-    path: `/bot${TG_TOKEN}/sendMessage`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-  });
-  req.on('error', (e) => console.error('[TG notify error]', e.message));
-  req.write(body);
-  req.end();
 }
 
 // ── Email-напоминания за день до приёма ───────────────────
@@ -356,6 +308,14 @@ function recordFail(username) {
 }
 function clearFail(username) { delete _attempts[username]; }
 
+// ── Freemium plan helper ───────────────────────────────────────────
+function getUserPlan(user) {
+  if (user.role === 'admin' || user.role === 'boss') return { plan: user.role, isLimited: false };
+  const tenant = db.findTenantByDoctor(user.username);
+  const plan = tenant ? (tenant.plan || 'free') : 'free';
+  return { plan, isLimited: plan === 'free' };
+}
+
 // ── Rate limiting для записей (max 20 в минуту на пользователя) ───
 const _recRateMap = {};
 function checkRecordRate(username) {
@@ -376,27 +336,6 @@ function checkPublicRate(ip, limit=5, windowMs=60_000) {
   r.count++;
   _publicRateMap[ip] = r;
   return r.count > limit;
-}
-
-function sendTgBookingNotify(appt, doctorName, clinicName) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
-  const when = new Date(appt.start_at.replace(' ','T')).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-  const text = `🩺 Новая заявка на приём\n` +
-    `Врач: ${doctorName}${clinicName ? ' · '+clinicName : ''}\n` +
-    `Когда: ${when}\n` +
-    `Пациент: ${appt.patient}\n` +
-    `Телефон: ${appt.patient_phone || '—'}\n` +
-    `Email: ${appt.patient_email || '—'}\n` +
-    `Жалобы: ${appt.notes || '—'}`;
-  const body = JSON.stringify({ chat_id: TG_CHAT_ID, text });
-  const req = https.request({
-    hostname: 'api.telegram.org',
-    path: `/bot${TG_TOKEN}/sendMessage`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-  });
-  req.on('error', e => console.error('[TG booking notify]', e.message));
-  req.write(body); req.end();
 }
 
 // ── API Router ─────────────────────────────────────────────
@@ -469,7 +408,7 @@ async function handleAPI(method, endpoint, req, res) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
     if (checkPublicRate(ip, 5, 60_000)) return json(res, 429, { error: 'Слишком частые запросы. Подождите минуту.' });
     const body = await readBody(req);
-    const { doctor, start_at, duration_min, patient, patient_phone, patient_email, reason } = body;
+    const { doctor, start_at, duration_min, patient, patient_phone, patient_email, reason, utm_source, utm_medium } = body;
     if (!doctor || !start_at || !patient || !patient_phone) return json(res, 400, { error: 'Заполните ФИО, телефон и выберите время' });
     if (String(patient).trim().length < 3) return json(res, 400, { error: 'Введите ФИО полностью' });
     if (String(patient_phone).trim().length < 6) return json(res, 400, { error: 'Некорректный телефон' });
@@ -490,7 +429,9 @@ async function handleAPI(method, endpoint, req, res) {
       service: null, price: null,
       notes: reason ? String(reason).slice(0,500).trim() : null,
       status: 'pending',
-      created_by: 'public'
+      created_by: 'public',
+      utm_source: utm_source ? String(utm_source).slice(0,100) : null,
+      utm_medium: utm_medium ? String(utm_medium).slice(0,100) : null,
     };
     try {
       db.addAppointment(apptData);
@@ -595,6 +536,19 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { username: user.username, name: user.name, role: user.role });
   }
 
+  // GET /api/plan — тариф и счётчик записей текущего пользователя
+  if (method === 'GET' && endpoint === '/api/plan') {
+    const user = requireAuth(req, res); if (!user) return;
+    const planInfo = getUserPlan(user);
+    const recordCount = planInfo.isLimited ? db.countDoctorRecords(user.username) : null;
+    return json(res, 200, {
+      plan: planInfo.plan,
+      isLimited: planInfo.isLimited,
+      recordCount,
+      recordLimit: planInfo.isLimited ? db.FREE_RECORD_LIMIT : null,
+    });
+  }
+
   // ── Records ─────────────────────────────────────────────
 
   // GET /api/records
@@ -629,6 +583,13 @@ async function handleAPI(method, endpoint, req, res) {
     const user = requireAuth(req, res); if (!user) return;
     if (checkRecordRate(user.username)) return json(res, 429, { error: 'Слишком много запросов. Подождите минуту.' });
     const body = await readBody(req);
+    const planInfo = getUserPlan(user);
+    if (planInfo.isLimited) {
+      const count = db.countDoctorRecords(user.username);
+      if (count >= db.FREE_RECORD_LIMIT) {
+        return json(res, 402, { error: 'limit', count, limit: db.FREE_RECORD_LIMIT, plan: 'free' });
+      }
+    }
     const rec = {
       id:         body.id || crypto.randomUUID(),
       doctor:     user.username,
@@ -904,6 +865,21 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { bot_name: PATIENT_TG_BOT_NAME || null });
   }
 
+  // GET /api/qr?slug=<doctor-slug> — QR-код для виджета записи (WGT-07)
+  if (method === 'GET' && endpoint.startsWith('/api/qr')) {
+    const qrQs = new URLSearchParams(req.url.split('?')[1] || '');
+    const slug = qrQs.get('slug');
+    if (!slug) return json(res, 400, { error: 'slug required' });
+    const bookUrl = 'https://acutwin.ru/book.html?doctor=' + encodeURIComponent(slug);
+    try {
+      const png = await QRCode.toBuffer(bookUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(png);
+    } catch (e) {
+      return json(res, 500, { error: 'QR generation failed' });
+    }
+  }
+
   // POST /api/public/appt-tg-token — генерация deep-link токена для записи (публичный)
   if (method === 'POST' && endpoint === '/api/public/appt-tg-token') {
     const body = await readBody(req);
@@ -1134,6 +1110,13 @@ http.createServer(async (req, res) => {
     const corsOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
     res.writeHead(204, { 'Access-Control-Allow-Origin': corsOrigin, 'Access-Control-Allow-Headers': 'Authorization,Content-Type', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,PATCH', 'Access-Control-Allow-Credentials': 'true' });
     return res.end();
+  }
+
+  // Telegram patient bot webhook (POST /tg-patient)
+  if (method === 'POST' && url === '/tg-patient') {
+    try { await handleAPI(method, url, req, res); }
+    catch (e) { res.writeHead(200); res.end('ok'); }
+    return;
   }
 
   // API routes

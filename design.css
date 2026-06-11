@@ -343,6 +343,14 @@ input[type="checkbox"] {
   -webkit-appearance: none;
   -webkit-appearance: none;
 }
+#irt-deqi {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  width: 14px; height: 14px;
+  accent-color: #0A84FF;
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
 /* 5. aspect-ratio fallback для iOS < 15 */
 @supports not (aspect-ratio: 16/9) {

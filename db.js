@@ -23,6 +23,11 @@ try { db.exec("ALTER TABLE records ADD COLUMN needle_type TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN stimulation TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN exposure INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN deqi INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN progress INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN soap_s TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN soap_o TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN soap_a TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN soap_p TEXT"); } catch(e) {}
 try { db.exec(`CREATE TABLE IF NOT EXISTS trial_requests (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   method     TEXT NOT NULL,
@@ -38,6 +43,50 @@ try { db.exec(`CREATE TABLE IF NOT EXISTS patient_statuses (
   status     TEXT NOT NULL DEFAULT '',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 )`); } catch(e) {}
+
+try { db.exec(`CREATE TABLE IF NOT EXISTS appointments (
+  id              TEXT PRIMARY KEY,
+  doctor          TEXT NOT NULL,
+  doctorName      TEXT NOT NULL,
+  patient         TEXT NOT NULL,
+  patient_phone   TEXT,
+  patient_email   TEXT,
+  patient_telegram TEXT,
+  start_at        TEXT NOT NULL,
+  duration_min    INTEGER NOT NULL DEFAULT 60,
+  service         TEXT,
+  price           INTEGER,
+  notes           TEXT,
+  status          TEXT NOT NULL DEFAULT 'scheduled',
+  record_id       TEXT,
+  created_by      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+)`); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_appt_doctor_start ON appointments(doctor, start_at)'); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN reminder_sent_at TEXT"); } catch(e) {}
+
+// Расширения для публичной записи (slug, профиль врача, реквизиты клиники)
+['slug TEXT', 'specialty TEXT', 'photo TEXT', 'bio TEXT', 'price_default INTEGER',
+ 'snils TEXT', 'medical_license TEXT', 'email TEXT'].forEach(col => {
+  try { db.exec(`ALTER TABLE users ADD COLUMN ${col}`); } catch(e) {}
+});
+['slug TEXT', 'address TEXT', 'tenant_phone TEXT', 'website TEXT', 'logo TEXT',
+ 'org_inn TEXT', 'org_kpp TEXT', 'org_ogrn TEXT', 'region_code TEXT'].forEach(col => {
+  try { db.exec(`ALTER TABLE tenants ADD COLUMN ${col}`); } catch(e) {}
+});
+// Расширения для appointments под госсектор (заполняется позже, не блокирует)
+['service_type TEXT', 'patient_oms TEXT', 'utm_source TEXT', 'utm_medium TEXT'].forEach(col => {
+  try { db.exec(`ALTER TABLE appointments ADD COLUMN ${col}`); } catch(e) {}
+});
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_slug ON users(slug) WHERE slug IS NOT NULL'); } catch(e) {}
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug) WHERE slug IS NOT NULL'); } catch(e) {}
+
+// Telegram-бот для пациентов
+try { db.exec("ALTER TABLE appointments ADD COLUMN tg_chat_id TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN tg_token TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN tg_reminder_1h_at TEXT"); } catch(e) {}
+try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_tg_token ON appointments(tg_token) WHERE tg_token IS NOT NULL'); } catch(e) {}
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_unique_slot ON appointments(doctor, start_at) WHERE status != 'cancelled'"); } catch(e) {}
 
 // ── Создаём таблицы ────────────────────────────────────────
 db.exec(`
@@ -89,10 +138,95 @@ const _getUser   = db.prepare('SELECT * FROM users WHERE username = ? COLLATE NO
 const _getUsers  = db.prepare('SELECT id,username,name,role,created_at FROM users');
 const _addUser   = db.prepare('INSERT INTO users (username,name,hash,role) VALUES (?,?,?,?)');
 const _delUser   = db.prepare('DELETE FROM users WHERE username = ? COLLATE NOCASE');
-const _updHash   = db.prepare('UPDATE users SET hash=? WHERE username=? COLLATE NOCASE');
+const _updHash        = db.prepare('UPDATE users SET hash=? WHERE username=? COLLATE NOCASE');
+const _getUserByEmail = db.prepare('SELECT * FROM users WHERE email=? COLLATE NOCASE');
+const _setUserEmail   = db.prepare('UPDATE users SET email=? WHERE username=? COLLATE NOCASE');
+
+// Транслитерация русских символов для URL slug
+const TRANSLIT = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+function makeSlug(str) {
+  return String(str || '').toLowerCase().trim()
+    .replace(/[а-яё]/g, c => TRANSLIT[c] || '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 60);
+}
+module.exports.makeSlug = makeSlug;
+
+// Бэкфилл slug-ов для существующих записей
+const _allUsersForSlug   = db.prepare("SELECT id, username, name FROM users WHERE slug IS NULL OR slug=''");
+const _allTenantsForSlug = db.prepare("SELECT id, clinic FROM tenants WHERE slug IS NULL OR slug=''");
+const _setUserSlug   = db.prepare('UPDATE users SET slug=? WHERE id=?');
+const _setTenantSlug = db.prepare('UPDATE tenants SET slug=? WHERE id=?');
+const _slugExistsUser   = db.prepare('SELECT 1 FROM users WHERE slug=? AND id != ?');
+const _slugExistsTenant = db.prepare('SELECT 1 FROM tenants WHERE slug=? AND id != ?');
+function uniqSlug(base, exists, currentId) {
+  let s = base || 'x';
+  let n = 1;
+  while (exists.get(s, currentId)) { n++; s = `${base}-${n}`; }
+  return s;
+}
+try {
+  for (const u of _allUsersForSlug.all()) {
+    const base = makeSlug(u.name) || makeSlug(u.username) || ('u' + u.id);
+    _setUserSlug.run(uniqSlug(base, _slugExistsUser, u.id), u.id);
+  }
+  for (const t of _allTenantsForSlug.all()) {
+    const base = makeSlug(t.clinic) || ('c' + t.id.slice(0,8));
+    _setTenantSlug.run(uniqSlug(base, _slugExistsTenant, t.id), t.id);
+  }
+} catch(e) { console.error('[slug backfill]', e.message); }
+
+// Резолв врача/клиники по slug
+const _userBySlug   = db.prepare('SELECT * FROM users WHERE slug=?');
+const _tenantBySlug = db.prepare('SELECT * FROM tenants WHERE slug=?');
+module.exports.getUserBySlug    = s => _userBySlug.get(s) || null;
+module.exports.getTenantBySlug  = s => parseTenant(_tenantBySlug.get(s)) || null;
+module.exports.getDoctorsByTenant = tenantId => {
+  const t = _getTenant.get(tenantId);
+  if (!t) return [];
+  const logins = JSON.parse(t.doctorLogins || '[]');
+  return logins.map(login => _getUser.get(login)).filter(Boolean);
+};
+
+const _updUserProfile = db.prepare(`
+  UPDATE users SET slug=@slug, specialty=@specialty, photo=@photo, bio=@bio, price_default=@price_default
+  WHERE username=@username COLLATE NOCASE
+`);
+const _updTenantProfile = db.prepare(`
+  UPDATE tenants SET slug=@slug, address=@address, tenant_phone=@tenant_phone, website=@website, logo=@logo
+  WHERE id=@id
+`);
+const _slugExistsUserExcept   = db.prepare('SELECT 1 FROM users   WHERE slug=? AND username != ? COLLATE NOCASE');
+const _slugExistsTenantExcept = db.prepare('SELECT 1 FROM tenants WHERE slug=? AND id != ?');
+
+module.exports.updateUserProfile = (username, p) => {
+  _updUserProfile.run({
+    username,
+    slug: p.slug || null,
+    specialty: p.specialty || null,
+    photo: p.photo || null,
+    bio: p.bio || null,
+    price_default: p.price_default != null ? Number(p.price_default) : null,
+  });
+};
+module.exports.updateTenantProfile = (id, p) => {
+  _updTenantProfile.run({
+    id,
+    slug: p.slug || null,
+    address: p.address || null,
+    tenant_phone: p.tenant_phone || null,
+    website: p.website || null,
+    logo: p.logo || null,
+  });
+};
+module.exports.isUserSlugTaken   = (slug, exceptUsername) => !!_slugExistsUserExcept.get(slug, exceptUsername);
+module.exports.isTenantSlugTaken = (slug, exceptId) => !!_slugExistsTenantExcept.get(slug, exceptId);
 
 module.exports.getUser      = u => _getUser.get(u) || null;
-module.exports.updateUserHash = (username, hash) => _updHash.run(hash, username);
+module.exports.updateUserHash  = (username, hash)  => _updHash.run(hash, username);
+module.exports.getUserByEmail  = email             => _getUserByEmail.get(email) || null;
+module.exports.setUserEmail    = (username, email) => _setUserEmail.run(email, username);
 module.exports.getUsers   = () => _getUsers.all();
 module.exports.addUser    = (username, name, hash, role='doctor') => {
   try { _addUser.run(username.trim(), name.trim(), hash, role); return { ok: true }; }
@@ -104,8 +238,8 @@ module.exports.deleteUser = u => _delUser.run(u);
 const _getRecords      = db.prepare('SELECT * FROM records ORDER BY date DESC, time DESC');
 const _getMyRecords    = db.prepare('SELECT * FROM records WHERE doctor=? ORDER BY date DESC, time DESC');
 const _addRecord       = db.prepare(`
-  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome,nrs_before,nrs_after,treatment_type,stimulation,exposure,deqi)
-  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome,@nrs_before,@nrs_after,@treatment_type,@stimulation,@exposure,@deqi)
+  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome,nrs_before,nrs_after,treatment_type,stimulation,exposure,deqi,progress,soap_s,soap_o,soap_a,soap_p)
+  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome,@nrs_before,@nrs_after,@treatment_type,@stimulation,@exposure,@deqi,@progress,@soap_s,@soap_o,@soap_a,@soap_p)
 `);
 const _delRecord       = db.prepare('DELETE FROM records WHERE id=?');
 
@@ -130,8 +264,19 @@ module.exports.addRecord    = rec => _addRecord.run({
   stimulation:    rec.stimulation    || null,
   exposure:       rec.exposure       ?? null,
   deqi:           rec.deqi           ? 1 : 0,
+  progress:       rec.progress       ?? null,
+  soap_s:         rec.soap_s         || null,
+  soap_o:         rec.soap_o         || null,
+  soap_a:         rec.soap_a         || null,
+  soap_p:         rec.soap_p         || null,
 });
 module.exports.deleteRecord   = id => _delRecord.run(id);
+const _countDoctorRecords = db.prepare('SELECT COUNT(*) as cnt FROM records WHERE doctor=?');
+module.exports.countDoctorRecords = username => _countDoctorRecords.get(username).cnt;
+const FREE_RECORD_LIMIT = 30;
+module.exports.FREE_RECORD_LIMIT = FREE_RECORD_LIMIT;
+const _getRecsByPatientDoctor = db.prepare('SELECT id FROM records WHERE patient=? AND doctor=? AND date=? LIMIT 5');
+module.exports.getRecordsByPatientDoctor = (patient, doctor, date) => _getRecsByPatientDoctor.all(patient, doctor, date);
 const _getRecord = db.prepare('SELECT * FROM records WHERE id=?');
 module.exports.getRecord = id => parseRecord(_getRecord.get(id));
 const _updOutcome = db.prepare('UPDATE records SET outcome=? WHERE id=?');
@@ -217,9 +362,71 @@ module.exports.findTenantByDoctor = username => {
   })[0];
 };
 
-// ── TRIAL REQUESTS ─────────────────────────────────────────
 try { db.exec("ALTER TABLE trial_requests ADD COLUMN email TEXT"); } catch(e) {}
 
+// ── APPOINTMENTS ───────────────────────────────────────────
+const _addAppt = db.prepare(`
+  INSERT INTO appointments (id,doctor,doctorName,patient,patient_phone,patient_email,patient_telegram,start_at,duration_min,service,price,notes,status,created_by,utm_source,utm_medium)
+  VALUES (@id,@doctor,@doctorName,@patient,@patient_phone,@patient_email,@patient_telegram,@start_at,@duration_min,@service,@price,@notes,@status,@created_by,@utm_source,@utm_medium)
+`);
+const _updAppt = db.prepare(`
+  UPDATE appointments SET patient=@patient,patient_phone=@patient_phone,patient_email=@patient_email,patient_telegram=@patient_telegram,
+    start_at=@start_at,duration_min=@duration_min,service=@service,price=@price,notes=@notes,status=@status,doctor=@doctor,doctorName=@doctorName
+  WHERE id=@id
+`);
+const _delAppt = db.prepare('DELETE FROM appointments WHERE id=?');
+const _getAppt = db.prepare('SELECT * FROM appointments WHERE id=?');
+const _getApptsByDoctor = db.prepare('SELECT * FROM appointments WHERE doctor=? AND start_at>=? AND start_at<? ORDER BY start_at');
+const _getApptsRange    = db.prepare('SELECT * FROM appointments WHERE start_at>=? AND start_at<? ORDER BY start_at');
+const _setApptStatus    = db.prepare('UPDATE appointments SET status=? WHERE id=?');
+const _setApptRecord    = db.prepare('UPDATE appointments SET record_id=?, status=? WHERE id=?');
+const _checkConflict = db.prepare(`
+  SELECT id FROM appointments
+  WHERE doctor=? AND status!='cancelled' AND id != ?
+    AND start_at < ?
+    AND datetime(start_at, '+' || duration_min || ' minutes') > ?
+  LIMIT 1
+`);
+
+module.exports.addAppointment    = a => _addAppt.run({
+  id: a.id, doctor: a.doctor, doctorName: a.doctorName, patient: a.patient,
+  patient_phone: a.patient_phone || null, patient_email: a.patient_email || null, patient_telegram: a.patient_telegram || null,
+  start_at: a.start_at, duration_min: a.duration_min || 60,
+  service: a.service || null, price: a.price ?? null, notes: a.notes || null,
+  status: a.status || 'scheduled', created_by: a.created_by || null,
+  utm_source: a.utm_source || null, utm_medium: a.utm_medium || null,
+});
+module.exports.updateAppointment = a => _updAppt.run({
+  id: a.id, doctor: a.doctor, doctorName: a.doctorName, patient: a.patient,
+  patient_phone: a.patient_phone || null, patient_email: a.patient_email || null, patient_telegram: a.patient_telegram || null,
+  start_at: a.start_at, duration_min: a.duration_min || 60,
+  service: a.service || null, price: a.price ?? null, notes: a.notes || null,
+  status: a.status || 'scheduled'
+});
+module.exports.deleteAppointment      = id => _delAppt.run(id);
+module.exports.getAppointment         = id => _getAppt.get(id);
+module.exports.getAppointmentsDoctor  = (doctor, fromISO, toISO) => _getApptsByDoctor.all(doctor, fromISO, toISO);
+module.exports.getAppointmentsRange   = (fromISO, toISO) => _getApptsRange.all(fromISO, toISO);
+module.exports.setAppointmentStatus   = (id, status) => _setApptStatus.run(status, id);
+module.exports.linkAppointmentRecord  = (id, recordId) => _setApptRecord.run(recordId, 'done', id);
+const _getApptsForReminder = db.prepare(`
+  SELECT * FROM appointments
+  WHERE status='scheduled' AND patient_email IS NOT NULL AND patient_email != ''
+    AND reminder_sent_at IS NULL
+    AND start_at >= ? AND start_at < ?
+`);
+const _markReminderSent = db.prepare("UPDATE appointments SET reminder_sent_at = datetime('now') WHERE id=?");
+module.exports.getAppointmentsForReminder = (fromISO, toISO) => _getApptsForReminder.all(fromISO, toISO);
+module.exports.markReminderSent          = id => _markReminderSent.run(id);
+
+module.exports.findApptConflict = (doctor, startISO, durationMin, exceptId='') => {
+  // startISO формат 'YYYY-MM-DD HH:MM:SS' (локальное время). endISO считаем через datetime() в SQL.
+  // Чтобы не лочиться на UTC, используем SQLite datetime для конвертации:
+  const endRow = db.prepare("SELECT datetime(?, '+' || ? || ' minutes') AS e").get(startISO, durationMin);
+  return _checkConflict.get(doctor, exceptId, endRow.e, startISO);
+};
+
+// ── TRIAL REQUESTS ─────────────────────────────────────────
 const _addTrialRequest = db.prepare(
   "INSERT INTO trial_requests (method, contact, ip, email) VALUES (?, ?, ?, ?)"
 );
@@ -229,3 +436,27 @@ const _getTrialRequests   = db.prepare("SELECT * FROM trial_requests ORDER BY cr
 const _updateTrialStatus  = db.prepare("UPDATE trial_requests SET status=? WHERE id=?");
 module.exports.getTrialRequests  = () => _getTrialRequests.all();
 module.exports.updateTrialStatus = (id, status) => _updateTrialStatus.run(status, id);
+
+// ── TELEGRAM PATIENT BOT ───────────────────────────────────
+const _setApptTgToken  = db.prepare("UPDATE appointments SET tg_token=? WHERE id=?");
+const _getApptByToken  = db.prepare("SELECT * FROM appointments WHERE tg_token=?");
+const _linkTgChat      = db.prepare("UPDATE appointments SET tg_chat_id=?, tg_token=NULL WHERE tg_token=?");
+const _getApptsTgRemind1h = db.prepare(`
+  SELECT * FROM appointments
+  WHERE status='scheduled' AND tg_chat_id IS NOT NULL
+    AND tg_reminder_1h_at IS NULL
+    AND start_at >= ? AND start_at < ?
+`);
+const _markTgRemind1h  = db.prepare("UPDATE appointments SET tg_reminder_1h_at=datetime('now') WHERE id=?");
+const _getApptsTgRemind24h = db.prepare(`
+  SELECT * FROM appointments
+  WHERE status='scheduled' AND tg_chat_id IS NOT NULL
+    AND reminder_sent_at IS NULL
+    AND start_at >= ? AND start_at < ?
+`);
+module.exports.setApptTgToken        = (id, token) => _setApptTgToken.run(token, id);
+module.exports.getApptByTgToken      = token => _getApptByToken.get(token);
+module.exports.linkPatientTelegram   = (token, chatId) => _linkTgChat.run(chatId, token);
+module.exports.getApptsForTgRemind1h = (fromISO, toISO) => _getApptsTgRemind1h.all(fromISO, toISO);
+module.exports.markTgRemind1h        = id => _markTgRemind1h.run(id);
+module.exports.getApptsForTgRemind24h = (fromISO, toISO) => _getApptsTgRemind24h.all(fromISO, toISO);

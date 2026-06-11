@@ -50,6 +50,11 @@ export async function apiMe() {
   return r?.data || null;
 }
 
+export async function apiGetPlan() {
+  const r = await req('GET', '/api/plan');
+  return r?.data || null;
+}
+
 export function apiLogout() {
   clearToken();
   localStorage.setItem('acutwin_logout_signal', Date.now());
@@ -64,7 +69,9 @@ export async function apiGetRecords() {
 
 export async function apiAddRecord(record) {
   const r = await req('POST', '/api/records', record);
-  return r?.data || { ok: false };
+  if (!r) return { ok: false };
+  if (r.status === 402) return { ok: false, limitReached: true, ...(r.data || {}) };
+  return r.data || { ok: false };
 }
 
 export async function apiDeleteRecord(id) {

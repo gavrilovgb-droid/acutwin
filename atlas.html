@@ -29,10 +29,7 @@
 <div id="nav-mount"></div>
 
 <!-- Body background -->
-<div id="body-bg">
-  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
-  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
-</div>
+<div id="body-bg"></div>
 
 <div class="md:ml-64 h-screen flex flex-col">
 
@@ -81,6 +78,11 @@
   <div id="panel-static" class="hidden flex-1 overflow-y-auto p-6">
     <div id="static-content" class="max-w-4xl mx-auto"></div>
   </div>
+
+  <!-- Meridian overview page (BUG-008) -->
+  <div id="panel-meridian" class="hidden flex-1 overflow-y-auto p-6">
+    <div id="meridian-content" class="max-w-4xl mx-auto"></div>
+  </div>
 </div>
 
 <!-- Video modal -->
@@ -104,8 +106,9 @@
 </div>
 
 <script type="module">
-import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
+import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
 import { requireAuth } from './auth.js';
+import { getToken } from './api.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 
 document.getElementById('nav-mount').innerHTML = buildSidebar('atlas', session);
@@ -181,7 +184,7 @@ const params = new URLSearchParams(location.search);
 const initCode = params.get('code');
 const initMer  = params.get('mer');
 
-fetch('../data/points.json')
+fetch('/data/points.json', { headers: { Authorization: 'Bearer ' + getToken() } })
   .then(r => r.json())
   .then(data => {
     points = data;
@@ -316,19 +319,111 @@ function updateAtlasSidebar() {
   });
 }
 
+function buildMeridianPage(mer) {
+  const merInfo = MERIDIANS[mer] || {};
+  const color = merInfo.color || '#8b90a0';
+  const label = merInfo.display || mer;
+  const merCodes = allCodes.filter(code => { const m = code.match(/^([A-Za-z]+)/); return m && m[1] === mer; });
+  const merVid = merVideoSrc(mer);
+  const signs = MER_SIGNS[mer];
+
+  const badge = (s, c) =>
+    `<span style="display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:${c}18;border:1px solid ${c}40;color:${c};margin:2px 1px">${esc(s)}</span>`;
+
+  const ptCard = (code) => {
+    const pt = points[code] || {};
+    return `
+      <button onclick="openPointFromMeridian('${code}')"
+        class="glass-panel rounded-xl p-4 text-left transition-all border border-white/10 hover:bg-white/5 w-full"
+        style="hover:border-color:${color}44">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="font-bold text-sm mer-code" style="color:${color}">${esc(code)}</span>
+          ${pt.cn_name ? `<span class="text-xs text-[#8b90a0] truncate">${esc(pt.cn_name)}</span>` : ''}
+        </div>
+        ${pt.location ? `<p class="text-xs text-[#c1c6d7] mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(pt.location)}</p>` : ''}
+        ${pt.indica ? `<p class="text-[11px] text-[#8b90a0]" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(pt.indica)}</p>` : ''}
+      </button>`;
+  };
+
+  return `
+    <div class="page-enter">
+      <div class="glass-panel rounded-2xl p-6 mb-5" style="border-color:${color}33;box-shadow:0 0 30px ${color}18">
+        <div class="flex items-start gap-4 mb-4">
+          <div style="width:4px;min-height:64px;border-radius:4px;background:${color};flex-shrink:0"></div>
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2 flex-wrap">
+              <span class="text-4xl font-bold mer-code" style="color:${color};text-shadow:0 0 20px ${color}66">${esc(label)}</span>
+              ${merInfo.code ? `<span class="text-sm text-[#8b90a0]">${merInfo.code}</span>` : ''}
+              ${merInfo.nameFr ? `<span class="text-xs text-[#414755]">${esc(merInfo.nameFr)}</span>` : ''}
+            </div>
+            <h2 class="text-2xl font-bold text-[#e2e2e2] mb-1" style="font-family:'Hanken Grotesk',sans-serif">Меридиан ${esc(merInfo.name || mer)}</h2>
+            <div class="flex items-center gap-3 text-sm text-[#8b90a0]">
+              <span>Стихия: <span style="color:${color}">${esc(merInfo.element || '—')}</span></span>
+              <span>·</span>
+              <span>${merCodes.length} точек</span>
+            </div>
+          </div>
+        </div>
+        <div class="rounded-xl overflow-hidden bg-[#0e0e0e]">
+          <video controls class="w-full block rounded-xl" src="${merVid}"
+                 style="max-height:200px;object-fit:contain"
+                 controlsList="nodownload noremoteplayback" disablePictureInPicture
+                 oncontextmenu="return false"
+                 onerror="this.closest('div').style.display='none'">
+          </video>
+        </div>
+        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">© П. В. Белоусов — zhong-yi.narod.ru</div>
+      </div>
+
+      ${signs ? `
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div class="glass-panel rounded-xl p-4">
+          <div class="text-[10px] text-[#FF9500] uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <span class="material-symbols-outlined" style="font-size:14px">arrow_upward</span>
+            Симптомы избытка
+          </div>
+          <div>${signs.excess.split(',').map(s => badge(s.trim(), '#FF9500')).join('')}</div>
+        </div>
+        <div class="glass-panel rounded-xl p-4">
+          <div class="text-[10px] text-[#5a8fa8] uppercase tracking-widest mb-3 flex items-center gap-1.5">
+            <span class="material-symbols-outlined" style="font-size:14px">arrow_downward</span>
+            Симптомы недостатка
+          </div>
+          <div>${signs.defic.split(',').map(s => badge(s.trim(), '#5a8fa8')).join('')}</div>
+        </div>
+      </div>` : ''}
+
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-3 flex items-center gap-2">
+        <span class="material-symbols-outlined" style="font-size:14px;color:${color}">adjust</span>
+        Точки меридиана · ${merCodes.length}
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        ${merCodes.map(ptCard).join('')}
+      </div>
+    </div>`;
+}
+
+window.openPointFromMeridian = (code) => {
+  setMer('all');
+  selectPoint(code);
+  const btn = document.getElementById(`li_${code}`);
+  if (btn) btn.scrollIntoView({ block: 'center', behavior: 'smooth' });
+};
+
 window.setMer = (mer) => {
   activeMer = mer;
-  // Always switch to catalog view when picking a meridian
-  if (activeSection !== 'catalog') {
+  document.getElementById('panel-static').classList.add('hidden');
+  if (mer !== 'all') {
     activeSection = 'catalog';
-    document.querySelectorAll('#section-tabs button').forEach(b => {
-      b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all text-[#8b90a0] hover:text-white hover:bg-white/5';
-    });
+    document.getElementById('panel-catalog').classList.add('hidden');
+    document.getElementById('panel-meridian').classList.remove('hidden');
+    document.getElementById('meridian-content').innerHTML = buildMeridianPage(mer);
+  } else {
+    document.getElementById('panel-meridian').classList.add('hidden');
     document.getElementById('panel-catalog').classList.remove('hidden');
-    document.getElementById('panel-static').classList.add('hidden');
+    renderList();
   }
-  buildMerTabs(); // rebuild to update active colors
-  renderList();
+  buildMerTabs();
   updateAtlasSidebar();
   updateMobAtlasNav();
 };
@@ -505,6 +600,7 @@ window.selectPoint = (code) => {
                  onerror="this.closest('.glass-panel').style.display='none'">
           </video>
         </div>
+        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">© П. В. Белоусов — zhong-yi.narod.ru</div>
       </div>` : ''}
     </div>`;
 };
@@ -695,12 +791,15 @@ let activeSection = 'catalog';
 
 window.setSection = (sec) => {
   activeSection = sec;
+  activeMer = 'all';
+  document.getElementById('panel-meridian').classList.add('hidden');
   document.querySelectorAll('#section-tabs button').forEach(b => {
     const isA = b.id === `stab_${sec}`;
     b.className = `px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${isA
       ? 'bg-[#00F2FF]/15 text-[#00F2FF] border border-[#00F2FF]/30'
       : 'text-[#8b90a0] hover:text-white hover:bg-white/5'}`;
   });
+  buildMerTabs();
   updateAtlasSidebar();
   updateMobAtlasNav();
   if (sec === 'catalog') {
@@ -739,14 +838,16 @@ window.setSection = (sec) => {
 // Search handler — always switch to catalog view when typing
 document.getElementById('atlas-search').addEventListener('input', e => {
   const q = e.target.value;
-  if (activeSection !== 'catalog') {
+  if (activeSection !== 'catalog' || activeMer !== 'all') {
     activeSection = 'catalog';
     activeMer = 'all';
     document.getElementById('panel-catalog').classList.remove('hidden');
     document.getElementById('panel-static').classList.add('hidden');
+    document.getElementById('panel-meridian').classList.add('hidden');
     document.querySelectorAll('#section-tabs button').forEach(b => {
       b.className = 'px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all text-[#8b90a0] hover:text-white hover:bg-white/5';
     });
+    buildMerTabs();
     updateAtlasSidebar();
     updateMobAtlasNav();
   }

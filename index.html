@@ -27,10 +27,7 @@
 <body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
 
 <div id="nav-mount"></div>
-<div id="body-bg">
-  <img src="body-v2.webp" alt="" style="position:absolute;right:3%;top:50%;transform:translateY(-50%);height:94vh;opacity:0.85;filter:saturate(0.6) brightness(1.56)"/>
-  <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,#131313 25%,rgba(19,19,19,.65) 55%,rgba(19,19,19,.15) 100%)"></div>
-</div>
+<div id="body-bg"></div>
 
 <div class="md:ml-64 flex flex-col min-h-screen">
 
@@ -172,6 +169,23 @@ document.getElementById('f-date').value = now.toISOString().slice(0,10);
 document.getElementById('f-time').value = now.toTimeString().slice(0,5);
 document.getElementById('f-doctor').value = session.name;
 
+// ── Подстановка пациента из расписания ───────────────────
+{
+  const qs = new URLSearchParams(window.location.search);
+  const p = qs.get('patient');
+  const apptId = qs.get('appointmentId');
+  const reason = qs.get('reason');
+  if (p) document.getElementById('f-fio').value = p;
+  if (reason) {
+    const r = document.getElementById('f-reason');
+    if (r && !r.value) r.value = reason;
+  }
+  if (apptId) {
+    window._appointmentId = apptId;
+    sessionStorage.setItem('acutwin_appointment_id', apptId);
+  }
+}
+
 // ── Records helpers ──────────────────────────────────────
 let _cachedRecords = [];
 async function loadRecords() {
@@ -248,7 +262,9 @@ window.goToTreatment = () => {
     reason: document.getElementById('f-reason').value.trim() || '',
   };
   sessionStorage.setItem('acutwin_diag_patient', JSON.stringify(data));
-  location.href = 'treatment.html';
+  const apptId = sessionStorage.getItem('acutwin_appointment_id');
+  if (apptId) sessionStorage.removeItem('acutwin_appointment_id');
+  location.href = 'treatment.html' + (apptId ? '?appointmentId=' + encodeURIComponent(apptId) : '');
 };
 
 // ── Автозаполнение ФИО ───────────────────────────────────

@@ -16,9 +16,10 @@ function authHeaders() {
            : { 'Content-Type': 'application/json' };
 }
 
-async function req(method, url, body) {
+async function req(method, url, body, signal) {
   const opts = { method, headers: authHeaders() };
   if (body !== undefined) opts.body = JSON.stringify(body);
+  if (signal) opts.signal = signal;
   const res = await fetch(BASE + url, opts);
   if (res.status === 401) {
     clearToken();
@@ -90,9 +91,9 @@ export async function apiBillingAudit(tenantId = null) {
   return r?.data || [];
 }
 
-export async function apiClinicStats(weeks = 1, tenantId = null) {
+export async function apiClinicStats(weeks = 1, tenantId = null, signal = null) {
   const qs = `?weeks=${weeks}` + (tenantId ? `&tenant=${tenantId}` : '');
-  const r = await req('GET', `/api/clinic-stats${qs}`);
+  const r = await req('GET', `/api/clinic-stats${qs}`, undefined, signal);
   return r?.data || [];
 }
 

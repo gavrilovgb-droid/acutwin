@@ -72,6 +72,8 @@ document.getElementById('nav-mount').innerHTML = buildSidebar('clinic-dashboard'
 
 let _weeks = 1;
 let _data  = [];
+let _abortCtrl   = null;
+let _periodTimer = null;
 
 // Admin: заполняем селектор клиник
 if (isAdmin) {
@@ -90,7 +92,9 @@ window.setPeriod = function(w) {
   document.querySelectorAll('.period-btn').forEach(b => {
     b.classList.toggle('active', Number(b.dataset.w) === w);
   });
-  reload();
+  clearTimeout(_periodTimer);
+  if (_abortCtrl) _abortCtrl.abort();
+  _periodTimer = setTimeout(() => reload(), 300);
 };
 
 function badgeForStatus(status) {
@@ -155,7 +159,13 @@ function renderClinicBlock(block) {
 
 window.reload = async function() {
   const tenantId = isAdmin ? (document.getElementById('tenant-select')?.value || null) : null;
-  _data = await apiClinicStats(_weeks, tenantId);
+  _abortCtrl = new AbortController();
+  try {
+    _data = await apiClinicStats(_weeks, tenantId, _abortCtrl.signal);
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    throw e;
+  }
 
   if (!Array.isArray(_data) || _data.length === 0) {
     document.getElementById('kpi-row').innerHTML = '';

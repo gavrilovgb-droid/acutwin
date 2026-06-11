@@ -145,6 +145,7 @@ async function runDailyReminders() {
   for (const a of list) {
     try {
       const tenant = db.findTenantByDoctor(a.doctor);
+      if (tenant?.plan === 'demo') { console.log(`[Reminders] skip demo email: ${a.patient}`); continue; }
       await sendReminderEmail(a, tenant ? tenant.clinic : '');
       db.markReminderSent(a.id);
       console.log(`[Reminders] email sent: ${a.patient} <${a.patient_email}>`);
@@ -157,6 +158,8 @@ async function runDailyReminders() {
     console.log(`[Reminders] tg 24h: ${tgList.length} pending`);
     for (const a of tgList) {
       try {
+        const tenant = db.findTenantByDoctor(a.doctor);
+        if (tenant?.plan === 'demo') { console.log(`[Reminders] skip demo tg24h: ${a.patient}`); continue; }
         const d = new Date(a.start_at.replace(' ', 'T'));
         const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         const dateStr = d.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
@@ -183,6 +186,8 @@ async function runHourlyTgReminders() {
   const list = db.getApptsForTgRemind1h(fmtLocal(in1h), fmtLocal(in1h10));
   for (const a of list) {
     try {
+      const tenant = db.findTenantByDoctor(a.doctor);
+      if (tenant?.plan === 'demo') { console.log(`[Reminders] skip demo tg1h: ${a.patient}`); continue; }
       const d = new Date(a.start_at.replace(' ','T'));
       const timeStr = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       await sendPatientTg(a.tg_chat_id,

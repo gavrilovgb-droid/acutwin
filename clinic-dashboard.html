@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>AcuTwin — Панель клиники</title>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<meta name="theme-color" content="#131313">
+<style>
+.period-btn { padding:6px 14px; border-radius:8px; font-size:.75rem; font-weight:600; cursor:pointer; border:1px solid rgba(255,255,255,.1); color:#8b90a0; background:transparent; transition:all .15s; }
+.period-btn.active { background:rgba(10,132,255,.15); color:#0A84FF; border-color:rgba(10,132,255,.4); }
+.stat-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:18px; }
+.badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:.62rem; font-weight:700; white-space:nowrap; }
+.badge-trial   { background:rgba(255,214,10,.12); color:#FFD60A; border:1px solid rgba(255,214,10,.3); }
+.badge-grace   { background:rgba(255,159,10,.12); color:#ff9f0a; border:1px solid rgba(255,159,10,.3); }
+.badge-expired { background:rgba(255,69,58,.12);  color:#FF453A; border:1px solid rgba(255,69,58,.3); }
+.badge-paid    { background:rgba(52,199,89,.12);  color:#34C759; border:1px solid rgba(52,199,89,.3); }
+.badge-demo    { background:rgba(10,132,255,.12);  color:#0A84FF; border:1px solid rgba(10,132,255,.3); }
+.doc-row { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px 16px; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 flex flex-col min-h-screen">
+  <header class="sticky top-0 z-30 border-b border-white/10 bg-[#131313]/95 backdrop-blur-xl px-6 py-3 flex items-center gap-4 flex-wrap">
+    <h1 class="text-sm font-bold text-[#e2e2e2]">Панель клиники</h1>
+
+    <!-- Period selector -->
+    <div class="flex gap-1">
+      <button class="period-btn active" data-w="1" onclick="setPeriod(1)">1 нед</button>
+      <button class="period-btn" data-w="2" onclick="setPeriod(2)">2 нед</button>
+      <button class="period-btn" data-w="3" onclick="setPeriod(3)">3 нед</button>
+      <button class="period-btn" data-w="4" onclick="setPeriod(4)">4 нед</button>
+    </div>
+
+    <!-- Admin: tenant selector -->
+    <div id="tenant-select-wrap" class="hidden ml-auto">
+      <select id="tenant-select" class="text-xs bg-[#1f1f1f] border border-[#414755] rounded-lg px-3 py-1.5 text-[#e2e2e2] outline-none" onchange="reload()">
+        <option value="">Все клиники</option>
+      </select>
+    </div>
+
+    <div id="period-label" class="text-xs text-[#8b90a0] ml-auto"></div>
+  </header>
+
+  <main class="flex-1 p-6 space-y-6">
+
+    <!-- KPI row -->
+    <div id="kpi-row" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+
+    <!-- Per-clinic blocks -->
+    <div id="clinic-blocks" class="space-y-8"></div>
+
+  </main>
+</div>
+
+<script type="module">
+import { buildSidebar } from './shared.js';
+import { requireAuth }  from './auth.js';
+import { apiClinicStats, apiBillingTenants } from './api.js';
+
+const session = await requireAuth();
+if (!session) { window.location.href = 'login.html'; throw new Error('redirect'); }
+const isAdmin = session.role === 'admin' || session.role === 'boss';
+if (!isAdmin && session.role !== 'manager') { window.location.href = 'index.html'; throw new Error('redirect'); }
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('clinic-dashboard', session);
+
+let _weeks = 1;
+let _data  = [];
+
+// Admin: заполняем селектор клиник
+if (isAdmin) {
+  document.getElementById('tenant-select-wrap').classList.remove('hidden');
+  const tenants = await apiBillingTenants();
+  const sel = document.getElementById('tenant-select');
+  tenants.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.id; o.textContent = t.clinic;
+    sel.appendChild(o);
+  });
+}
+
+window.setPeriod = function(w) {
+  _weeks = w;
+  document.querySelectorAll('.period-btn').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.w) === w);
+  });
+  reload();
+};
+
+function badgeForStatus(status) {
+  if (status === 'trial_active') return '<span class="badge badge-trial">Trial</span>';
+  if (status === 'trial_grace')  return '<span class="badge badge-grace">Grace 24h</span>';
+  if (status === 'trial_expired')return '<span class="badge badge-expired">Expired</span>';
+  if (status === 'paid')         return '<span class="badge badge-paid">Paid</span>';
+  if (status === 'demo')         return '<span class="badge badge-demo">Demo</span>';
+  return '';
+}
+
+function renderKPI(totals) {
+  const kpi = [
+    { label:'Записей', val: totals.recordCount, color:'#0A84FF' },
+    { label:'Визитов', val: totals.apptCount,   color:'#34C759' },
+    { label:'Врачей',  val: totals.doctorCount,  color:'#BF5AF2' },
+    { label:'Период',  val: `${_weeks} нед`,     color:'#8b90a0' },
+  ];
+  document.getElementById('kpi-row').innerHTML = kpi.map(k => `
+    <div class="stat-card">
+      <div class="text-2xl font-bold" style="color:${k.color}">${k.val}</div>
+      <div class="text-xs text-[#8b90a0] mt-1">${k.label}</div>
+    </div>`).join('');
+}
+
+function renderClinicBlock(block) {
+  const { tenantName, plan, trialStatus, doctors, totals } = block;
+  const st = trialStatus?.status || 'demo';
+
+  const doctorRows = doctors.length === 0
+    ? '<div class="text-xs text-[#8b90a0] py-3 text-center">Нет данных за период</div>'
+    : doctors.map(d => `
+      <div class="doc-row flex flex-wrap items-center gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">${d.name}</div>
+          <div class="text-xs text-[#8b90a0]">${d.username}</div>
+        </div>
+        <div class="flex gap-4 text-center">
+          <div>
+            <div class="text-sm font-bold" style="color:#0A84FF">${d.recordCount}</div>
+            <div class="text-[10px] text-[#8b90a0]">записей</div>
+          </div>
+          <div>
+            <div class="text-sm font-bold" style="color:#34C759">${d.apptCount}</div>
+            <div class="text-[10px] text-[#8b90a0]">визитов</div>
+          </div>
+        </div>
+      </div>`).join('');
+
+  return `
+    <div>
+      <div class="flex items-center gap-3 mb-3">
+        <div class="font-bold">${tenantName}</div>
+        ${badgeForStatus(st)}
+        <div class="text-xs text-[#8b90a0]">
+          итого: ${totals.recordCount} зап. / ${totals.apptCount} вит.
+        </div>
+      </div>
+      <div class="space-y-2">${doctorRows}</div>
+    </div>`;
+}
+
+window.reload = async function() {
+  const tenantId = isAdmin ? (document.getElementById('tenant-select')?.value || null) : null;
+  _data = await apiClinicStats(_weeks, tenantId);
+
+  if (!Array.isArray(_data) || _data.length === 0) {
+    document.getElementById('kpi-row').innerHTML = '';
+    document.getElementById('clinic-blocks').innerHTML =
+      '<div class="text-center text-[#8b90a0] text-sm py-16">Нет данных</div>';
+    document.getElementById('period-label').textContent = '';
+    return;
+  }
+
+  const allDoctors = _data.flatMap(b => b.doctors);
+  const globalTotals = {
+    recordCount: allDoctors.reduce((s,d) => s + d.recordCount, 0),
+    apptCount:   allDoctors.reduce((s,d) => s + d.apptCount, 0),
+    doctorCount: allDoctors.length,
+  };
+  renderKPI(globalTotals);
+
+  const fromDate = new Date();
+  fromDate.setUTCDate(fromDate.getUTCDate() - _weeks * 7);
+  document.getElementById('period-label').textContent =
+    `${fromDate.toLocaleDateString('ru-RU')} — ${new Date().toLocaleDateString('ru-RU')}`;
+
+  document.getElementById('clinic-blocks').innerHTML =
+    _data.map(renderClinicBlock).join('<hr class="border-white/5 my-2">');
+};
+
+await reload();
+</script>
+</body>
+</html>

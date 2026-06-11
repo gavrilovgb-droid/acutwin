@@ -50,8 +50,8 @@ export async function apiMe() {
   return r?.data || null;
 }
 
-export async function apiGetPlan() {
-  const r = await req('GET', '/api/plan');
+export async function apiGetTrialStatus() {
+  const r = await req('GET', '/api/trial-status');
   return r?.data || null;
 }
 
@@ -70,8 +70,24 @@ export async function apiGetRecords() {
 export async function apiAddRecord(record) {
   const r = await req('POST', '/api/records', record);
   if (!r) return { ok: false };
-  if (r.status === 402) return { ok: false, limitReached: true, ...(r.data || {}) };
+  if (r.status === 402) return { ok: false, trialExpired: true };
   return r.data || { ok: false };
+}
+
+export async function apiBillingTenants() {
+  const r = await req('GET', '/api/billing/tenants');
+  return r?.data || [];
+}
+
+export async function apiBillingAction(id, action, opts = {}) {
+  const r = await req('PATCH', `/api/billing/tenants/${id}`, { action, ...opts });
+  return r?.data || { ok: false };
+}
+
+export async function apiClinicStats(weeks = 1, tenantId = null) {
+  const qs = `?weeks=${weeks}` + (tenantId ? `&tenant=${tenantId}` : '');
+  const r = await req('GET', `/api/clinic-stats${qs}`);
+  return r?.data || [];
 }
 
 export async function apiDeleteRecord(id) {

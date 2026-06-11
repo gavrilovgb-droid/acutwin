@@ -257,10 +257,6 @@ html, body {
       <div id="si3" class="step-circle">3</div>
     </div>
     <div class="ml-auto flex items-center gap-2 flex-shrink-0">
-      <div id="plan-counter" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer" onclick="showUpgradeModal()" style="border:1px solid rgba(255,159,10,0.4);background:rgba(255,159,10,0.08);color:#ff9f0a">
-        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">lock</span>
-        <span id="plan-counter-text">0/30 приёмов</span>
-      </div>
       <button onclick="toggleSoundPanel()" id="snd-header-btn"
               class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
@@ -669,7 +665,7 @@ html, body {
 <script type="module">
 import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, OWN, EB, DIST, parseSyms, ptVideoSrc, merVideoSrc, extractPoints, esc, safeSetItem, uniqueId, displayCode } from './shared.js';
 import { requireAuth } from './auth.js';
-import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic, apiGetPlan } from './api.js';
+import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic, apiGetTrialStatus } from './api.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 let _clinicName = '';
 apiGetClinic().then(c => { _clinicName = c.name || ''; });
@@ -677,32 +673,17 @@ apiGetClinic().then(c => { _clinicName = c.name || ''; });
 document.getElementById('nav-mount').innerHTML = buildSidebar('treatment', session);
 initElementClock();
 
-// ── Freemium plan counter ──────────────────────────────────
-let _planInfo = null;
-
-function updatePlanCounter(info) {
-  _planInfo = info;
-  const wrap = document.getElementById('plan-counter');
-  const text = document.getElementById('plan-counter-text');
-  if (!wrap || !info?.isLimited) return;
-  const { recordCount, recordLimit } = info;
-  text.textContent = `${recordCount}/${recordLimit} приёмов`;
-  const pct = recordCount / recordLimit;
-  const color = pct >= 1 ? '#ff453a' : pct >= 0.8 ? '#ff9f0a' : '#ff9f0a';
-  wrap.style.color = color;
-  wrap.style.borderColor = color.replace(')', ',0.4)').replace('rgb', 'rgba');
-  wrap.style.background = color.replace(')', ',0.08)').replace('rgb', 'rgba');
-  wrap.style.display = 'flex';
-}
-
-window.showUpgradeModal = () => {
-  const m = document.getElementById('upgrade-modal');
-  const cnt = document.getElementById('upgrade-count');
-  if (_planInfo) cnt.textContent = _planInfo.recordCount;
-  m.style.display = 'flex';
-};
-
-apiGetPlan().then(info => updatePlanCounter(info));
+// ── Trial grace banner ─────────────────────────────────────
+apiGetTrialStatus().then(ts => {
+  if (!ts) return;
+  if (ts.status === 'trial_grace') {
+    const b = document.getElementById('trial-grace-banner');
+    if (b) b.classList.remove('hidden');
+  }
+  if (ts.blocked) {
+    document.getElementById('trial-expired-overlay')?.classList.remove('hidden');
+  }
+});
 
 // ── Запись расписания (если перешли из schedule.html) ──
 const _urlParams = new URLSearchParams(window.location.search);
@@ -2196,9 +2177,8 @@ window.savePatientSession = async () => {
         ...irt, ...soap,
         appointmentId: window._appointmentId || null,
       });
-      if (res?.limitReached) { _savingSession = false; showUpgradeModal(); return; }
+      if (res?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
     }
-    apiGetPlan().then(updatePlanCounter);
     window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
     confirmedRecipes.length = 0;
     window._currentPts = [];
@@ -2240,8 +2220,7 @@ window.savePatientSession = async () => {
     appointmentId: window._appointmentId || null,
   };
   const saveRes = await apiAddRecord(rec);
-  if (saveRes?.limitReached) { _savingSession = false; showUpgradeModal(); return; }
-  apiGetPlan().then(updatePlanCounter);
+  if (saveRes?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
   resetIrtFields();
@@ -2284,8 +2263,7 @@ async function doSaveRecord(patientName, age, gender, reason) {
     ...soap,
     appointmentId: window._appointmentId || null,
   });
-  if (hdrRes?.limitReached) { showUpgradeModal(); return; }
-  apiGetPlan().then(updatePlanCounter);
+  if (hdrRes?.trialExpired) { document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
   const btn = document.getElementById('hdr-save-btn');
@@ -5612,27 +5590,20 @@ function sndUpdateTimer() {
   document.getElementById('snd-timer').textContent = `${_sndRemain < 0 ? '-' : ''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 </script>
-<!-- Freemium upgrade modal -->
-<div id="upgrade-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
-  <div class="relative w-full max-w-md rounded-2xl p-8 text-center" style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.12)">
-    <div class="text-5xl mb-4">🔒</div>
-    <h2 class="text-xl font-bold mb-2" style="font-family:'Hanken Grotesk',sans-serif;color:#fff">Лимит Freemium исчерпан</h2>
-    <p class="text-sm mb-1" style="color:rgba(255,255,255,0.6)">Вы использовали <span id="upgrade-count" class="font-bold" style="color:#ff9f0a">30</span> из 30 бесплатных приёмов.</p>
-    <p class="text-sm mb-6" style="color:rgba(255,255,255,0.5)">Перейдите на тариф Solo, чтобы вести неограниченное число пациентов и записей.</p>
-    <div class="rounded-xl p-4 mb-6 text-left" style="background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.3)">
-      <div class="font-bold text-sm mb-1" style="color:#ff9f0a">Solo — 990 ₽/мес</div>
-      <ul class="text-xs space-y-1" style="color:rgba(255,255,255,0.6)">
-        <li>✓ Неограниченные записи и пациенты</li>
-        <li>✓ Полный атлас, протоколы, SOAP</li>
-        <li>✓ Расписание и онлайн-запись</li>
-      </ul>
-    </div>
-    <button onclick="document.getElementById('upgrade-modal').style.display='none'" class="w-full py-3 rounded-xl font-bold text-sm mb-3" style="background:linear-gradient(135deg,#ff9f0a,#ff6b00);color:#fff;border:none;cursor:pointer">
-      Перейти на Solo →
-    </button>
-    <button onclick="document.getElementById('upgrade-modal').style.display='none'" class="w-full py-2 text-xs" style="color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer">
-      Закрыть
-    </button>
+<!-- Grace period banner -->
+<div id="trial-grace-banner" class="hidden fixed top-0 left-0 right-0 z-[80] flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium" style="background:rgba(255,159,10,0.92);color:#1a1a1a">
+  <span class="material-symbols-outlined" style="font-size:16px;zoom:1">warning</span>
+  Trial истёк — ещё 24 часа для сохранения данных. Обратитесь к администратору.
+  <button onclick="document.getElementById('trial-grace-banner').classList.add('hidden')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#1a1a1a;opacity:0.6;line-height:1">×</button>
+</div>
+
+<!-- Trial expired overlay -->
+<div id="trial-expired-overlay" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)">
+  <div class="w-full max-w-sm rounded-2xl p-8 text-center" style="background:#1a1a1a;border:1px solid rgba(255,69,58,0.4)">
+    <div class="text-5xl mb-4" style="font-size:40px">🔒</div>
+    <h2 class="text-lg font-bold mb-2" style="color:#fff">Trial-период истёк</h2>
+    <p class="text-sm mb-6" style="color:rgba(255,255,255,0.5)">Создание новых записей недоступно. Обратитесь к администратору для продления доступа.</p>
+    <a href="index.html" class="block w-full py-3 rounded-xl text-sm font-bold text-center" style="background:rgba(255,255,255,0.08);color:#e2e2e2;text-decoration:none">На главную</a>
   </div>
 </div>
 </body>

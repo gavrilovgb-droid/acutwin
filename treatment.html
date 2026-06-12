@@ -2478,6 +2478,16 @@ window.headerSaveSession = () => {
   }
 };
 
+function spShowPicker() {
+  const picker = document.getElementById('patient-picker');
+  const overlay = document.getElementById('patient-picker-overlay');
+  if (!picker) return;
+  picker.classList.remove('hidden');
+  overlay?.classList.remove('hidden');
+  filterPicker('');
+  setTimeout(() => document.getElementById('picker-search')?.focus(), 50);
+}
+
 function closePicker() {
   document.getElementById('patient-picker')?.classList.add('hidden');
   document.getElementById('patient-picker-overlay')?.classList.add('hidden');

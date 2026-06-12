@@ -2482,6 +2482,7 @@ window.headerSaveSession = () => {
 let _pickerMode = 'save';
 
 function setPatientContext(patient, age, gender, reason) {
+  document.getElementById('patient-context')?.classList.remove('hidden');
   document.getElementById('pc-name').textContent = patient;
   document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
   document.getElementById('pc-reason').textContent = reason || '';

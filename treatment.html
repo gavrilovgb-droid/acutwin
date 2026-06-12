@@ -715,7 +715,6 @@ try {
     document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
     document.getElementById('pc-reason').textContent = reason;
     window._pendingPath = 'recipe';
-    initSplitPanel(patient);
     window._spPatientSet = true;
     const gMap = { 'М': 'm', 'Ж': 'f' };
     window._pendingGender = gMap[gender] || null;
@@ -2467,7 +2466,8 @@ window.headerSaveSession = () => {
     }
     return;
   }
-  // Нет пациента — показываем попап
+  // Нет пациента — показываем попап (режим сохранения)
+  _pickerMode = 'save';
   const picker = document.getElementById('patient-picker');
   const overlay = document.getElementById('patient-picker-overlay');
   picker.classList.toggle('hidden');
@@ -2478,7 +2478,25 @@ window.headerSaveSession = () => {
   }
 };
 
+// 'context' = установить пациента в шапке; 'save' = сохранить сессию с пациентом
+let _pickerMode = 'save';
+
+function setPatientContext(patient, age, gender, reason) {
+  document.getElementById('pc-name').textContent = patient;
+  document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
+  document.getElementById('pc-reason').textContent = reason || '';
+  window._spPatientSet = true;
+  const _sk = patient.replace(/\s+/g,'_');
+  ['s','o','a','p'].forEach(f => {
+    const el = document.getElementById('soap-' + f);
+    if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
+  });
+  document.getElementById('irt-fields')?.classList.remove('hidden');
+  document.getElementById('soap-modal-btn')?.classList.remove('hidden');
+}
+
 function spShowPicker() {
+  _pickerMode = 'context';
   const picker = document.getElementById('patient-picker');
   const overlay = document.getElementById('patient-picker-overlay');
   if (!picker) return;
@@ -2503,25 +2521,38 @@ window.filterPicker = async (q) => {
     list.innerHTML = '<div class="text-xs text-[#8b90a0] py-2 text-center">Не найдено</div>';
     return;
   }
-  list.innerHTML = filtered.slice(0, 8).map(r => `
-    <button onclick="pickPatient(${JSON.stringify(JSON.stringify(r))})"
+  const slice = filtered.slice(0, 8);
+  list.innerHTML = slice.map((r, i) => `
+    <button data-pidx="${i}"
             class="w-full text-left px-3 py-2 rounded-lg hover:bg-[#2a2a2a] transition-colors">
-      <div class="text-xs font-semibold text-[#e2e2e2]">${r.patient}</div>
-      <div class="text-[10px] text-[#8b90a0]">${r.gender||''}${r.age ? ', ' + r.age + ' л' : ''}</div>
+      <div class="text-xs font-semibold text-[#e2e2e2]">${esc(r.patient)}</div>
+      <div class="text-[10px] text-[#8b90a0]">${esc(r.gender||'')}${r.age ? ', ' + r.age + ' л' : ''}</div>
     </button>`).join('');
+  list.querySelectorAll('button[data-pidx]').forEach(btn => {
+    const r = slice[+btn.dataset.pidx];
+    btn.addEventListener('click', () => window.pickPatient(JSON.stringify(r)));
+  });
 };
 
 window.pickPatient = (rJson) => {
   const r = JSON.parse(rJson);
   closePicker();
-  doSaveRecord(r.patient, r.age || '', r.gender || '', r.reason || '');
+  if (_pickerMode === 'context') {
+    setPatientContext(r.patient, r.age || '', r.gender || '', r.reason || '');
+  } else {
+    doSaveRecord(r.patient, r.age || '', r.gender || '', r.reason || '');
+  }
 };
 
 window.saveWithPickedPatient = () => {
   const name = document.getElementById('picker-new').value.trim();
   if (!name) return;
   closePicker();
-  doSaveRecord(name, '', '', '');
+  if (_pickerMode === 'context') {
+    setPatientContext(name, '', '', '');
+  } else {
+    doSaveRecord(name, '', '', '');
+  }
 };
 
 // ─── ДИАГНОСТИКА — ШАГ 1 ─────────────────────────────────

@@ -3,6 +3,7 @@
  * Обратно совместим: getSession() возвращает тот же формат {name, username, role}
  */
 import { apiLogin, apiLogout, apiMe, getToken, clearToken, apiAddUser, apiGetUsers } from './api.js';
+import { t } from '/i18n.js';
 
 const SESSION_KEY = 'acutwin_session';
 
@@ -70,7 +71,7 @@ export async function requireAuth() {
         const bar = document.createElement('div');
         bar.id = 'jwt-warn-bar';
         bar.style.cssText = 'position:fixed;bottom:72px;left:50%;transform:translateX(-50%);z-index:9999;background:#FF9500;color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px';
-        bar.innerHTML = '<span>⏱ Сессия истекает через 5 минут. Сохраните данные.</span><button onclick="this.closest(\'#jwt-warn-bar\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;line-height:1">×</button>';
+        bar.innerHTML = '<span>' + t('auth:sessionExpiring') + '</span><button onclick="this.closest(\'#jwt-warn-bar\').remove()" style="background:none;border:none;font-size:18px;cursor:pointer;line-height:1">×</button>';
         document.body.appendChild(bar);
         setTimeout(() => bar.remove(), 60_000);
       }, delay);

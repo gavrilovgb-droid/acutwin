@@ -70,6 +70,7 @@ for (const f of walk(ROOT)) {
   const src   = fs.readFileSync(f, 'utf8');
   const lines = src.split('\n');
   lines.forEach((line, idx) => {
+    if (line.includes('/* i18n-ok */')) return;
     let m;
     T_CALL.lastIndex = 0;
     while ((m = T_CALL.exec(line)) !== null) {

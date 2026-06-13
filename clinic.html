@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title data-i18n="clinic:page.title">AcuTwin — Клиника</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<meta name="theme-color" content="#131313">
+<style>
+.wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 60px; }
+.head { text-align:center; margin-bottom:28px; }
+.brand { font-size:13px; color:#0A84FF; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.title { font-family:'Hanken Grotesk',sans-serif; font-size:28px; font-weight:800; margin-top:6px; }
+.subtitle { font-size:14px; color:#8b90a0; margin-top:6px; }
+.meta-row { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:12px; font-size:13px; color:#c1c6d7; }
+.meta-row span { display:inline-flex; align-items:center; gap:6px; }
+.meta-row .material-symbols-outlined { font-size:16px; color:#8b90a0; }
+
+.logo-box { width:88px; height:88px; border-radius:18px; background:linear-gradient(135deg,rgba(10,132,255,0.15),rgba(0,242,255,0.15)); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+.logo-box img { width:100%; height:100%; object-fit:cover; }
+.logo-box .material-symbols-outlined { font-size:48px; color:#0A84FF; }
+
+.section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#8b90a0; margin:32px 0 14px; }
+
+.doctors { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); }
+.doc-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px; cursor:pointer; transition:transform .15s,border-color .15s,box-shadow .15s; display:flex; gap:14px; align-items:flex-start; }
+.doc-card:hover { transform:translateY(-2px); border-color:rgba(10,132,255,0.4); box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+.doc-avatar { flex-shrink:0; width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,#1a1a2e,#16213e); display:flex; align-items:center; justify-content:center; overflow:hidden; border:1px solid rgba(255,255,255,0.08); }
+.doc-avatar img { width:100%; height:100%; object-fit:cover; }
+.doc-avatar .material-symbols-outlined { font-size:32px; color:#8b90a0; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { font-size:15px; font-weight:700; color:#e2e2e2; font-family:'Hanken Grotesk',sans-serif; line-height:1.3; }
+.doc-spec { font-size:12px; color:#0A84FF; font-weight:600; margin-top:3px; }
+.doc-bio  { font-size:12px; color:#8b90a0; line-height:1.4; margin-top:6px; }
+.doc-bottom { display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:6px; }
+.doc-price { font-size:13px; color:#c1c6d7; font-weight:600; }
+.doc-book-btn { font-size:11px; font-weight:700; padding:6px 12px; border-radius:8px; background:rgba(10,132,255,0.18); border:1px solid rgba(10,132,255,0.4); color:#0A84FF; }
+.doc-card:hover .doc-book-btn { background:#0A84FF; color:#fff; border-color:#0A84FF; }
+
+.brand-bar { font-size:11px; color:#6b7280; text-align:center; margin-top:32px; }
+.brand-bar a { color:#0A84FF; text-decoration:none; }
+.empty { text-align:center; padding:40px 20px; color:#8b90a0; font-size:14px; }
+
+/* Embed-режим */ /* i18n-ok */
+body.acutwin-embed #staff-bar { display:none !important; }
+body.acutwin-embed .brand-bar { display:none; }
+body.acutwin-embed .head .brand { display:none; }
+body.acutwin-embed .wrap { padding-top:16px; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] min-h-screen" style="font-family:'Inter',sans-serif">
+
+<div id="staff-bar" style="display:none;position:sticky;top:0;z-index:10;background:rgba(10,132,255,0.12);border-bottom:1px solid rgba(10,132,255,0.3);padding:10px 16px;font-size:12px;color:#0A84FF;text-align:center">
+  <span data-i18n="book:page.staffBadge">👁 Превью публичной страницы</span> · <a href="/profile.html" style="color:#fff;text-decoration:underline"><span data-i18n="book:page.staffBack">← Назад в АкуТвин</span></a>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="logo-box" id="logo-box">
+      <span class="material-symbols-outlined">local_hospital</span>
+    </div>
+    <div class="brand" data-i18n="book:page.brand">AcuTwin · Онлайн-запись</div>
+    <h1 class="title" id="clinic-name" data-i18n="common:action.loading">Загрузка...</h1>
+    <div class="subtitle" id="clinic-address"></div>
+    <div class="meta-row" id="clinic-meta"></div>
+  </div>
+
+  <div class="section-title" data-i18n="clinic:page.doctors">Врачи клиники</div>
+  <div id="doctors" class="doctors"></div>
+  <div id="empty" class="empty" style="display:none" data-i18n="clinic:page.empty">Врачи скоро появятся</div>
+
+  <div class="brand-bar" id="brand-footer"></div>
+</div>
+
+<script type="module">
+import { initI18n, t } from '/i18n.js';
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n'));
+    if (v) el.textContent = v;
+  });
+  const bf = document.getElementById('brand-footer');
+  if (bf) bf.innerHTML = t('book:footer.prefix') + '<a href="https://acutwin.ru" target="_blank">AcuTwin</a>' + t('book:footer.suffix');
+}
+
+const params = new URLSearchParams(location.search);
+const clinicSlug = params.get('slug');
+const isEmbed    = params.get('embed') === '1';
+
+if (isEmbed) {
+  document.body.classList.add('acutwin-embed');
+} else if (sessionStorage.getItem('acutwin_token')) {
+  document.getElementById('staff-bar').style.display = 'block';
+}
+
+initI18n().then(() => {
+  applyI18n();
+  document.title = t('clinic:page.title');
+  if (!clinicSlug) {
+    document.getElementById('clinic-name').textContent = t('clinic:notSpecified');
+  } else {
+    init();
+  }
+});
+
+async function init() {
+  try {
+    const r = await fetch('/api/public/clinic/' + encodeURIComponent(clinicSlug));
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    document.getElementById('clinic-name').textContent = data.name;
+    document.title = data.name + t('clinic:titleSuffix');
+    document.getElementById('clinic-address').textContent = data.address || '';
+
+    const meta = [];
+    if (data.phone)   meta.push(`<span><span class="material-symbols-outlined">call</span><a href="tel:${esc(data.phone)}" style="color:inherit;text-decoration:none">${esc(data.phone)}</a></span>`);
+    if (data.website) meta.push(`<span><span class="material-symbols-outlined">language</span><a href="${esc(data.website)}" target="_blank" style="color:inherit;text-decoration:none">${esc(data.website.replace(/^https?:\/\//,''))}</a></span>`);
+    document.getElementById('clinic-meta').innerHTML = meta.join('');
+
+    if (data.logo) {
+      const lb = document.getElementById('logo-box');
+      lb.innerHTML = `<img src="${esc(data.logo)}" alt="" onerror="this.outerHTML='<span class=\\'material-symbols-outlined\\'>local_hospital</span>'">`;
+    }
+
+    renderDoctors(data.doctors || []);
+  } catch {
+    document.getElementById('clinic-name').textContent = t('clinic:notFound');
+  }
+}
+
+function renderDoctors(docs) {
+  if (!docs.length) { document.getElementById('empty').style.display = 'block'; return; }
+  const cont = document.getElementById('doctors');
+  cont.innerHTML = docs.map(d => {
+    const link = isEmbed
+      ? `/book.html?doctor=${encodeURIComponent(d.slug || d.username)}&clinic=${encodeURIComponent(clinicSlug)}&embed=1`
+      : '/c/' + encodeURIComponent(clinicSlug) + '/d/' + encodeURIComponent(d.slug || d.username);
+    const avatar = d.photo
+      ? `<img src="${esc(d.photo)}" alt="" onerror="this.outerHTML='<span class=\\'material-symbols-outlined\\'>person</span>'">`
+      : `<span class="material-symbols-outlined">person</span>`;
+    return `<a href="${link}" style="text-decoration:none;color:inherit">
+      <div class="doc-card">
+        <div class="doc-avatar">${avatar}</div>
+        <div class="doc-info">
+          <div class="doc-name">${esc(d.name)}</div>
+          ${d.specialty ? `<div class="doc-spec">${esc(d.specialty)}</div>` : ''}
+          ${d.bio ? `<div class="doc-bio">${esc(d.bio)}</div>` : ''}
+          <div class="doc-bottom">
+            <div class="doc-price">${d.price_default ? d.price_default + ' ₽' : ''}</div>
+            <div class="doc-book-btn">${t('clinic:bookBtn')}</div>
+          </div>
+        </div>
+      </div>
+    </a>`;
+  }).join('');
+}
+
+function esc(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
-<title>AcuTwin — Вход</title>
+<title>AcuTwin</title>
 <link rel="stylesheet" href="tailwind.css?v=2">
 <link href="fonts.css?v=2" rel="stylesheet"/>
 <link href="design.css?v=3" rel="stylesheet"/>
@@ -28,7 +28,7 @@
     <img src="vitruvian-digital.webp" alt="" style="height:3rem;width:3rem;object-fit:cover;border-radius:8px;opacity:0.9"/>
     <div>
       <h1 class="text-xl font-bold text-[#00F2FF]" style="font-family:'Hanken Grotesk',sans-serif">AcuTwin</h1>
-      <p class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Иглорефлексотерапия</p>
+      <p class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="auth:tagline">Иглорефлексотерапия</p>
     </div>
   </div>
 
@@ -37,7 +37,7 @@
     <div id="step-dot-1" class="w-2 h-2 rounded-full bg-[#00F2FF]"></div>
     <div class="w-8 h-px bg-[#414755]"></div>
     <div id="step-dot-2" class="w-2 h-2 rounded-full bg-[#414755]"></div>
-    <span id="step-label" class="text-[10px] text-[#8b90a0] ml-2 uppercase tracking-wider">Шаг 1 из 2</span>
+    <span id="step-label" class="text-[10px] text-[#8b90a0] ml-2 uppercase tracking-wider" data-i18n="auth:onboarding.step1">Шаг 1 из 2</span>
   </div>
 
   <!-- STEP 1: Clinic setup -->
@@ -45,33 +45,33 @@
     <div class="flex items-center gap-3 mb-5">
       <span class="material-symbols-outlined text-2xl text-[#0A84FF]" style="zoom:1">local_hospital</span>
       <div>
-        <h3 class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif">Настройка клиники</h3>
-        <p class="text-[10px] text-[#8b90a0]">Заполните один раз — данные сохранятся</p>
+        <h3 class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="auth:onboarding.cardTitle">Настройка клиники</h3>
+        <p class="text-[10px] text-[#8b90a0]" data-i18n="auth:onboarding.cardSubtitle">Заполните один раз — данные сохранятся</p>
       </div>
     </div>
 
     <form id="form-clinic" onsubmit="submitClinic(event)" class="space-y-3">
       <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Название клиники <span class="text-[#ffb4ab]">*</span></label>
-        <input id="c-name" type="text" required placeholder="Клиника восточной медицины «Весна»"
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5"><span data-i18n="auth:onboarding.clinicName">Название клиники</span> <span class="text-[#ffb4ab]">*</span></label>
+        <input id="c-name" type="text" required placeholder="Клиника восточной медицины «Весна»" data-i18n-placeholder="auth:onboarding.clinicNamePh"
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
       </div>
       <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Адрес</label>
-        <input id="c-address" type="text" placeholder="г. Москва, ул. Ленина, д. 12, офис 301"
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:onboarding.clinicAddress">Адрес</label>
+        <input id="c-address" type="text" placeholder="г. Москва, ул. Ленина, д. 12, офис 301" data-i18n-placeholder="auth:onboarding.addressPh"
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Телефон</label>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:onboarding.clinicPhone">Телефон</label>
           <input id="c-phone" type="tel" placeholder="+7 (495) 000-00-00"
                  class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                         placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
         </div>
         <div>
-          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Email</label>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:onboarding.clinicEmail">Email</label>
           <input id="c-email" type="email" placeholder="info@clinic.ru"
                  class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                         placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
@@ -79,13 +79,13 @@
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Сайт</label>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:onboarding.clinicSite">Сайт</label>
           <input id="c-site" type="url" placeholder="https://clinic.ru"
                  class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                         placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
         </div>
         <div>
-          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ИНН / Лицензия</label>
+          <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:onboarding.clinicInn">ИНН / Лицензия</label>
           <input id="c-inn" type="text" placeholder="7701234567"
                  class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                         placeholder-[#414755] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
@@ -95,7 +95,7 @@
         class="w-full py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 border border-[#0A84FF]/40 text-[#0A84FF]
                rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 mt-1">
         <span class="material-symbols-outlined text-base" style="zoom:1">arrow_forward</span>
-        Сохранить и продолжить
+        <span data-i18n="auth:onboarding.saveAndContinue">Сохранить и продолжить</span>
       </button>
     </form>
   </div>
@@ -107,7 +107,7 @@
     <div id="clinic-badge" class="hidden flex items-center gap-2 mb-5 px-3 py-2 bg-[#0A84FF]/10 border border-[#0A84FF]/20 rounded-xl">
       <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:16px;zoom:1">local_hospital</span>
       <span id="clinic-badge-name" class="text-xs font-semibold text-[#c1c6d7] truncate flex-1"></span>
-      <button onclick="editClinic()" class="text-[10px] text-[#8b90a0] hover:text-[#0A84FF] transition-colors">изменить</button>
+      <button onclick="editClinic()" class="text-[10px] text-[#8b90a0] hover:text-[#0A84FF] transition-colors" data-i18n="auth:onboarding.edit">изменить</button>
     </div>
 
     <!-- Tabs: регистрация отключена, вход — единственный режим -->
@@ -115,9 +115,8 @@
     <!-- Demo hint -->
     <div id="demo-hint" class="hidden mb-4">
       <button type="button" onclick="this.nextElementSibling.classList.toggle('hidden')"
-              class="text-[10px] text-[#8b90a0] hover:text-[#c1c6d7] transition-colors w-full text-left mb-1">
-        Демо-аккаунты ▾
-      </button>
+              class="text-[10px] text-[#8b90a0] hover:text-[#c1c6d7] transition-colors w-full text-left mb-1"
+              data-i18n="auth:demo.toggle">Демо-аккаунты ▾</button>
       <div class="hidden bg-[#1f1f1f] rounded-xl p-3 space-y-1.5" id="demo-accounts"></div>
     </div>
 
@@ -128,13 +127,13 @@
     <form id="form-login" onsubmit="submitLogin(event)" class="space-y-4">
       <div>
         <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:login.labelUsername">Логин</label>
-        <input id="l-username" type="text" autocomplete="username" required placeholder="doctor"
+        <input id="l-username" type="text" autocomplete="username" required placeholder="doctor" data-i18n-placeholder="auth:login.placeholderUser"
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
       </div>
       <div>
         <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:login.labelPassword">Пароль</label>
-        <input id="l-password" type="password" autocomplete="current-password" required
+        <input id="l-password" type="password" autocomplete="current-password" required placeholder="••••••••" data-i18n-placeholder="auth:login.placeholderPass"
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
       </div>
@@ -158,6 +157,7 @@ import { esc } from './shared.js';
 import { initI18n, t } from '/i18n.js';
 
 await initI18n();
+document.title = t('auth:pageTitle');
 
 async function getClinic() {
   return apiGetClinic();
@@ -174,7 +174,7 @@ function showStep(step) {
     ind.classList.remove('hidden');
     document.getElementById('step-dot-1').className = 'w-2 h-2 rounded-full bg-[#0A84FF]';
     document.getElementById('step-dot-2').className = 'w-2 h-2 rounded-full bg-[#414755]';
-    document.getElementById('step-label').textContent = 'Шаг 1 из 2';
+    document.getElementById('step-label').textContent = t('auth:onboarding.step1');
   } else {
     ind.classList.add('hidden');
     const clinic = getClinic();
@@ -248,7 +248,7 @@ if (!_usersCheck || _usersCheck.status === 401 || _usersCheck.status === 404) {
 // Демо-аккаунты — только логины, без паролей в исходнике
 const users = await apiGetUsers();
 if (users && users.length) {
-  const ROLE_LABEL = { admin:'⚙️ Админ', boss: '👑 Босс', doctor: '🩺 Врач' };
+  const ROLE_LABEL = { admin: `⚙️ ${t('auth:role.admin')}`, boss: `👑 ${t('auth:role.boss')}`, doctor: `🩺 ${t('auth:role.doctor')}` };
   const DEMO_LOGINS = ['admin','boss','ivanov','petrov','sidorov','dr_kuznetsova','dr_qi1','dr_akumed1','dr_dao1'];
   document.getElementById('demo-hint').classList.remove('hidden');
   document.getElementById('demo-accounts').innerHTML = users

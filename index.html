@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
-<title>AcuTwin — Запись</title>
+<title>AcuTwin</title>
 <link rel="stylesheet" href="tailwind.css?v=2">
 <link href="fonts.css?v=2" rel="stylesheet"/>
 <link href="design.css?v=3" rel="stylesheet"/>
@@ -32,7 +32,7 @@
 <div class="md:ml-64 flex flex-col min-h-screen">
 
   <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center px-6 flex-shrink-0">
-    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Запись пациента</h2>
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="dashboard:newVisitTitle">Запись пациента</h2>
   </header>
 
   <main class="flex-1 p-6 page-enter">
@@ -42,7 +42,7 @@
       <div class="glass-panel rounded-2xl p-6 mb-4">
         <div class="flex items-center gap-3 mb-6">
           <span class="material-symbols-outlined text-2xl text-[#00F2FF]">person_add</span>
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Новый приём</h3>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="dashboard:newAppointment">Новый приём</h3>
         </div>
 
         <form id="intake-form" class="space-y-5">
@@ -50,13 +50,13 @@
           <!-- Row: date + time -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Дата</label>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.date">Дата</label>
               <input id="f-date" type="date"
                      class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                             focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
             </div>
             <div>
-              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Время</label>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.time">Время</label>
               <input id="f-time" type="time"
                      class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                             focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
@@ -65,8 +65,8 @@
 
           <!-- FIO -->
           <div class="relative">
-            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">ФИО пациента</label>
-            <input id="f-fio" type="text" placeholder="Иванов Иван Иванович" autocomplete="off"
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.patientName">ФИО пациента</label>
+            <input id="f-fio" type="text" placeholder="Иванов Иван Иванович" data-i18n-placeholder="dashboard:form.namePlaceholder" autocomplete="off"
                    oninput="fioSuggest(this.value)"
                    onblur="setTimeout(()=>document.getElementById('fio-drop').classList.add('hidden'),150)"
                    class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
@@ -79,37 +79,37 @@
           <!-- Row: age + sex -->
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Возраст</label>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.age">Возраст</label>
               <input id="f-age" type="number" min="5" max="80" value="35"
                      class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                             placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
             </div>
             <div>
-              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пол</label>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.gender">Пол</label>
               <select id="f-sex"
                       class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                              focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all">
-                <option value="" class="bg-[#1f1f1f]">— выбрать —</option>
-                <option value="М" class="bg-[#1f1f1f]">Мужской</option>
-                <option value="Ж" class="bg-[#1f1f1f]">Женский</option>
+                <option value="" class="bg-[#1f1f1f]" data-i18n="dashboard:form.genderAny">— выбрать —</option>
+                <option value="М" class="bg-[#1f1f1f]" data-i18n="dashboard:form.genderMale">Мужской</option>
+                <option value="Ж" class="bg-[#1f1f1f]" data-i18n="dashboard:form.genderFemale">Женский</option>
               </select>
             </div>
           </div>
 
           <!-- Doctor -->
           <div>
-            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Лечащий врач</label>
-            <input id="f-doctor" type="text" placeholder="Фамилия И.О."
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.doctor">Лечащий врач</label>
+            <input id="f-doctor" type="text" placeholder="Фамилия И.О." data-i18n-placeholder="dashboard:form.doctorPlaceholder"
                    class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                           placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
           </div>
 
           <!-- Reason -->
           <div>
-            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Причина приёма / жалобы</label>
+            <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.reason">Причина приёма / жалобы</label>
             <!-- Шаблоны жалоб -->
             <div id="complaint-chips" class="flex flex-wrap gap-1.5 mb-2"></div>
-            <textarea id="f-reason" rows="3" placeholder="Опишите основные жалобы пациента..."
+            <textarea id="f-reason" rows="3" placeholder="Опишите основные жалобы пациента..." data-i18n-placeholder="dashboard:form.reasonPlaceholder"
                       class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                              placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all resize-none leading-relaxed"></textarea>
           </div>
@@ -120,7 +120,7 @@
                class="w-full flex items-center justify-center gap-2 py-3 bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25
                       text-[#0A84FF] border border-[#0A84FF]/40 rounded-xl font-bold text-sm transition-colors">
               <span class="material-symbols-outlined text-base">arrow_forward</span>
-              К тактике лечения
+              <span data-i18n="dashboard:visit.toTreatment">К тактике лечения</span>
             </button>
           </div>
         </form>
@@ -129,19 +129,19 @@
       <!-- Success toast (hidden) -->
       <div id="toast" class="hidden glass-panel rounded-xl p-4 flex items-center gap-3 border border-[#00F2FF]/30 mb-4">
         <span class="material-symbols-outlined text-[#00F2FF]">check_circle</span>
-        <span class="text-sm text-[#e2e2e2]">Запись сохранена</span>
+        <span class="text-sm text-[#e2e2e2]" data-i18n="dashboard:visit.saved">Запись сохранена</span>
       </div>
 
       <!-- Recent appointments -->
       <div class="glass-panel rounded-2xl p-6">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider">Последние записи</h3>
-          <a href="history.html" class="text-xs text-[#0A84FF] hover:text-[#adc6ff] transition-colors">Вся история →</a>
+          <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider" data-i18n="dashboard:recent.title">Последние записи</h3>
+          <a href="history.html" class="text-xs text-[#0A84FF] hover:text-[#adc6ff] transition-colors" data-i18n="dashboard:recent.allHistory">Вся история →</a>
         </div>
         <!-- Поиск пациента -->
         <div class="relative mb-3">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0]" style="font-size:16px;zoom:1">search</span>
-          <input id="recent-search" type="text" placeholder="Найти пациента..."
+          <input id="recent-search" type="text" placeholder="Найти пациента..." data-i18n-placeholder="dashboard:recent.search"
                  oninput="renderRecent(this.value)"
                  class="w-full pl-9 pr-4 py-2 bg-[#1a1a1a] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                         placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] transition-all"/>
@@ -157,9 +157,12 @@
 import { buildSidebar, initElementClock, esc, uniqueId } from './shared.js';
 import { requireAuth } from './auth.js';
 import { apiGetRecords, apiAddRecord } from './api.js';
+import { initI18n, t } from '/i18n.js';
 
 const session = await requireAuth();
 if (!session) throw new Error('redirect');
+await initI18n();
+document.title = t('dashboard:pageTitle');
 
 document.getElementById('nav-mount').innerHTML = buildSidebar('index', session);
 initElementClock();
@@ -199,16 +202,16 @@ await loadRecords();
 
 // ── Шаблоны жалоб ────────────────────────────────────────
 const DEFAULT_COMPLAINTS = [
-  { label: 'Боль в спине',    full: 'Боль в спине' },
-  { label: 'Головная боль',   full: 'Головная боль' },
-  { label: 'Бессонница',      full: 'Бессонница' },
-  { label: 'Давление',        full: 'Повышенное давление' },
-  { label: 'Усталость',       full: 'Усталость, упадок сил' },
-  { label: 'Суставы',         full: 'Боли в суставах' },
-  { label: 'Желудок',         full: 'Нарушение пищеварения, вздутие' },
-  { label: 'Стресс',          full: 'Тревожность, стресс' },
-  { label: 'Остеохондроз',    full: 'Остеохондроз' },
-  { label: 'Онемение',        full: 'Онемение конечностей' },
+  { label: 'Боль в спине',    full: 'Боль в спине' },    /* i18n-ok */
+  { label: 'Головная боль',   full: 'Головная боль' },   /* i18n-ok */
+  { label: 'Бессонница',      full: 'Бессонница' },      /* i18n-ok */
+  { label: 'Давление',        full: 'Повышенное давление' }, /* i18n-ok */
+  { label: 'Усталость',       full: 'Усталость, упадок сил' }, /* i18n-ok */
+  { label: 'Суставы',         full: 'Боли в суставах' }, /* i18n-ok */
+  { label: 'Желудок',         full: 'Нарушение пищеварения, вздутие' }, /* i18n-ok */
+  { label: 'Стресс',          full: 'Тревожность, стресс' }, /* i18n-ok */
+  { label: 'Остеохондроз',    full: 'Остеохондроз' },    /* i18n-ok */
+  { label: 'Онемение',        full: 'Онемение конечностей' }, /* i18n-ok */
 ];
 const HISTORY_THRESHOLD = 10; // при скольких посещениях переключаться на динамику
 
@@ -238,7 +241,7 @@ function renderComplaintChips() {
   }
 
   wrap.innerHTML =
-    `<span class="text-[10px] text-[#8b90a0] self-center mr-1">Быстрый выбор:</span>` +
+    `<span class="text-[10px] text-[#8b90a0] self-center mr-1">${t('dashboard:recent.quick')}</span>` +
     chips.map(c =>
       `<button type="button" onclick='addComplaint(${JSON.stringify(c.full).replace(/'/g,"&#39;")})' class="complaint-chip">${esc(c.label)}</button>`
     ).join('');
@@ -249,10 +252,10 @@ let _navigating = false;
 window.goToTreatment = () => {
   if (_navigating) return;
   const patient = document.getElementById('f-fio').value.trim();
-  if (!patient) { alert('Введите ФИО пациента'); return; }
+  if (!patient) { alert(t('dashboard:alert.enterName')); return; }
   const ageVal = +document.getElementById('f-age').value;
   if (document.getElementById('f-age').value !== '' && (ageVal < 5 || ageVal > 80 || !Number.isInteger(ageVal))) {
-    alert('Возраст должен быть от 5 до 80 лет'); return;
+    alert(t('dashboard:alert.ageRange')); return;
   }
   _navigating = true;
   const data = {
@@ -282,7 +285,7 @@ window.fioSuggest = (q) => {
     .slice(0, 6);
   if (!matches.length) { drop.classList.add('hidden'); return; }
   drop.innerHTML = matches.map(r => {
-    const meta = [r.gender ? (r.gender === 'М' ? '♂' : '♀') : '', r.age ? r.age + ' лет' : ''].filter(Boolean).join(' ');
+    const meta = [r.gender ? (r.gender === 'М' ? '♂' : '♀') : '', r.age ? r.age + ' лет' /* i18n-ok */ : ''].filter(Boolean).join(' ');
     const safeR = JSON.stringify(r).replace(/'/g,"&#39;");
     return `<button type="button" onmousedown='fillPatient(${safeR})'
       class="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-[#00F2FF]/10 transition-colors text-left min-w-0">
@@ -308,15 +311,15 @@ window.addComplaint = (text) => {
 
 // ── Статус лечения ────────────────────────────────────────
 const STATUS_MAP = {
-  started:   { label: 'Начат',       color: '#0A84FF' },
-  active:    { label: 'В процессе',  color: '#FFD60A' },
-  completed: { label: 'Завершён',    color: '#5AC85A' },
+  started:   { key: 'dashboard:status.started',   color: '#0A84FF' },
+  active:    { key: 'dashboard:status.active',     color: '#FFD60A' },
+  completed: { key: 'dashboard:status.completed',  color: '#5AC85A' },
 };
 function statusBadge(status) {
   const s = STATUS_MAP[status];
   if (!s) return '';
   return `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;
-    background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${s.label}</span>`;
+    background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${t(s.key)}</span>`;
 }
 
 // ── Последние записи ─────────────────────────────────────
@@ -327,7 +330,7 @@ function renderRecent(query = '') {
   if (query) recs = recs.filter(r => r.patient?.toLowerCase().includes(query.toLowerCase()));
   recs = recs.slice(0, 10);
   if (!recs.length) {
-    list.innerHTML = `<div class="text-sm text-[#8b90a0] text-center py-4">${query ? 'Пациент не найден' : 'Записей пока нет'}</div>`;
+    list.innerHTML = `<div class="text-sm text-[#8b90a0] text-center py-4">${query ? t('dashboard:recent.notFound') : t('dashboard:recent.noRecords')}</div>`;
     return;
   }
   list.innerHTML = recs.map((r) => {
@@ -344,10 +347,10 @@ function renderRecent(query = '') {
       </div>
       ${isBoss && r.doctorName ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#0A84FF]/10 text-[#0A84FF]">${esc(r.doctorName)}</span>` : `<span class="text-[10px] font-mono text-[#8b90a0]">${esc(r.gender || '')}</span>`}
       <button onclick='sessionStorage.setItem("acutwin_diag_patient",${JSON.stringify(recJson)});location.href="treatment.html"'
-              title="К тактике лечения"
+              title="${t('dashboard:visit.toTreatment')}"
               class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors text-[10px] font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:13px;zoom:1">medical_services</span>
-        Рецепт
+        ${t('dashboard:visit.recipe')}
       </button>
     </div>`;
   }).join('');

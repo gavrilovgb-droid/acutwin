@@ -33,11 +33,11 @@ select.glass-input option { background:#1f1f1f; }
     <h1 class="text-sm font-bold text-[#e2e2e2]">Admin Billing Dashboard</h1>
     <div class="ml-auto flex items-center gap-2">
       <select id="filter-status" class="glass-input" style="width:160px" onchange="renderTable()">
-        <option value="">Все статусы</option>
+        <option value="" data-i18n="admin:billing.allStatuses">Все статусы</option>
         <option value="demo">Demo</option>
-        <option value="trial_active">Trial активный</option>
+        <option value="trial_active" data-i18n="admin:billing.triActive">Trial активный</option>
         <option value="trial_grace">Trial grace</option>
-        <option value="trial_expired">Trial истёк</option>
+        <option value="trial_expired" data-i18n="admin:billing.triExpired">Trial истёк</option>
         <option value="paid">Paid</option>
       </select>
       <div id="counts-bar" class="text-xs text-[#8b90a0]"></div>
@@ -56,26 +56,26 @@ select.glass-input option { background:#1f1f1f; }
       <div class="flex items-center gap-3 mb-3 flex-wrap">
         <h2 class="text-sm font-bold text-[#e2e2e2]">Audit Log</h2>
         <select id="audit-tenant-filter" class="glass-input" style="width:220px" onchange="loadAudit()">
-          <option value="">Все тенанты</option>
+          <option value="" data-i18n="admin:billing.allTenants">Все тенанты</option>
         </select>
-        <button id="audit-reset-btn" class="hidden btn-sm" style="background:rgba(255,69,58,.12);color:#FF453A" onclick="resetAuditFilter()">✕ Показать все</button>
-        <button onclick="loadAudit()" class="btn-sm" style="background:rgba(255,255,255,.06);color:#8b90a0">↻ Обновить</button>
+        <button id="audit-reset-btn" class="hidden btn-sm" style="background:rgba(255,69,58,.12);color:#FF453A" onclick="resetAuditFilter()"><span data-i18n="admin:billing.showAll">✕ Показать все</span></button>
+        <button onclick="loadAudit()" class="btn-sm" style="background:rgba(255,255,255,.06);color:#8b90a0"><span data-i18n="admin:billing.refresh">↻ Обновить</span></button>
         <span id="audit-count" class="text-xs text-[#8b90a0]"></span>
       </div>
       <div class="row-card overflow-x-auto">
         <table class="w-full text-xs" style="border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid rgba(255,255,255,.08)">
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" style="min-width:140px">Время (UTC)</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Администратор</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Действие</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Тенант</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Было</th>
-              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold">Стало</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" style="min-width:140px" data-i18n="admin:billing.colTime">Время (UTC)</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" data-i18n="admin:billing.colAdmin">Администратор</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" data-i18n="admin:billing.colAction">Действие</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" data-i18n="admin:billing.colTenant">Тенант</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" data-i18n="admin:billing.colBefore">Было</th>
+              <th class="text-left px-3 py-2 text-[#8b90a0] font-semibold" data-i18n="admin:billing.colAfter">Стало</th>
             </tr>
           </thead>
           <tbody id="audit-tbody">
-            <tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>
+            <tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center" data-i18n="admin:billing.loading">Загрузка…</td></tr>
           </tbody>
         </table>
       </div>
@@ -99,29 +99,29 @@ select.glass-input option { background:#1f1f1f; }
 
     <!-- Activate trial -->
     <div>
-      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider">Активировать trial</div>
+      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider" data-i18n="admin:billing.activateTrial">Активировать trial</div>
       <div class="flex gap-2 flex-wrap">
-        <button onclick="doAction('activate_trial',1)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A">1 нед</button>
-        <button onclick="doAction('activate_trial',2)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A">2 нед</button>
-        <button onclick="doAction('activate_trial',3)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A">3 нед</button>
-        <button onclick="doAction('activate_trial',4)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A">4 нед</button>
+        <button onclick="doAction('activate_trial',1)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A"><span data-i18n="admin:billing.week1">1 нед</span></button>
+        <button onclick="doAction('activate_trial',2)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A"><span data-i18n="admin:billing.week2">2 нед</span></button>
+        <button onclick="doAction('activate_trial',3)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A"><span data-i18n="admin:billing.week3">3 нед</span></button>
+        <button onclick="doAction('activate_trial',4)" class="btn-sm" style="background:rgba(255,214,10,.12);color:#FFD60A"><span data-i18n="admin:billing.week4">4 нед</span></button>
       </div>
     </div>
 
     <!-- Extend trial -->
     <div>
-      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider">Продлить trial</div>
+      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider" data-i18n="admin:billing.extendTrial">Продлить trial</div>
       <div class="flex gap-2 flex-wrap">
-        <button onclick="doAction('extend_trial',1)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a">+1 нед</button>
-        <button onclick="doAction('extend_trial',2)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a">+2 нед</button>
-        <button onclick="doAction('extend_trial',3)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a">+3 нед</button>
-        <button onclick="doAction('extend_trial',4)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a">+4 нед</button>
+        <button onclick="doAction('extend_trial',1)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a"><span data-i18n="admin:billing.weekP1">+1 нед</span></button>
+        <button onclick="doAction('extend_trial',2)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a"><span data-i18n="admin:billing.weekP2">+2 нед</span></button>
+        <button onclick="doAction('extend_trial',3)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a"><span data-i18n="admin:billing.weekP3">+3 нед</span></button>
+        <button onclick="doAction('extend_trial',4)" class="btn-sm" style="background:rgba(255,159,10,.12);color:#ff9f0a"><span data-i18n="admin:billing.weekP4">+4 нед</span></button>
       </div>
     </div>
 
     <!-- Set plan -->
     <div>
-      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider">Сменить тариф</div>
+      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider" data-i18n="admin:billing.changePlan">Сменить тариф</div>
       <div class="flex gap-2 flex-wrap">
         <button onclick="setPlan('demo')"      class="btn-sm" style="background:rgba(10,132,255,.12);color:#0A84FF">Demo</button>
         <button onclick="setPlan('practik')"   class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Practik</button>
@@ -137,6 +137,7 @@ select.glass-input option { background:#1f1f1f; }
 
 <script type="module">
 import { buildSidebar } from './shared.js';
+import { initI18n, t } from '/i18n.js';
 import { requireAuth }  from './auth.js';
 import { apiBillingTenants, apiBillingAction, apiBillingAudit } from './api.js';
 
@@ -144,6 +145,7 @@ const session = await requireAuth();
 if (!session || (session.role !== 'admin' && session.role !== 'boss')) {
   window.location.href = 'index.html'; throw new Error('redirect');
 }
+await initI18n();
 document.getElementById('nav-mount').innerHTML = buildSidebar('billing', session);
 
 let _tenants = [];
@@ -191,9 +193,9 @@ function paidUntilLabel(t) {
 function daysLeftLabel(t) {
   const dl = t.trialStatus?.daysLeft;
   if (dl == null) return '';
-  if (dl === 0) return '<span style="color:#FF453A">0 дн.</span>';
-  if (dl <= 3) return `<span style="color:#ff9f0a">${dl} дн.</span>`;
-  return `<span style="color:#34C759">${dl} дн.</span>`;
+  if (dl === 0) return `<span style="color:#FF453A">${t('admin:billing.daysLeft', {n: 0})}</span>`;
+  if (dl <= 3) return `<span style="color:#ff9f0a">${t('admin:billing.daysLeft', {n: dl})}</span>`;
+  return `<span style="color:#34C759">${t('admin:billing.daysLeft', {n: dl})}</span>`;
 }
 
 window.renderTable = function() {
@@ -204,7 +206,7 @@ window.renderTable = function() {
     : _tenants;
 
   list.innerHTML = visible.length === 0
-    ? '<div class="text-center text-[#8b90a0] text-sm py-12">Нет данных</div>'
+    ? `<div class="text-center text-[#8b90a0] text-sm py-12">${t('admin:billing.noData')}</div>`
     : visible.map(t => {
       const st = t.trialStatus?.status || 'demo';
       const cls = planBadgeClass(st);
@@ -216,22 +218,22 @@ window.renderTable = function() {
         </div>
         <span class="badge ${cls}">${planLabel(t)}</span>
         <div class="text-xs text-[#8b90a0] w-24 text-right">
-          <div>до: ${paidUntilLabel(t)}</div>
+          <div>${t('admin:billing.untilLabel', {date: paidUntilLabel(t)})}</div>
           <div>${daysLeftLabel(t)}</div>
         </div>
       </div>`;
     }).join('');
 
-  document.getElementById('counts-bar').textContent = `${visible.length} из ${_tenants.length}`;
+  document.getElementById('counts-bar').textContent = t('admin:billing.countsBar', {visible: visible.length, total: _tenants.length});
 };
 
 function renderStatCards() {
   const cnt = s => _tenants.filter(t => t.trialStatus?.status === s).length;
   const cards = [
     { label:'Demo',          val: cnt('demo'),         color:'#0A84FF' },
-    { label:'Trial активн.', val: cnt('trial_active'), color:'#FFD60A' },
+    { label: t('admin:billing.statsTriActive'), val: cnt('trial_active'), color:'#FFD60A' },
     { label:'Grace 24h',     val: cnt('trial_grace'),  color:'#ff9f0a' },
-    { label:'Trial истёк',   val: cnt('trial_expired'),color:'#FF453A' },
+    { label: t('admin:billing.statsTriExpired'), val: cnt('trial_expired'),color:'#FF453A' },
     { label:'Paid',          val: cnt('paid'),          color:'#34C759' },
   ];
   document.getElementById('stat-cards').innerHTML = cards.map(c => `
@@ -250,10 +252,10 @@ window.openPanel = function(id) {
   const te = _selected.trial_end;
   document.getElementById('ap-trial-info').innerHTML = [
     te ? `<div>trial_end: <b>${formatDate(te.replace(' ','T')+'Z')}</b></div>` : '',
-    _selected.trial_weeks ? `<div>Недель: ${_selected.trial_weeks}</div>` : '',
-    _selected.trialStatus?.daysLeft != null ? `<div>Дней осталось: ${_selected.trialStatus.daysLeft}</div>` : '',
-    _selected.paidUntil ? `<div>Оплачен до: ${formatDate(_selected.paidUntil)}</div>` : '',
-  ].filter(Boolean).join('') || '<div>Нет данных trial</div>';
+    _selected.trial_weeks ? `<div>${t('admin:billing.weeksLabel', {n: _selected.trial_weeks})}</div>` : '',
+    _selected.trialStatus?.daysLeft != null ? `<div>${t('admin:billing.daysLeftLabel', {n: _selected.trialStatus.daysLeft})}</div>` : '',
+    _selected.paidUntil ? `<div>${t('admin:billing.paidUntilLabel', {date: formatDate(_selected.paidUntil)})}</div>` : '',
+  ].filter(Boolean).join('') || `<div>${t('admin:billing.noTrialData')}</div>`;
   document.getElementById('ap-feedback').textContent = '';
   document.getElementById('action-panel').classList.remove('hidden');
   document.getElementById('panel-backdrop').classList.remove('hidden');
@@ -267,38 +269,38 @@ window.closePanel = function() {
 window.doAction = async function(action, weeks) {
   if (!_selected) return;
   const fb = document.getElementById('ap-feedback');
-  fb.style.color = '#8b90a0'; fb.textContent = 'Сохраняю…';
+  fb.style.color = '#8b90a0'; fb.textContent = t('admin:billing.saving');
   const r = await apiBillingAction(_selected.id, action, { weeks });
   if (r?.ok) {
     fb.style.color = '#34C759';
     fb.textContent = action === 'extend_trial'
-      ? `Продлено до ${formatDate(r.trialEnd?.replace(' ','T')+'Z')}`
-      : `Trial активирован до ${formatDate(r.trialEnd?.replace(' ','T')+'Z')}`;
+      ? t('admin:billing.extendedUntil', {date: formatDate(r.trialEnd?.replace(' ','T')+'Z')})
+      : t('admin:billing.activatedUntil', {date: formatDate(r.trialEnd?.replace(' ','T')+'Z')});
     await reload();
     openPanel(_selected.id);
   } else {
-    fb.style.color = '#FF453A'; fb.textContent = r?.error || 'Ошибка';
+    fb.style.color = '#FF453A'; fb.textContent = r?.error || t('admin:billing.error');
   }
 };
 
 window.setPlan = async function(plan) {
   if (!_selected) return;
   const fb = document.getElementById('ap-feedback');
-  fb.style.color = '#8b90a0'; fb.textContent = 'Сохраняю…';
+  fb.style.color = '#8b90a0'; fb.textContent = t('admin:billing.saving');
   const r = await apiBillingAction(_selected.id, 'set_plan', { plan });
   if (r?.ok) {
-    fb.style.color = '#34C759'; fb.textContent = `Тариф → ${PLAN_LABELS[plan] || plan}`;
+    fb.style.color = '#34C759'; fb.textContent = t('admin:billing.planChanged', {plan: PLAN_LABELS[plan] || plan});
     await reload();
     openPanel(_selected.id);
   } else {
-    fb.style.color = '#FF453A'; fb.textContent = r?.error || 'Ошибка';
+    fb.style.color = '#FF453A'; fb.textContent = r?.error || t('admin:billing.error');
   }
 };
 
 const ACTION_LABELS = {
-  activate_trial: 'Активировать trial',
-  extend_trial:   'Продлить trial',
-  change_plan:    'Сменить тариф',
+  activate_trial: t('admin:billing.actLabel.activate_trial'),
+  extend_trial:   t('admin:billing.actLabel.extend_trial'),
+  change_plan:    t('admin:billing.actLabel.change_plan'),
 };
 
 window.loadAudit = async function() {
@@ -306,13 +308,13 @@ window.loadAudit = async function() {
   const tbody = document.getElementById('audit-tbody');
   const cnt   = document.getElementById('audit-count');
   const rst   = document.getElementById('audit-reset-btn');
-  tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Загрузка…</td></tr>';
+  tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">${t('admin:billing.loading')}</td></tr>`;
   const tenantId = sel.value || null;
   rst.classList.toggle('hidden', !tenantId);
   const rows = await apiBillingAudit(tenantId);
-  cnt.textContent = rows.length ? `${rows.length} записей` : '';
+  cnt.textContent = rows.length ? t('admin:billing.recordsCount', {n: rows.length}) : '';
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">Нет записей</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="6" class="px-3 py-4 text-[#8b90a0] text-center">${t('admin:billing.noRecords')}</td></tr>`;
     return;
   }
   const tenantMap = Object.fromEntries(_tenants.map(t => [t.id, t.clinic]));

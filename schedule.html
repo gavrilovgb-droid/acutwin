@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>AcuTwin</title>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<style>
+.sc-grid { display:grid; grid-template-columns: 60px repeat(var(--cols), 1fr); border:1px solid rgba(255,255,255,0.08); border-radius:12px; overflow:hidden; background:#0f0f17; }
+.sc-head { background:rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.08); padding:8px 6px; font-size:11px; font-weight:700; text-align:center; color:#c1c6d7; position:sticky; top:0; z-index:5; }
+.sc-head .dow { font-size:10px; color:#8b90a0; text-transform:uppercase; letter-spacing:.06em; }
+.sc-head.today { color:#FF9F0A; }
+.sc-head.today .dow { color:#FF9F0A; opacity:.8; }
+.sc-time { font-size:10px; color:#6b7280; padding:2px 4px; text-align:right; border-right:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.04); }
+.sc-cell { border-right:1px solid rgba(255,255,255,0.04); border-bottom:1px solid rgba(255,255,255,0.04); min-height:18px; cursor:pointer; position:relative; transition:background .1s; }
+.sc-cell:hover { background:rgba(10,132,255,0.07); }
+.sc-cell.hour-line { border-bottom:1px solid rgba(255,255,255,0.10); }
+.sc-cell.half-line { border-bottom:1px dashed rgba(255,255,255,0.06); }
+.sc-col { position:relative; }
+
+/* appt cards */
+.appt {
+  position:absolute; left:2px; right:2px; border-radius:6px; padding:3px 6px;
+  font-size:10px; line-height:1.25; cursor:pointer; overflow:hidden;
+  border-left:3px solid; transition:transform .15s, box-shadow .15s;
+  user-select:none;
+}
+.appt:hover { transform:scale(1.02); box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:10; }
+.appt-scheduled { background:rgba(10,132,255,0.18); border-color:#0A84FF; color:#cfe3ff; }
+.appt-pending   { background:rgba(255,159,10,0.18); border-color:#FF9F0A; color:#ffe2b8; }
+.appt-done      { background:rgba(139,144,160,0.12); border-color:#8b90a0; color:#8b90a0; text-decoration:line-through; }
+.appt-cancelled { background:rgba(255,69,58,0.10);  border-color:#FF453A; color:#ff9a92; opacity:.7; text-decoration:line-through; }
+.appt .ap-time { font-weight:700; }
+.appt .ap-name { font-weight:600; }
+
+/* header buttons */
+.btn-nav {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#c1c6d7;
+  padding:5px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s;
+  display:inline-flex; align-items:center; gap:4px;
+}
+.btn-nav:hover { background:rgba(255,255,255,0.1); color:#fff; }
+.btn-mode { background:transparent; color:#8b90a0; border:1px solid rgba(255,255,255,0.08); padding:5px 12px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; }
+.btn-mode.active { background:rgba(10,132,255,0.18); color:#0A84FF; border-color:rgba(10,132,255,0.4); }
+
+/* modal */
+.modal-bg { background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); }
+.fld-label { font-size:10px; color:#8b90a0; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; display:block; }
+.fld { width:100%; background:#1a1a2a; border:1px solid #414755; border-radius:8px; padding:7px 10px; font-size:12px; color:#e2e2e2; outline:none; transition:border-color .15s; }
+.fld:focus { border-color:#0A84FF; }
+.fld-row { display:grid; gap:10px; }
+.now-line { position:absolute; left:0; right:0; height:2px; background:#FF453A; z-index:8; pointer-events:none; box-shadow:0 0 6px rgba(255,69,58,0.6); }
+.now-line::before { content:''; position:absolute; left:-5px; top:-4px; width:10px; height:10px; border-radius:50%; background:#FF453A; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 h-screen flex flex-col">
+
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-3 px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="schedule:header">Расписание</h2>
+    <div class="flex items-center gap-1 ml-3">
+      <button class="btn-nav" onclick="navDate(-1)" data-i18n-title="schedule:nav.back" title="Назад"><span class="material-symbols-outlined" style="font-size:16px">chevron_left</span></button>
+      <button class="btn-nav" onclick="navToday()"><span data-i18n="schedule:nav.today">Сегодня</span></button>
+      <button class="btn-nav" onclick="navDate(1)" data-i18n-title="schedule:nav.forward" title="Вперёд"><span class="material-symbols-outlined" style="font-size:16px">chevron_right</span></button>
+    </div>
+    <div id="sc-period" class="text-sm font-semibold text-[#c1c6d7]"></div>
+    <div class="ml-auto flex items-center gap-2">
+      <div id="doctor-filter-wrap" class="hidden">
+        <select id="doctor-filter" class="fld" style="padding:5px 10px;font-size:12px"></select>
+      </div>
+      <div class="flex items-center gap-1">
+        <button id="mode-day"  class="btn-mode" onclick="setMode('day')" data-i18n="schedule:mode.day">День</button>
+        <button id="mode-week" class="btn-mode active" onclick="setMode('week')" data-i18n="schedule:mode.week">Неделя</button>
+      </div>
+      <button class="btn-nav" onclick="copyBookingLink()" data-i18n-title="schedule:nav.copyLink" title="Скопировать ссылку для пациентов">
+        <span class="material-symbols-outlined" style="font-size:16px">link</span><span data-i18n="schedule:nav.link">Ссылка</span>
+      </button>
+      <button class="btn-nav" style="background:rgba(10,132,255,0.18);color:#0A84FF;border-color:rgba(10,132,255,0.4)" onclick="openApptModal()">
+        <span class="material-symbols-outlined" style="font-size:16px">add</span><span data-i18n="schedule:nav.newAppt">Новая запись</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 overflow-auto p-4">
+    <div id="sc-container"></div>
+  </main>
+</div>
+
+<!-- Модал записи -->
+<div id="appt-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-bg" onclick="if(event.target===this)closeApptModal()">
+  <div class="w-full max-w-md bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl flex flex-col" style="max-height:90vh">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2 text-sm font-bold">
+        <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:18px">calendar_month</span>
+        <span id="appt-title" data-i18n="schedule:form.titleNew">Новая запись</span>
+      </div>
+      <button onclick="closeApptModal()" class="text-[#8b90a0] hover:text-white"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="p-5 overflow-y-auto" style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="fld-label" data-i18n="schedule:form.patientLabel">Пациент *</label>
+        <input id="ap-patient" class="fld" data-i18n-placeholder="schedule:form.patientPh" placeholder="Имя пациента" list="patients-list" autocomplete="off">
+        <datalist id="patients-list"></datalist>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.dateLabel">Дата *</label>
+          <input id="ap-date" type="date" class="fld">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.timeLabel">Время *</label>
+          <input id="ap-time" type="time" class="fld" step="900">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.durationLabel">Длительность</label>
+          <select id="ap-dur" class="fld">
+            <option value="15" data-i18n="schedule:form.duration.15">15 мин</option>
+            <option value="30" data-i18n="schedule:form.duration.30">30 мин</option>
+            <option value="45" data-i18n="schedule:form.duration.45">45 мин</option>
+            <option value="60" selected data-i18n="schedule:form.duration.60">60 мин</option>
+            <option value="75" data-i18n="schedule:form.duration.75">75 мин</option>
+            <option value="90" data-i18n="schedule:form.duration.90">90 мин</option>
+          </select>
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.serviceLabel">Услуга</label>
+          <input id="ap-service" class="fld" data-i18n-placeholder="schedule:form.servicePh" placeholder="Акупунктура">
+        </div>
+      </div>
+      <div id="ap-doctor-wrap" class="hidden">
+        <label class="fld-label" data-i18n="schedule:form.doctorLabel">Врач</label>
+        <select id="ap-doctor" class="fld"></select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.phoneLabel">Телефон</label>
+          <input id="ap-phone" class="fld" placeholder="+7...">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="schedule:form.priceLabel">Цена, ₽</label>
+          <input id="ap-price" type="number" class="fld" placeholder="0">
+        </div>
+      </div>
+      <div>
+        <label class="fld-label" data-i18n="schedule:form.emailLabel">Email пациента (для напоминания)</label>
+        <input id="ap-email" type="email" class="fld" placeholder="example@mail.ru">
+      </div>
+      <div>
+        <label class="fld-label" data-i18n="schedule:form.notesLabel">Заметки</label>
+        <textarea id="ap-notes" rows="2" class="fld" style="resize:vertical" data-i18n-placeholder="schedule:form.notesPh" placeholder="Жалобы, особенности..."></textarea>
+      </div>
+      <div id="ap-status-wrap" class="hidden">
+        <label class="fld-label" data-i18n="schedule:form.statusLabel">Статус</label>
+        <select id="ap-status" class="fld">
+          <option value="scheduled" data-i18n="schedule:form.status.scheduled">Запланирована</option>
+          <option value="pending" data-i18n="schedule:form.status.pending">Ожидает подтверждения</option>
+          <option value="done" data-i18n="schedule:form.status.done">Завершена</option>
+          <option value="cancelled" data-i18n="schedule:form.status.cancelled">Отменена</option>
+        </select>
+      </div>
+      <div id="ap-pending-actions" class="hidden" style="display:flex;gap:8px;padding:10px 12px;background:rgba(255,159,10,0.08);border:1px solid rgba(255,159,10,0.3);border-radius:10px">
+        <div style="flex:1;font-size:11px;color:#FF9F0A;display:flex;align-items:center;gap:4px">
+          <span class="material-symbols-outlined" style="font-size:16px">schedule</span>
+          <span data-i18n="schedule:pending.info">Заявка от пациента — требует подтверждения</span>
+        </div>
+        <button onclick="setStatusQuick('cancelled')" style="padding:6px 12px;border-radius:6px;background:rgba(255,69,58,0.15);border:1px solid rgba(255,69,58,0.4);color:#FF453A;font-size:11px;font-weight:700;cursor:pointer"><span data-i18n="schedule:pending.reject">Отклонить</span></button>
+        <button onclick="setStatusQuick('scheduled')" style="padding:6px 12px;border-radius:6px;background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.4);color:#30D158;font-size:11px;font-weight:700;cursor:pointer"><span data-i18n="schedule:pending.confirm">Подтвердить</span></button>
+      </div>
+      <div id="ap-error" class="hidden text-xs text-[#FF453A] bg-[rgba(255,69,58,0.1)] border border-[rgba(255,69,58,0.3)] rounded-lg px-3 py-2"></div>
+    </div>
+    <div class="px-5 py-4 border-t border-white/10 flex items-center justify-between gap-2 flex-shrink-0">
+      <button id="ap-del-btn" class="hidden px-4 py-2 rounded-lg text-xs font-bold text-[#FF453A] hover:bg-[rgba(255,69,58,0.1)] transition-colors" onclick="deleteAppt()" data-i18n="schedule:action.delete">Удалить</button>
+      <div class="ml-auto flex gap-2">
+        <button id="ap-open-record-btn" class="hidden px-4 py-2 rounded-lg text-xs font-bold text-[#FF9F0A] border border-[rgba(255,159,10,0.4)] hover:bg-[rgba(255,159,10,0.1)] transition-colors" onclick="openRecord()" data-i18n="schedule:action.openRecord">Открыть приём</button>
+        <button class="px-4 py-2 rounded-lg text-xs font-bold text-[#8b90a0] hover:text-white transition-colors" onclick="closeApptModal()" data-i18n="schedule:action.cancel">Отмена</button>
+        <button class="px-5 py-2 rounded-lg text-xs font-bold bg-[#0A84FF] hover:bg-[#0a6ed4] text-white transition-colors" onclick="saveAppt()" data-i18n="schedule:action.save">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc } from './shared.js';
+import { initI18n, t } from '/i18n.js';
+import { requireAuth } from './auth.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+await initI18n();
+document.title = t('schedule:pageTitle');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('schedule', session);
+initElementClock();
+
+const HOUR_START = 8;
+const HOUR_END   = 21;
+const STEP_MIN   = 15;            // 15-минутный шаг
+const SLOT_PX    = 18;            // высота слота 15 мин (см. .sc-cell min-height)
+
+let currentMode = 'week';         // 'day' | 'week'
+let viewDate    = startOfWeek(new Date());
+let currentAppts = [];
+let editingApptId = null;
+let allDoctors = [];              // для админ/босса
+let selectedDoctorFilter = '';    // '' = все
+
+const isPriv = session.role === 'admin' || session.role === 'boss';
+
+const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
+const _jsonHdr = () => ({ headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
+
+// ── Утилиты дат ─────────────────────────────────────────
+function startOfWeek(d) {
+  const x = new Date(d); x.setHours(0,0,0,0);
+  const day = (x.getDay() + 6) % 7; // понедельник = 0
+  x.setDate(x.getDate() - day);
+  return x;
+}
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function fmtDate(d) { return d.toLocaleDateString('ru', { day:'numeric', month:'long' }); }
+function fmtDoW(d)  { return t('schedule:dow.' + ((d.getDay()+6)%7)); } /* i18n-ok */
+function fmtDoWFull(d) { return d.toLocaleDateString('ru', { weekday:'long' }); }
+function toISO(d) {
+  // Локальное время в формате 'YYYY-MM-DD HH:MM:SS' (без UTC-сдвига)
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function isSameDay(a,b) { return a.toDateString() === b.toDateString(); }
+
+// Парсим start_at, который сервер хранит как 'YYYY-MM-DD HH:MM:SS' (локальное)
+function parseStartAt(s) {
+  if (!s) return new Date(NaN);
+  return new Date(s.replace(' ', 'T'));
+}
+
+// ── Загрузка ──────────────────────────────────────────────
+async function loadAppts() {
+  const from = currentMode === 'day' ? new Date(viewDate) : startOfWeek(viewDate);
+  from.setHours(0,0,0,0);
+  const to = new Date(from); to.setDate(to.getDate() + (currentMode === 'day' ? 1 : 7));
+  const fromS = toISO(from), toS = toISO(to);
+  let url = `/api/appointments?from=${encodeURIComponent(fromS)}&to=${encodeURIComponent(toS)}`;
+  if (selectedDoctorFilter) url += `&doctor=${encodeURIComponent(selectedDoctorFilter)}`;
+  const r = await fetch(url, _authHdr());
+  if (!r.ok) { currentAppts = []; return; }
+  currentAppts = await r.json();
+}
+
+async function loadDoctors() {
+  if (!isPriv) return;
+  const r = await fetch('/api/users', _authHdr());
+  if (!r.ok) return;
+  const users = await r.json();
+  allDoctors = users.filter(u => u.role === 'doctor' || u.role === 'boss');
+  // селекты
+  const wrap = document.getElementById('doctor-filter-wrap');
+  const sel  = document.getElementById('doctor-filter');
+  sel.innerHTML = `<option value="">${t('schedule:form.allDoctors')}</option>` + allDoctors.map(d => `<option value="${esc(d.username)}">${esc(d.name)}</option>`).join('');
+  wrap.classList.remove('hidden');
+  sel.onchange = async () => { selectedDoctorFilter = sel.value; await loadAppts(); render(); };
+
+  const apDoc = document.getElementById('ap-doctor');
+  apDoc.innerHTML = allDoctors.map(d => `<option value="${esc(d.username)}" data-name="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  document.getElementById('ap-doctor-wrap').classList.remove('hidden');
+}
+
+async function loadPatients() {
+  try {
+    const r = await fetch('/api/records', _authHdr());
+    if (!r.ok) return;
+    const recs = await r.json();
+    const uniq = [...new Set(recs.map(r => r.patient).filter(Boolean))];
+    document.getElementById('patients-list').innerHTML = uniq.slice(0,200).map(p => `<option value="${esc(p)}">`).join('');
+  } catch {}
+}
+
+// ── Рендер ──────────────────────────────────────────────
+function render() {
+  const cont = document.getElementById('sc-container');
+  const days = currentMode === 'day' ? [new Date(viewDate)] : Array.from({length:7}, (_,i) => addDays(startOfWeek(viewDate), i));
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // период в шапке
+  if (currentMode === 'day') {
+    document.getElementById('sc-period').textContent = fmtDoWFull(viewDate)[0].toUpperCase() + fmtDoWFull(viewDate).slice(1) + ', ' + fmtDate(viewDate);
+  } else {
+    const s = days[0], e = days[6];
+    document.getElementById('sc-period').textContent = `${s.getDate()} ${s.toLocaleDateString('ru',{month:'short'})} – ${e.getDate()} ${e.toLocaleDateString('ru',{month:'short'})}`;
+  }
+
+  const slotsPerDay = (HOUR_END - HOUR_START) * (60 / STEP_MIN);
+
+  // строим грид
+  let html = `<div class="sc-grid" style="--cols:${days.length}">`;
+  // шапка дней
+  html += `<div class="sc-head"></div>`;
+  for (const d of days) {
+    const isToday = d.toDateString() === today.toDateString();
+    html += `<div class="sc-head ${isToday?'today':''}">
+      <div class="dow">${fmtDoW(d)}</div>
+      <div>${d.getDate()} ${d.toLocaleDateString('ru',{month:'short'})}</div>
+    </div>`;
+  }
+  // строки времени
+  for (let s = 0; s < slotsPerDay; s++) {
+    const totalMin = s * STEP_MIN;
+    const hr = HOUR_START + Math.floor(totalMin / 60);
+    const mn = totalMin % 60;
+    const label = mn === 0 ? `${hr}:00` : '';
+    html += `<div class="sc-time">${label}</div>`;
+    for (let di = 0; di < days.length; di++) {
+      const cls = mn === 45 ? 'hour-line' : (mn === 15 ? 'half-line' : '');
+      html += `<div class="sc-cell ${cls}" data-day="${di}" data-slot="${s}"></div>`;
+    }
+  }
+  html += `</div>`;
+  cont.innerHTML = html;
+
+  // высота слота для абсолютного позиционирования записей
+  const firstCell = cont.querySelector('.sc-cell');
+  const slotHeight = firstCell ? firstCell.offsetHeight : SLOT_PX;
+  const headerHeight = cont.querySelector('.sc-head').offsetHeight;
+
+  // оверлей-колонки для записей (по одной на день)
+  const grid = cont.querySelector('.sc-grid');
+  for (let di = 0; di < days.length; di++) {
+    const dayDate = new Date(days[di]); dayDate.setHours(0,0,0,0);
+    const cellsInColumn = grid.querySelectorAll(`.sc-cell[data-day="${di}"]`);
+    const colOverlay = document.createElement('div');
+    colOverlay.style.position = 'absolute';
+    colOverlay.style.pointerEvents = 'none';
+    if (cellsInColumn.length) {
+      const first = cellsInColumn[0];
+      const rect  = first.getBoundingClientRect();
+      const gridRect = grid.getBoundingClientRect();
+      colOverlay.style.left = (first.offsetLeft) + 'px';
+      colOverlay.style.top  = (first.offsetTop)  + 'px';
+      colOverlay.style.width = first.offsetWidth + 'px';
+      colOverlay.style.height = (slotHeight * slotsPerDay) + 'px';
+    }
+    grid.appendChild(colOverlay);
+
+    // записи этого дня
+    const dayAppts = currentAppts.filter(a => {
+      const dt = parseStartAt(a.start_at);
+      return dt.toDateString() === days[di].toDateString();
+    });
+    for (const a of dayAppts) {
+      const dt = parseStartAt(a.start_at);
+      const minFromStart = (dt.getHours() - HOUR_START) * 60 + dt.getMinutes();
+      if (minFromStart < 0 || minFromStart >= (HOUR_END - HOUR_START)*60) continue;
+      const topPx = (minFromStart / STEP_MIN) * slotHeight;
+      const heightPx = Math.max(20, (a.duration_min / STEP_MIN) * slotHeight - 2);
+      const el = document.createElement('div');
+      el.className = `appt appt-${a.status||'scheduled'}`;
+      el.style.top = topPx + 'px';
+      el.style.height = heightPx + 'px';
+      el.style.pointerEvents = 'auto';
+      const timeStr = `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      const docLabel = (isPriv && !selectedDoctorFilter && currentMode === 'week') ? `<div style="font-size:9px;opacity:.7">${esc(a.doctorName||'')}</div>` : '';
+      el.innerHTML = `<div class="ap-time">${timeStr} · ${a.duration_min}${t('schedule:card.minUnit')}</div><div class="ap-name">${esc(a.patient)}</div>${docLabel}`;
+      el.onclick = (ev) => { ev.stopPropagation(); openApptModal(a); };
+      colOverlay.appendChild(el);
+    }
+
+    // линия «сейчас»
+    if (days[di].toDateString() === new Date().toDateString()) {
+      const now = new Date();
+      const minNow = (now.getHours() - HOUR_START) * 60 + now.getMinutes();
+      if (minNow >= 0 && minNow < (HOUR_END - HOUR_START)*60) {
+        const line = document.createElement('div');
+        line.className = 'now-line';
+        line.style.top = ((minNow / STEP_MIN) * slotHeight) + 'px';
+        colOverlay.appendChild(line);
+      }
+    }
+  }
+
+  // клики по пустым слотам → новая запись
+  grid.querySelectorAll('.sc-cell').forEach(c => {
+    c.onclick = () => {
+      const di = +c.dataset.day;
+      const s  = +c.dataset.slot;
+      const totalMin = s * STEP_MIN;
+      const hr = HOUR_START + Math.floor(totalMin / 60);
+      const mn = totalMin % 60;
+      const d = new Date(days[di]);
+      d.setHours(hr, mn, 0, 0);
+      openApptModal({ start_at: toISO(d), duration_min: 60 });
+    };
+  });
+}
+
+// ── Модал ───────────────────────────────────────────────
+window.openApptModal = (appt) => {
+  editingApptId = appt && appt.id ? appt.id : null;
+  const m = document.getElementById('appt-modal');
+  m.classList.remove('hidden'); m.classList.add('flex');
+  document.getElementById('ap-error').classList.add('hidden');
+
+  const isEdit = !!editingApptId;
+  document.getElementById('appt-title').textContent = isEdit ? t('schedule:form.titleEdit') : t('schedule:form.titleNew');
+  document.getElementById('ap-del-btn').classList.toggle('hidden', !isEdit);
+  document.getElementById('ap-status-wrap').classList.toggle('hidden', !isEdit);
+  document.getElementById('ap-open-record-btn').classList.toggle('hidden', !isEdit || (appt && appt.status === 'pending'));
+  const isPending = isEdit && appt && appt.status === 'pending';
+  document.getElementById('ap-pending-actions').classList.toggle('hidden', !isPending);
+
+  // Дата и время по умолчанию
+  let dt;
+  if (appt && appt.start_at) dt = parseStartAt(appt.start_at);
+  else { dt = new Date(); dt.setMinutes(Math.ceil(dt.getMinutes()/15)*15, 0, 0); }
+  document.getElementById('ap-date').value = dt.toISOString().slice(0,10);
+  document.getElementById('ap-time').value = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+  document.getElementById('ap-dur').value = String(appt && appt.duration_min || 60);
+  document.getElementById('ap-patient').value = (appt && appt.patient) || '';
+  document.getElementById('ap-service').value = (appt && appt.service) || t('schedule:form.serviceDefault');
+  document.getElementById('ap-phone').value   = (appt && appt.patient_phone) || '';
+  document.getElementById('ap-email').value   = (appt && appt.patient_email) || '';
+  document.getElementById('ap-price').value   = (appt && appt.price) ?? '';
+  document.getElementById('ap-notes').value   = (appt && appt.notes) || '';
+  document.getElementById('ap-status').value  = (appt && appt.status) || 'scheduled';
+
+  if (isPriv && allDoctors.length) {
+    const sel = document.getElementById('ap-doctor');
+    sel.value = (appt && appt.doctor) || session.username;
+  }
+
+  setTimeout(() => document.getElementById('ap-patient').focus(), 50);
+};
+
+window.closeApptModal = () => {
+  const m = document.getElementById('appt-modal');
+  m.classList.add('hidden'); m.classList.remove('flex');
+  editingApptId = null;
+};
+
+window.saveAppt = async () => {
+  const patient = document.getElementById('ap-patient').value.trim();
+  const date    = document.getElementById('ap-date').value;
+  const time    = document.getElementById('ap-time').value;
+  const dur     = parseInt(document.getElementById('ap-dur').value);
+  if (!patient || !date || !time) return showApptError(t('schedule:error.required'));
+  const start_at = `${date} ${time}:00`;
+  const data = {
+    patient,
+    start_at,
+    duration_min: dur,
+    service: document.getElementById('ap-service').value.trim() || null,
+    patient_phone: document.getElementById('ap-phone').value.trim() || null,
+    patient_email: document.getElementById('ap-email').value.trim() || null,
+    price: document.getElementById('ap-price').value ? Number(document.getElementById('ap-price').value) : null,
+    notes: document.getElementById('ap-notes').value.trim() || null,
+  };
+  if (editingApptId) data.status = document.getElementById('ap-status').value;
+  if (isPriv && !document.getElementById('ap-doctor-wrap').classList.contains('hidden')) {
+    const sel = document.getElementById('ap-doctor');
+    data.doctor = sel.value;
+    const opt = sel.options[sel.selectedIndex];
+    if (opt) data.doctorName = opt.dataset.name;
+  }
+  const url = editingApptId ? `/api/appointments/${editingApptId}` : '/api/appointments';
+  const method = editingApptId ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, ..._jsonHdr(), body: JSON.stringify(data) });
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({error: t('schedule:error.saveFailed')}));
+    if (r.status === 409 && e.code === 'SLOT_TAKEN') {
+      // BUG-015: слот занят — показываем сообщение и обновляем расписание
+      showApptError(e.error || t('schedule:error.slotBusy'));
+      await loadAppts(); render();
+      return;
+    }
+    return showApptError(e.error || t('schedule:error.generic'));
+  }
+  closeApptModal();
+  await loadAppts();
+  render();
+};
+
+window.deleteAppt = async () => {
+  if (!editingApptId) return;
+  if (!confirm(t('schedule:confirm.delete'))) return;
+  const r = await fetch(`/api/appointments/${editingApptId}`, { method: 'DELETE', ..._authHdr() });
+  // BUG-014: если есть SOAP-записи — запрашиваем дополнительное подтверждение
+  if (r.status === 409) {
+    const d = await r.json().catch(() => ({}));
+    if (d.hasRecords) {
+      const w = d.count === 1 ? t('schedule:confirm.soapWord1') : d.count < 5 ? t('schedule:confirm.soapWord24') : t('schedule:confirm.soapWord5');
+      const ok = confirm(
+        t('schedule:confirm.soapCount', {count: d.count, word: w}) + '\n\n' +
+        t('schedule:confirm.deleteSimple')
+      );
+      if (!ok) return;
+      const r2 = await fetch(`/api/appointments/${editingApptId}?force=1`, { method: 'DELETE', ..._authHdr() });
+      if (!r2.ok) return showApptError(t('schedule:error.deleteFailed'));
+    } else return showApptError(t('schedule:error.deleteFailed'));
+  } else if (!r.ok) return showApptError(t('schedule:error.deleteFailed'));
+  closeApptModal();
+  await loadAppts();
+  render();
+};
+
+window.setStatusQuick = async (status) => {
+  if (!editingApptId) return;
+  const r = await fetch(`/api/appointments/${editingApptId}/status`, {
+    method:'PATCH', ..._jsonHdr(), body: JSON.stringify({ status })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); return showApptError(e.error || t('schedule:error.updateFailed')); }
+  closeApptModal();
+  await loadAppts(); render();
+};
+
+window.copyBookingLink = async () => {
+  // Для босса/админа — спросить врача; для doctor — на себя
+  let targetUser = session.username;
+  if (isPriv) {
+    if (selectedDoctorFilter) targetUser = selectedDoctorFilter;
+    else if (allDoctors.length === 1) targetUser = allDoctors[0].username;
+    else {
+      const choice = prompt(t('schedule:confirm.doctorPrompt'), allDoctors[0]?.username || '');
+      if (!choice) return;
+      targetUser = choice.trim();
+    }
+  }
+  // Получим slug врача и клиники
+  let doctorSlug = targetUser, clinicSlug = '';
+  try {
+    const r = await fetch('/api/public/doctor/' + encodeURIComponent(targetUser));
+    if (r.ok) {
+      const d = await r.json();
+      doctorSlug = d.slug || d.username;
+      clinicSlug = d.clinic && d.clinic.slug;
+    }
+  } catch {}
+  const doctorLink = `${location.origin}/d/${encodeURIComponent(doctorSlug)}`;
+  const clinicLink = clinicSlug ? `${location.origin}/c/${encodeURIComponent(clinicSlug)}` : '';
+  openShareModal(doctorLink, clinicLink);
+};
+
+function openShareModal(doctorLink, clinicLink) {
+  let m = document.getElementById('share-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'share-modal';
+    m.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 modal-bg';
+    m.onclick = (e) => { if (e.target === m) m.remove(); };
+    document.body.appendChild(m);
+  }
+  const qrUrl = (link) => `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=12&data=${encodeURIComponent(link)}`;
+  m.innerHTML = `
+    <div class="bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl w-full max-w-md p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-bold flex items-center gap-2"><span class="material-symbols-outlined text-[#0A84FF]" style="font-size:18px">link</span>${t('schedule:share.title')}</div>
+        <button onclick="document.getElementById('share-modal').remove()" class="text-[#8b90a0] hover:text-white"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div>
+        <div class="text-[10px] text-[#8b90a0] font-bold uppercase tracking-wider mb-1">${t('schedule:share.doctorDirect')}</div>
+        <div class="flex gap-2">
+          <input id="share-link-doc" class="fld" value="${doctorLink}" readonly>
+          <button class="btn-nav" onclick="navigator.clipboard.writeText(document.getElementById('share-link-doc').value).then(()=>this.textContent='✓')">${t('schedule:share.copy')}</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary style="font-size:11px;color:#8b90a0;cursor:pointer">${t('schedule:share.qrPrint')}</summary>
+          <div style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:12px;margin-top:8px">
+            <img src="${qrUrl(doctorLink)}" alt="QR" width="220" height="220">
+          </div>
+        </details>
+      </div>
+
+      ${clinicLink ? `
+      <div>
+        <div class="text-[10px] text-[#8b90a0] font-bold uppercase tracking-wider mb-1">${t('schedule:share.clinicAll')}</div>
+        <div class="flex gap-2">
+          <input id="share-link-clinic" class="fld" value="${clinicLink}" readonly>
+          <button class="btn-nav" onclick="navigator.clipboard.writeText(document.getElementById('share-link-clinic').value).then(()=>this.textContent='✓')">${t('schedule:share.copy')}</button>
+        </div>
+        <details style="margin-top:8px">
+          <summary style="font-size:11px;color:#8b90a0;cursor:pointer">${t('schedule:share.qrPrint')}</summary>
+          <div style="display:flex;justify-content:center;padding:12px;background:#fff;border-radius:12px;margin-top:8px">
+            <img src="${qrUrl(clinicLink)}" alt="QR" width="220" height="220">
+          </div>
+        </details>
+      </div>` : ''}
+
+      <details>
+        <summary style="font-size:11px;color:#0A84FF;cursor:pointer;font-weight:700">${t('schedule:share.embedCode')}</summary>
+        <div style="margin-top:8px;font-size:11px;color:#8b90a0;line-height:1.5">
+          ${t('schedule:share.embedHint')}
+        </div>
+        <textarea id="share-embed-code" readonly style="width:100%;margin-top:8px;min-height:80px;background:#0a0a14;border:1px solid #414755;border-radius:8px;padding:9px;color:#c1c6d7;font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical">${buildEmbedSnippet(doctorLink, clinicLink)}</textarea>
+        <button class="btn-nav" style="margin-top:8px" onclick="navigator.clipboard.writeText(document.getElementById('share-embed-code').value).then(()=>this.textContent=t('schedule:share.copiedCode'))">${t('schedule:share.copyCode')}</button>
+      </details>
+
+      <div class="text-[11px] text-[#6b7280]" style="line-height:1.5">
+        ${t('schedule:share.alsoPlace')}
+        <ul style="margin-top:4px;padding-left:18px">
+          <li>${t('schedule:share.ch0')}</li>
+          <li>${t('schedule:share.ch1')}</li>
+          <li>${t('schedule:share.ch2')}</li>
+          <li>${t('schedule:share.ch3')}</li>
+        </ul>
+      </div>
+    </div>`;
+}
+
+function buildEmbedSnippet(doctorLink, clinicLink) {
+  const origin = location.origin;
+  const dSlug = doctorLink.replace(origin + '/d/', '');
+  const cSlug = clinicLink ? clinicLink.replace(origin + '/c/', '') : '';
+  return `<!-- AcuTwin: онлайн-запись -->
+<button onclick="AcuTwinBook.open('${dSlug}')"
+        style="background:#0A84FF;color:#fff;padding:14px 28px;border:0;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">
+  ${t('schedule:share.bookOnline')}
+</button>${cSlug ? `
+<button onclick="AcuTwinBook.openClinic('${cSlug}')"
+        style="background:transparent;color:#0A84FF;border:2px solid #0A84FF;padding:12px 26px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-left:8px">
+  ${t('schedule:share.allDoctors')}
+</button>` : ''}
+<script src="${origin}/widget.js" async></` + `script>`;
+}
+
+window.openRecord = () => {
+  const appt = currentAppts.find(a => a.id === editingApptId);
+  if (!appt) return;
+  const params = new URLSearchParams({ patient: appt.patient, appointmentId: appt.id });
+  if (appt.notes) params.set('reason', appt.notes);
+  window.location.href = 'index.html?' + params.toString();
+};
+
+function showApptError(msg) {
+  const el = document.getElementById('ap-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── Навигация ───────────────────────────────────────────
+window.navDate = (n) => {
+  const step = currentMode === 'day' ? 1 : 7;
+  viewDate = addDays(viewDate, n*step);
+  refresh();
+};
+window.navToday = () => { viewDate = currentMode === 'day' ? new Date() : startOfWeek(new Date()); refresh(); };
+window.setMode = (m) => {
+  currentMode = m;
+  document.getElementById('mode-day').classList.toggle('active',  m==='day');
+  document.getElementById('mode-week').classList.toggle('active', m==='week');
+  if (m === 'week') viewDate = startOfWeek(viewDate);
+  refresh();
+};
+
+async function refresh() { await loadAppts(); render(); }
+
+// ── Старт ───────────────────────────────────────────────
+await loadDoctors();
+await loadPatients();
+await loadAppts();
+render();
+
+// Авто-скролл к 8:00 + перерисовка линии «сейчас» каждые 60 сек
+setInterval(() => render(), 60_000);
+window.addEventListener('resize', () => render());
+</script>
+</body>
+</html>

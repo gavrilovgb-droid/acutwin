@@ -1,6 +1,9 @@
 {
   "title":           "Панель управления",
+  "pageTitle":       "AcuTwin — Запись",
   "newVisit":        "Новый приём",
+  "newVisitTitle":   "Запись пациента",
+  "newAppointment":  "Новый приём",
   "patient": {
     "select":        "Выберите пациента",
     "search":        "Поиск пациента...",
@@ -12,18 +15,53 @@
     "start":         "Начать приём",
     "save":          "Сохранить приём",
     "saveConfirm":   "Сохранить запись о приёме?",
-    "saved":         "Приём сохранён",
+    "saved":         "Запись сохранена",
     "nrsBeforeLabel":"Боль до",
     "nrsAfterLabel": "Боль после",
     "deqi":          "Де-ци",
     "exposure":      "Экспозиция (мин)",
     "stimulation":   "Стимуляция",
-    "progress":      "Прогресс"
+    "progress":      "Прогресс",
+    "toTreatment":   "К тактике лечения",
+    "recipe":        "Рецепт"
+  },
+  "form": {
+    "date":          "Дата",
+    "time":          "Время",
+    "patientName":   "ФИО пациента",
+    "namePlaceholder":"Иванов Иван Иванович",
+    "age":           "Возраст",
+    "gender":        "Пол",
+    "genderMale":    "Мужской",
+    "genderFemale":  "Женский",
+    "genderAny":     "— выбрать —",
+    "doctor":        "Лечащий врач",
+    "doctorPlaceholder":"Фамилия И.О.",
+    "reason":        "Причина приёма / жалобы",
+    "reasonPlaceholder":"Опишите основные жалобы пациента...",
+    "agePlaceholder":"лет"
+  },
+  "recent": {
+    "title":         "Последние записи",
+    "allHistory":    "Вся история →",
+    "search":        "Найти пациента...",
+    "notFound":      "Пациент не найден",
+    "noRecords":     "Записей пока нет",
+    "quick":         "Быстрый выбор:"
+  },
+  "status": {
+    "started":       "Начат",
+    "active":        "В процессе",
+    "completed":     "Завершён"
+  },
+  "alert": {
+    "enterName":     "Введите ФИО пациента",
+    "ageRange":      "Возраст должен быть от 5 до 80 лет"
   },
   "tabs": {
     "diseases":      "Болезни",
     "tcm":           "Рецепты ТКМ",
-    "wuxing":        "У-Синь",
+    "wuxing":        "У-Син",
     "points":        "Точки",
     "notes":         "Заметки"
   }

@@ -1,3 +1,27 @@
+import { initI18n, t } from '/i18n.js';
+
+// i18n: обновляем [data-i18n] и [data-i18n-title] элементы после загрузки локали
+export function applyI18nToDom(root) {
+  const scope = root || document;
+  scope.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n'));
+    if (v && v !== el.getAttribute('data-i18n')) el.textContent = v;
+  });
+  scope.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n-title'));
+    if (v && v !== el.getAttribute('data-i18n-title')) el.title = v;
+  });
+}
+initI18n().then(() => applyI18nToDom());
+
+// Глобальный обработчик logout — использует t() для confirm-текста
+window._logoutConfirm = function() {
+  if (confirm(t('auth:login.logoutConfirm'))) {
+    sessionStorage.clear();
+    location.href = 'login.html';
+  }
+};
+
 // Защита видео от скачивания
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) e.preventDefault();
@@ -205,7 +229,7 @@ export function safeSetItem(key, value) {
     return true;
   } catch (e) {
     if (e.name === 'QuotaExceededError' || e.code === 22) {
-      alert('Хранилище браузера переполнено. Удалите старые записи или очистите кэш.');
+      alert(t('errors:storage.quotaExceeded'));
     }
     return false;
   }
@@ -244,27 +268,38 @@ export function displayCode(code) {
     .replace(/^J(\d)/,  'VC$1');
 }
 
+const NAV_I18N = {
+  index:    'common:nav.newVisit',
+  schedule: 'common:nav.schedule',
+  treatment:'common:nav.treatment',
+  atlas:    'common:nav.atlas',
+  history:  'common:nav.history',
+  video:    'common:nav.video',
+  profile:  'common:nav.profile',
+  admin:    'common:nav.admin',
+};
+
 export function buildSidebar(activePage, session) {
   const isAdmin = session && session.role === 'admin';
   const items = isAdmin ? [
-    { id:'index',     href:'index.html',       icon:'edit_calendar',        label:'Новый приём' },
-    { id:'schedule',  href:'schedule.html',    icon:'calendar_month',       label:'Расписание' },
-    { id:'treatment', href:'treatment.html',   icon:'medical_services',     label:'Тактика лечения' },
-    { id:'atlas',     href:'atlas.html',       icon:'menu_book',            label:'Атлас точек' },
-    { id:'history',   href:'history.html',     icon:'history',              label:'История приёмов' },
-    { id:'video',     href:'video.html',       icon:'play_circle',          label:'Видеообучение' },
+    { id:'index',     href:'index.html',       icon:'edit_calendar',        label:'Новый приём' /* i18n-ok */ },
+    { id:'schedule',  href:'schedule.html',    icon:'calendar_month',       label:'Расписание' /* i18n-ok */ },
+    { id:'treatment', href:'treatment.html',   icon:'medical_services',     label:'Тактика лечения' /* i18n-ok */ },
+    { id:'atlas',     href:'atlas.html',       icon:'menu_book',            label:'Атлас точек' /* i18n-ok */ },
+    { id:'history',   href:'history.html',     icon:'history',              label:'История приёмов' /* i18n-ok */ },
+    { id:'video',     href:'video.html',       icon:'play_circle',          label:'Видеообучение' /* i18n-ok */ },
     { id:'divider' },
-    { id:'profile',   href:'profile.html',     icon:'badge',                label:'Профиль' },
-    { id:'admin',     href:'admin.html',       icon:'admin_panel_settings', label:'Клиенты и оплата' },
+    { id:'profile',   href:'profile.html',     icon:'badge',                label:'Профиль' /* i18n-ok */ },
+    { id:'admin',     href:'admin.html',       icon:'admin_panel_settings', label:'Клиенты и оплата' /* i18n-ok */ },
   ] : [
-    { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' },
-    { id:'schedule',  href:'schedule.html',  icon:'calendar_month',   label:'Расписание' },
-    { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' },
-    { id:'atlas',     href:'atlas.html',      icon:'menu_book',        label:'Атлас точек' },
-    { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' },
-    { id:'video',     href:'video.html',      icon:'play_circle',      label:'Видеообучение' },
+    { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' /* i18n-ok */ },
+    { id:'schedule',  href:'schedule.html',  icon:'calendar_month',   label:'Расписание' /* i18n-ok */ },
+    { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' /* i18n-ok */ },
+    { id:'atlas',     href:'atlas.html',      icon:'menu_book',        label:'Атлас точек' /* i18n-ok */ },
+    { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' /* i18n-ok */ },
+    { id:'video',     href:'video.html',      icon:'play_circle',      label:'Видеообучение' /* i18n-ok */ },
     { id:'divider' },
-    { id:'profile',   href:'profile.html',    icon:'badge',            label:'Профиль' },
+    { id:'profile',   href:'profile.html',    icon:'badge',            label:'Профиль' /* i18n-ok */ },
   ];
   const doctorBlock = session ? `
     <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0">
@@ -273,10 +308,11 @@ export function buildSidebar(activePage, session) {
         <div class="text-xs font-semibold text-[#e2e2e2] truncate">${esc(session.name)}</div>
         <div class="text-[10px] text-[#8b90a0]">${esc(session.username)}</div>
       </div>
-      <button onclick="if(confirm('Выйти из системы?')){sessionStorage.clear();location.href='login.html'}"
-        class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#8b90a0] hover:text-[#ffb4ab] hover:bg-[#ffb4ab]/10 transition-colors text-xs font-medium" title="Выйти">
+      <button onclick="window._logoutConfirm && window._logoutConfirm()"
+        class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#8b90a0] hover:text-[#ffb4ab] hover:bg-[#ffb4ab]/10 transition-colors text-xs font-medium"
+        data-i18n-title="auth:login.logout" title="Выйти">
         <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
-        Выйти
+        <span data-i18n="auth:login.logout">Выйти</span>
       </button>
     </div>` : '';
   return `
@@ -309,7 +345,7 @@ export function buildSidebar(activePage, session) {
                       : 'text-[#c1c6d7] hover:bg-white/15 hover:text-white'}"
           >
             <span class="material-symbols-outlined text-xl">${i.icon}</span>
-            <span style="font-family:'Inter',sans-serif;font-weight:600">${i.label}</span>
+            <span style="font-family:'Inter',sans-serif;font-weight:600" data-i18n="${NAV_I18N[i.id] || ''}">${i.label}</span>
           </a>`).join('')}
       </nav>
       <div style="padding:5px 16px 4px;display:flex;justify-content:center;margin-top:auto">
@@ -360,7 +396,7 @@ export function buildSidebar(activePage, session) {
       ${items.filter(i => i.id !== 'divider').map(i => `
         <a href="${i.href}" class="${activePage===i.id ? 'mob-active' : ''}">
           <span class="material-symbols-outlined">${i.icon}</span>
-          <span>${i.label}</span>
+          <span data-i18n="${NAV_I18N[i.id] || ''}">${i.label}</span>
         </a>`).join('')}
     </nav>`;
 }
@@ -599,13 +635,14 @@ function _injectMobileUser() {
              padding:14px 16px;min-width:190px;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
       <div style="font-size:13px;font-weight:600;color:#e2e2e2;margin-bottom:2px;white-space:nowrap">${esc(session.name)}</div>
       <div style="font-size:11px;color:#8b90a0;margin-bottom:14px">${esc(session.username)}</div>
-      <button onclick="if(confirm('Выйти из системы?')){sessionStorage.clear();location.href='login.html'}"
+      <button onclick="window._logoutConfirm && window._logoutConfirm()"
+        data-i18n-title="auth:login.logout" title="Выйти"
         style="width:100%;padding:9px 12px;background:rgba(255,180,171,0.1);
                border:1px solid rgba(255,180,171,0.3);border-radius:8px;
                color:#ffb4ab;font-size:13px;font-weight:600;cursor:pointer;
                display:flex;align-items:center;gap:8px">
         <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
-        Выйти
+        <span data-i18n="auth:login.logout">Выйти</span>
       </button>
     </div>`;
   // Закрытие панели при клике вне

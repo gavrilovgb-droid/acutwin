@@ -127,13 +127,13 @@
     <!-- Login form -->
     <form id="form-login" onsubmit="submitLogin(event)" class="space-y-4">
       <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Логин</label>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:login.labelUsername">Логин</label>
         <input id="l-username" type="text" autocomplete="username" required placeholder="doctor"
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
       </div>
       <div>
-        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Пароль</label>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="auth:login.labelPassword">Пароль</label>
         <input id="l-password" type="password" autocomplete="current-password" required
                class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
                       focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
@@ -142,7 +142,7 @@
         class="w-full py-3 bg-[#00F2FF]/15 hover:bg-[#00F2FF]/25 border border-[#00F2FF]/40 text-[#00F2FF]
                rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
         <span class="material-symbols-outlined text-base" style="zoom:1">login</span>
-        Войти
+        <span data-i18n="auth:login.submit">Войти</span>
       </button>
     </form>
 
@@ -155,6 +155,9 @@ import { login, getSession } from './auth.js';
 import { apiGetUsers, apiGetClinic, apiSetClinic, getToken } from './api.js';
 import { seedIfEmpty } from './seed.js';
 import { esc } from './shared.js';
+import { initI18n, t } from '/i18n.js';
+
+await initI18n();
 
 async function getClinic() {
   return apiGetClinic();
@@ -212,7 +215,7 @@ window.submitClinic = async (e) => {
 if (!window.isSecureContext) {
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b33;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-family:Inter,sans-serif';
-  banner.textContent = '⚠️ Сайт открыт через обычный HTTP. Авторизация недоступна — используйте HTTPS или localhost.';
+  banner.textContent = t('auth:error.httpWarning');
   document.body.prepend(banner);
 }
 
@@ -283,7 +286,7 @@ window.submitLogin = async (e) => {
       window.location.href = 'index.html';
     } else showError(result.error);
   } catch (err) {
-    showError(err.message || 'Ошибка авторизации. Проверьте подключение.');
+    showError(err.message || t('auth:error.generic'));
   }
 };
 

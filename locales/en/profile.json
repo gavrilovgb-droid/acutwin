@@ -1,0 +1,39 @@
+{
+  "pageTitle": "[TODO-EN] AcuTwin — Профиль",
+  "header": "[TODO-EN] Профиль",
+  "headerSub": "[TODO-EN] Информация для публичной страницы записи",
+  "doctor": {
+    "sectionTitle": "[TODO-EN] Профиль врача",
+    "nameLabel": "[TODO-EN] ФИО (нельзя изменить)",
+    "slugLabel": "[TODO-EN] Slug — короткая ссылка",
+    "specialtyLabel": "[TODO-EN] Специализация",
+    "specialtyPh": "[TODO-EN] Рефлексотерапевт, ТКМ",
+    "priceLabel": "[TODO-EN] Базовая цена приёма, ₽",
+    "photoLabel": "[TODO-EN] Фото — URL",
+    "bioLabel": "[TODO-EN] Краткое био",
+    "bioPh": "[TODO-EN] Стаж 12 лет, специализация по неврологическим заболеваниям...",
+    "previewLink": "[TODO-EN] Посмотреть публичную страницу",
+    "save": "[TODO-EN] Сохранить",
+    "qrTitle": "[TODO-EN] QR-код для записи",
+    "qrHint": "[TODO-EN] Пациент сканирует — и сразу попадает на форму записи"
+  },
+  "clinic": {
+    "sectionTitle": "[TODO-EN] Клиника",
+    "readonlyBadge": "[TODO-EN] только просмотр",
+    "nameLabel": "[TODO-EN] Название (управляется администратором)",
+    "phoneLabel": "[TODO-EN] Телефон",
+    "addressLabel": "[TODO-EN] Адрес",
+    "addressPh": "[TODO-EN] Москва, ул. Лесная, 5, 1 этаж",
+    "websiteLabel": "[TODO-EN] Сайт",
+    "logoLabel": "[TODO-EN] Лого — URL",
+    "previewLink": "[TODO-EN] Посмотреть страницу клиники",
+    "save": "[TODO-EN] Сохранить",
+    "noClinic": "[TODO-EN] Вы не привязаны к клинике. Привязку делает администратор."
+  },
+  "toast": {
+    "loadError": "[TODO-EN] Не удалось загрузить профиль",
+    "error": "[TODO-EN] Ошибка",
+    "doctorSaved": "[TODO-EN] Профиль сохранён",
+    "clinicSaved": "[TODO-EN] Клиника сохранена"
+  }
+}

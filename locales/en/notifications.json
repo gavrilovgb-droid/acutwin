@@ -1,0 +1,20 @@
+{
+  "booking": {
+    "new": "[TODO-EN] Новая запись от {{name}}",
+    "confirmed": "[TODO-EN] Запись подтверждена",
+    "cancelled": "[TODO-EN] Запись отменена",
+    "reminder": "[TODO-EN] Напоминание: приём завтра в {{time}}"
+  },
+  "reminder": {
+    "email": {
+      "subject": "[TODO-EN] Напоминание о приёме — AcuTwin",
+      "body": "[TODO-EN] Напоминаем, что завтра у вас приём в {{time}} у врача {{doctor}}."
+    }
+  },
+  "system": {
+    "saved": "[TODO-EN] Сохранено",
+    "deleted": "[TODO-EN] Удалено",
+    "error": "[TODO-EN] Произошла ошибка",
+    "copied": "[TODO-EN] Скопировано в буфер"
+  }
+}

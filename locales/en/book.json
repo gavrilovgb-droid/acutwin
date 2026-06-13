@@ -1,0 +1,69 @@
+{
+  "page": {
+    "title": "[TODO-EN] AcuTwin — Онлайн-запись",
+    "brand": "[TODO-EN] AcuTwin · Онлайн-запись",
+    "staffBadge": "[TODO-EN] 👁 Превью публичной страницы",
+    "staffBack": "[TODO-EN] ← Назад в АкуТвин"
+  },
+  "step": {
+    "selectDay": "[TODO-EN] Выберите день",
+    "selectTime": "[TODO-EN] Выберите время",
+    "yourData": "[TODO-EN] Ваши данные"
+  },
+  "form": {
+    "name": "[TODO-EN] ФИО *",
+    "namePlaceholder": "[TODO-EN] Иванов Иван Иванович",
+    "phone": "[TODO-EN] Телефон *",
+    "email": "[TODO-EN] Email (для подтверждения)",
+    "complaint": "[TODO-EN] Жалобы или причина обращения",
+    "complaintPlaceholder": "[TODO-EN] Кратко опишите, что беспокоит...",
+    "submit": "[TODO-EN] Записаться"
+  },
+  "footer": {
+    "prefix": "[TODO-EN] Работает на ",
+    "suffix": "[TODO-EN]  · Цифровая платформа для рефлексотерапевтов"
+  },
+  "success": {
+    "title": "[TODO-EN] Заявка принята",
+    "text": "[TODO-EN] Врач свяжется с вами в течение дня для подтверждения времени.",
+    "bookAgain": "[TODO-EN] Записаться ещё",
+    "home": "[TODO-EN] На главную"
+  },
+  "doctor": {
+    "notSpecified": "[TODO-EN] Врач не указан",
+    "prefix": "[TODO-EN] Запись к врачу: ",
+    "notFound": "[TODO-EN] Врач не найден",
+    "titlePrefix": "[TODO-EN] Запись · ",
+    "backToClinic": "[TODO-EN] ← Все врачи клиники"
+  },
+  "dow": [
+    "[TODO-EN] Вс",
+    "[TODO-EN] Пн",
+    "[TODO-EN] Вт",
+    "[TODO-EN] Ср",
+    "[TODO-EN] Чт",
+    "[TODO-EN] Пт",
+    "[TODO-EN] Сб"
+  ],
+  "today": "[TODO-EN] Сегодня",
+  "noSlots": "[TODO-EN] Нет доступных слотов",
+  "error": {
+    "selectTime": "[TODO-EN] Выберите время",
+    "fullName": "[TODO-EN] Введите ФИО полностью",
+    "phone": "[TODO-EN] Введите телефон",
+    "sending": "[TODO-EN] Отправляем...",
+    "failed": "[TODO-EN] Не удалось записаться",
+    "network": "[TODO-EN] Ошибка сети. Попробуйте ещё раз."
+  },
+  "summary": {
+    "doctor": "[TODO-EN] Врач:",
+    "clinic": "[TODO-EN] Клиника:",
+    "time": "[TODO-EN] Время:",
+    "timeAt": "[TODO-EN]  в ",
+    "patient": "[TODO-EN] Пациент:",
+    "contact": "[TODO-EN] Контакт:"
+  },
+  "tg": {
+    "remind": "[TODO-EN] Получать напоминания в Telegram"
+  }
+}

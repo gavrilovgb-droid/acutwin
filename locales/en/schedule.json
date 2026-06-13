@@ -1,0 +1,109 @@
+{
+  "pageTitle": "[TODO-EN] AcuTwin — Расписание",
+  "header": "[TODO-EN] Расписание",
+  "nav": {
+    "today": "[TODO-EN] Сегодня",
+    "back": "[TODO-EN] Назад",
+    "forward": "[TODO-EN] Вперёд",
+    "link": "[TODO-EN] Ссылка",
+    "newAppt": "[TODO-EN] Новая запись",
+    "copyLink": "[TODO-EN] Скопировать ссылку для пациентов"
+  },
+  "mode": {
+    "day": "[TODO-EN] День",
+    "week": "[TODO-EN] Неделя"
+  },
+  "dow": {
+    "0": "[TODO-EN] Пн",
+    "1": "[TODO-EN] Вт",
+    "2": "[TODO-EN] Ср",
+    "3": "[TODO-EN] Чт",
+    "4": "[TODO-EN] Пт",
+    "5": "[TODO-EN] Сб",
+    "6": "[TODO-EN] Вс"
+  },
+  "card": {
+    "minUnit": "[TODO-EN] м"
+  },
+  "form": {
+    "titleNew": "[TODO-EN] Новая запись",
+    "titleEdit": "[TODO-EN] Запись",
+    "patientLabel": "[TODO-EN] Пациент *",
+    "patientPh": "[TODO-EN] Имя пациента",
+    "dateLabel": "[TODO-EN] Дата *",
+    "timeLabel": "[TODO-EN] Время *",
+    "durationLabel": "[TODO-EN] Длительность",
+    "serviceLabel": "[TODO-EN] Услуга",
+    "servicePh": "[TODO-EN] Акупунктура",
+    "serviceDefault": "[TODO-EN] Акупунктура",
+    "doctorLabel": "[TODO-EN] Врач",
+    "phoneLabel": "[TODO-EN] Телефон",
+    "priceLabel": "[TODO-EN] Цена, ₽",
+    "emailLabel": "[TODO-EN] Email пациента (для напоминания)",
+    "notesLabel": "[TODO-EN] Заметки",
+    "notesPh": "[TODO-EN] Жалобы, особенности...",
+    "statusLabel": "[TODO-EN] Статус",
+    "allDoctors": "[TODO-EN] Все врачи",
+    "duration": {
+      "15": "[TODO-EN] 15 мин",
+      "30": "[TODO-EN] 30 мин",
+      "45": "[TODO-EN] 45 мин",
+      "60": "[TODO-EN] 60 мин",
+      "75": "[TODO-EN] 75 мин",
+      "90": "[TODO-EN] 90 мин"
+    },
+    "status": {
+      "scheduled": "[TODO-EN] Запланирована",
+      "pending": "[TODO-EN] Ожидает подтверждения",
+      "done": "[TODO-EN] Завершена",
+      "cancelled": "[TODO-EN] Отменена"
+    }
+  },
+  "pending": {
+    "info": "[TODO-EN] Заявка от пациента — требует подтверждения",
+    "reject": "[TODO-EN] Отклонить",
+    "confirm": "[TODO-EN] Подтвердить"
+  },
+  "action": {
+    "delete": "[TODO-EN] Удалить",
+    "openRecord": "[TODO-EN] Открыть приём",
+    "cancel": "[TODO-EN] Отмена",
+    "save": "[TODO-EN] Сохранить"
+  },
+  "error": {
+    "required": "[TODO-EN] Заполните пациента, дату и время",
+    "saveFailed": "[TODO-EN] Ошибка сохранения",
+    "slotBusy": "[TODO-EN] Это время занято. Выберите другой слот",
+    "generic": "[TODO-EN] Ошибка",
+    "deleteFailed": "[TODO-EN] Не удалось удалить",
+    "updateFailed": "[TODO-EN] Не удалось обновить"
+  },
+  "confirm": {
+    "delete": "[TODO-EN] Удалить запись?",
+    "soapCount": "[TODO-EN] ⚠️ У этого приёма есть {{count}} SOAP-{{word}} в базе.",
+    "deleteSimple": "[TODO-EN] Удалить запись о приёме? SOAP-данные останутся в базе.",
+    "soapWord1": "[TODO-EN] запись",
+    "soapWord24": "[TODO-EN] записи",
+    "soapWord5": "[TODO-EN] записей",
+    "doctorPrompt": "[TODO-EN] Логин или slug врача:"
+  },
+  "share": {
+    "title": "[TODO-EN] Ссылки для пациентов",
+    "doctorDirect": "[TODO-EN] К врачу напрямую",
+    "clinicAll": "[TODO-EN] Страница клиники (все врачи)",
+    "copy": "[TODO-EN] Копировать",
+    "copiedMark": "[TODO-EN] ✓",
+    "qrPrint": "[TODO-EN] QR-код для печати",
+    "embedCode": "[TODO-EN] ⟨/⟩ Код для встраивания на сайт клиники",
+    "embedHint": "[TODO-EN] Один раз вставьте на свой сайт — появится кнопка «Записаться онлайн», которая открывает запись поверх вашей страницы:",
+    "copyCode": "[TODO-EN] Копировать код",
+    "copiedCode": "[TODO-EN] ✓ Скопировано",
+    "alsoPlace": "[TODO-EN] Также разместите ссылку или QR-код:",
+    "ch0": "[TODO-EN] В соцсетях (VK, Telegram, Instagram)",
+    "ch1": "[TODO-EN] В Яндекс.Картах / 2ГИС / Google Maps",
+    "ch2": "[TODO-EN] На визитке врача, в холле клиники",
+    "ch3": "[TODO-EN] В email-подписи",
+    "bookOnline": "[TODO-EN] Записаться онлайн",
+    "allDoctors": "[TODO-EN] Все врачи клиники"
+  }
+}

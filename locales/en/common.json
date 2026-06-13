@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "newVisit": "[TODO-EN] Новый приём",
+    "schedule": "[TODO-EN] Расписание",
+    "treatment": "[TODO-EN] Тактика лечения",
+    "atlas": "[TODO-EN] Атлас точек",
+    "history": "[TODO-EN] История приёмов",
+    "video": "[TODO-EN] Видеообучение",
+    "profile": "[TODO-EN] Профиль",
+    "admin": "[TODO-EN] Клиенты и оплата",
+    "billing": "[TODO-EN] Биллинг",
+    "dashboard": "[TODO-EN] Панель клиники",
+    "logout": "[TODO-EN] Выйти"
+  },
+  "action": {
+    "save": "[TODO-EN] Сохранить",
+    "cancel": "[TODO-EN] Отмена",
+    "delete": "[TODO-EN] Удалить",
+    "edit": "[TODO-EN] Редактировать",
+    "add": "[TODO-EN] Добавить",
+    "close": "[TODO-EN] Закрыть",
+    "confirm": "[TODO-EN] Подтвердить",
+    "back": "[TODO-EN] Назад",
+    "search": "[TODO-EN] Поиск",
+    "filter": "[TODO-EN] Фильтр",
+    "export": "[TODO-EN] Экспорт",
+    "print": "[TODO-EN] Печать",
+    "download": "[TODO-EN] Скачать",
+    "open": "[TODO-EN] Открыть",
+    "create": "[TODO-EN] Создать",
+    "update": "[TODO-EN] Обновить",
+    "loading": "[TODO-EN] Загрузка...",
+    "saving": "[TODO-EN] Сохранение...",
+    "saveDone": "[TODO-EN] Сохранено",
+    "yes": "[TODO-EN] Да",
+    "no": "[TODO-EN] Нет"
+  },
+  "status": {
+    "active": "[TODO-EN] Активен",
+    "inactive": "[TODO-EN] Неактивен",
+    "pending": "[TODO-EN] Ожидает",
+    "scheduled": "[TODO-EN] Запланирован",
+    "done": "[TODO-EN] Завершён",
+    "cancelled": "[TODO-EN] Отменён",
+    "trial": "[TODO-EN] Пробный период",
+    "expired": "[TODO-EN] Истёк",
+    "grace": "[TODO-EN] Льготный период"
+  },
+  "role": {
+    "admin": "[TODO-EN] Администратор",
+    "boss": "[TODO-EN] Руководитель",
+    "doctor": "[TODO-EN] Врач"
+  },
+  "time": {
+    "today": "[TODO-EN] Сегодня",
+    "yesterday": "[TODO-EN] Вчера",
+    "tomorrow": "[TODO-EN] Завтра",
+    "min": "[TODO-EN] мин",
+    "hour": "[TODO-EN] ч",
+    "day": "[TODO-EN] д"
+  },
+  "patient": "[TODO-EN] Пациент",
+  "doctor": "[TODO-EN] Врач",
+  "clinic": "[TODO-EN] Клиника",
+  "date": "[TODO-EN] Дата",
+  "noData": "[TODO-EN] Нет данных",
+  "notFound": "[TODO-EN] Не найдено",
+  "brand": {
+    "tagline": "[TODO-EN] для практикующего рефлексотерапевта",
+    "subtitle": "[TODO-EN] Цифровой помощник рефлексотерапевта"
+  },
+  "wuxing": {
+    "name": "[TODO-EN] У-Син",
+    "metal": "[TODO-EN] Металл",
+    "earth": "[TODO-EN] Земля",
+    "fire": "[TODO-EN] Огонь",
+    "water": "[TODO-EN] Вода",
+    "fire2": "[TODO-EN] Огонь²",
+    "wood": "[TODO-EN] Дерево"
+  },
+  "about": {
+    "tabs": {
+      "features": "[TODO-EN] Возможности",
+      "literature": "[TODO-EN] 📚 Литература",
+      "disclaimer": "[TODO-EN] ⚠️ Важно"
+    }
+  }
+}

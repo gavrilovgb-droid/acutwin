@@ -1,0 +1,68 @@
+{
+  "title": "[TODO-EN] Панель управления",
+  "pageTitle": "[TODO-EN] AcuTwin — Запись",
+  "newVisit": "[TODO-EN] Новый приём",
+  "newVisitTitle": "[TODO-EN] Запись пациента",
+  "newAppointment": "[TODO-EN] Новый приём",
+  "patient": {
+    "select": "[TODO-EN] Выберите пациента",
+    "search": "[TODO-EN] Поиск пациента...",
+    "new": "[TODO-EN] Новый пациент",
+    "name": "[TODO-EN] Имя пациента",
+    "noPatients": "[TODO-EN] Пациентов пока нет"
+  },
+  "visit": {
+    "start": "[TODO-EN] Начать приём",
+    "save": "[TODO-EN] Сохранить приём",
+    "saveConfirm": "[TODO-EN] Сохранить запись о приёме?",
+    "saved": "[TODO-EN] Запись сохранена",
+    "nrsBeforeLabel": "[TODO-EN] Боль до",
+    "nrsAfterLabel": "[TODO-EN] Боль после",
+    "deqi": "[TODO-EN] Де-ци",
+    "exposure": "[TODO-EN] Экспозиция (мин)",
+    "stimulation": "[TODO-EN] Стимуляция",
+    "progress": "[TODO-EN] Прогресс",
+    "toTreatment": "[TODO-EN] К тактике лечения",
+    "recipe": "[TODO-EN] Рецепт"
+  },
+  "form": {
+    "date": "[TODO-EN] Дата",
+    "time": "[TODO-EN] Время",
+    "patientName": "[TODO-EN] ФИО пациента",
+    "namePlaceholder": "[TODO-EN] Иванов Иван Иванович",
+    "age": "[TODO-EN] Возраст",
+    "gender": "[TODO-EN] Пол",
+    "genderMale": "[TODO-EN] Мужской",
+    "genderFemale": "[TODO-EN] Женский",
+    "genderAny": "[TODO-EN] — выбрать —",
+    "doctor": "[TODO-EN] Лечащий врач",
+    "doctorPlaceholder": "[TODO-EN] Фамилия И.О.",
+    "reason": "[TODO-EN] Причина приёма / жалобы",
+    "reasonPlaceholder": "[TODO-EN] Опишите основные жалобы пациента...",
+    "agePlaceholder": "[TODO-EN] лет"
+  },
+  "recent": {
+    "title": "[TODO-EN] Последние записи",
+    "allHistory": "[TODO-EN] Вся история →",
+    "search": "[TODO-EN] Найти пациента...",
+    "notFound": "[TODO-EN] Пациент не найден",
+    "noRecords": "[TODO-EN] Записей пока нет",
+    "quick": "[TODO-EN] Быстрый выбор:"
+  },
+  "status": {
+    "started": "[TODO-EN] Начат",
+    "active": "[TODO-EN] В процессе",
+    "completed": "[TODO-EN] Завершён"
+  },
+  "alert": {
+    "enterName": "[TODO-EN] Введите ФИО пациента",
+    "ageRange": "[TODO-EN] Возраст должен быть от 5 до 80 лет"
+  },
+  "tabs": {
+    "diseases": "[TODO-EN] Болезни",
+    "tcm": "[TODO-EN] Рецепты ТКМ",
+    "wuxing": "[TODO-EN] У-Син",
+    "points": "[TODO-EN] Точки",
+    "notes": "[TODO-EN] Заметки"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "pageTitle": "[TODO-EN] AcuTwin — Атлас точек",
+  "header": "[TODO-EN] Атлас точек",
+  "searchPh": "[TODO-EN] Поиск точки (код, название)...",
+  "selectPoint": "[TODO-EN] Выберите точку из списка",
+  "loadError": "[TODO-EN] Ошибка загрузки данных",
+  "notFound": "[TODO-EN] Ничего не найдено",
+  "nav": {
+    "meridians": "[TODO-EN] Меридианы",
+    "special": "[TODO-EN] Специальные точки",
+    "catalog": "[TODO-EN] Каталог",
+    "all": "[TODO-EN] Все",
+    "pointCount": "[TODO-EN] {{n}} точек"
+  },
+  "detail": {
+    "element": "[TODO-EN] Стихия:",
+    "location": "[TODO-EN] Локализация",
+    "indications": "[TODO-EN] Показания",
+    "technique": "[TODO-EN] Техника",
+    "merVideo": "[TODO-EN] Меридиан {{name}} — обзорное видео",
+    "merHeader": "[TODO-EN] Меридиан {{name}}",
+    "pointCount": "[TODO-EN] {{n}} точек",
+    "excess": "[TODO-EN] Симптомы избытка",
+    "deficit": "[TODO-EN] Симптомы недостатка",
+    "pointList": "[TODO-EN] Список точек",
+    "merPointCount": "[TODO-EN] Точки меридиана · {{n}}",
+    "copyright": "[TODO-EN] © П. В. Белоусов — zhong-yi.narod.ru"
+  },
+  "table": {
+    "standardTitle": "[TODO-EN] Стандартные точки меридианов",
+    "standardHeader": "[TODO-EN] Стандартные точки меридианов",
+    "colMeridian": "[TODO-EN] Меридиан",
+    "colTonify": "[TODO-EN] Тониз.",
+    "colSedate": "[TODO-EN] Седат.",
+    "colLo": "[TODO-EN] Ло",
+    "colLoSub": "[TODO-EN] (связующая)",
+    "colYuan": "[TODO-EN] Юань",
+    "colYuanSub": "[TODO-EN] (источник)",
+    "colShu": "[TODO-EN] Шу",
+    "colShuSub": "[TODO-EN] (спины)",
+    "colMu": "[TODO-EN] Му",
+    "colMuSub": "[TODO-EN] (сигнальная)",
+    "colXi": "[TODO-EN] Си",
+    "colXiSub": "[TODO-EN] (щель/противоболевая)"
+  },
+  "pain": {
+    "title": "[TODO-EN] Противоболевые точки",
+    "hint": "[TODO-EN] Точки-щели (Си-пункты) — активируются при острой боли и острых состояниях.",
+    "colHe": "[TODO-EN] Хэ-пункт",
+    "colInd": "[TODO-EN] Показание",
+    "typePain": "[TODO-EN] Противоболевая",
+    "typeBlood": "[TODO-EN] Лечение крови",
+    "heLabel": "[TODO-EN] Хэ-точки",
+    "merLabel": "[TODO-EN] Меридиан {{mer}}"
+  },
+  "emergency": {
+    "title": "[TODO-EN] Точки скорой помощи",
+    "hint": "[TODO-EN] Точки первой помощи при неотложных состояниях"
+  },
+  "dangerous": {
+    "title": "[TODO-EN] Опасные точки",
+    "hint": "[TODO-EN] Точки, не рекомендуемые для иглоукалывания и прижигания",
+    "noNeedle": "[TODO-EN] 🚫 Не колоть",
+    "noMoxa": "[TODO-EN] 🔥 Не прижигать"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "auth": {
+    "unauthorized": "[TODO-EN] Необходима авторизация",
+    "forbidden": "[TODO-EN] Доступ запрещён",
+    "sessionExpired": "[TODO-EN] Сессия истекла. Войдите снова."
+  },
+  "network": {
+    "offline": "[TODO-EN] Нет подключения к интернету",
+    "timeout": "[TODO-EN] Превышено время ожидания",
+    "serverError": "[TODO-EN] Ошибка сервера. Попробуйте позже."
+  },
+  "validation": {
+    "required": "[TODO-EN] Поле обязательно для заполнения",
+    "tooShort": "[TODO-EN] Слишком короткое значение",
+    "tooLong": "[TODO-EN] Слишком длинное значение",
+    "invalidFormat": "[TODO-EN] Неверный формат"
+  },
+  "booking": {
+    "conflict": "[TODO-EN] Это время уже занято",
+    "duplicate": "[TODO-EN] Запись с такими данными уже существует",
+    "pastTime": "[TODO-EN] Нельзя записаться на прошедшее время"
+  },
+  "storage": {
+    "quotaExceeded": "[TODO-EN] Хранилище браузера переполнено. Удалите старые записи или очистите кэш."
+  },
+  "generic": "[TODO-EN] Что-то пошло не так. Обновите страницу."
+}

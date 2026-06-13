@@ -1,0 +1,45 @@
+{
+  "atlas": {
+    "title": "[TODO-EN] Атлас точек",
+    "search": "[TODO-EN] Поиск точки...",
+    "totalPoints": "[TODO-EN] {{count}} точек",
+    "meridian": "[TODO-EN] Меридиан",
+    "element": "[TODO-EN] Элемент",
+    "location": "[TODO-EN] Локализация",
+    "action": "[TODO-EN] Действие",
+    "indication": "[TODO-EN] Показания",
+    "technique": "[TODO-EN] Техника",
+    "depth": "[TODO-EN] Глубина введения"
+  },
+  "meridian": {
+    "title": "[TODO-EN] Меридианы",
+    "excess": "[TODO-EN] Синдром полноты",
+    "deficiency": "[TODO-EN] Синдром пустоты",
+    "element": {
+      "metal": "[TODO-EN] Металл",
+      "wood": "[TODO-EN] Дерево",
+      "water": "[TODO-EN] Вода",
+      "fire": "[TODO-EN] Огонь",
+      "earth": "[TODO-EN] Земля"
+    }
+  },
+  "disease": {
+    "search": "[TODO-EN] Поиск по болезням...",
+    "category": "[TODO-EN] Категория",
+    "mkb10": "[TODO-EN] МКБ-10",
+    "evidence": "[TODO-EN] Доказательность",
+    "gradeA": "[TODO-EN] Уровень A",
+    "gradeB": "[TODO-EN] Уровень B",
+    "gradeC": "[TODO-EN] Уровень C",
+    "points": "[TODO-EN] Точки воздействия",
+    "mainPoints": "[TODO-EN] Основные точки",
+    "extraPoints": "[TODO-EN] Дополнительные точки",
+    "video": "[TODO-EN] Видео по теме"
+  },
+  "tcm": {
+    "title": "[TODO-EN] Рецепты ТКМ",
+    "syndrome": "[TODO-EN] Синдром",
+    "recipe": "[TODO-EN] Рецепт",
+    "herbs": "[TODO-EN] Фитотерапия"
+  }
+}

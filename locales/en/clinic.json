@@ -1,0 +1,11 @@
+{
+  "page": {
+    "title": "[TODO-EN] AcuTwin — Клиника",
+    "doctors": "[TODO-EN] Врачи клиники",
+    "empty": "[TODO-EN] Врачи скоро появятся"
+  },
+  "notSpecified": "[TODO-EN] Клиника не указана",
+  "notFound": "[TODO-EN] Клиника не найдена",
+  "titleSuffix": "[TODO-EN]  — Запись на приём",
+  "bookBtn": "[TODO-EN] Записаться →"
+}

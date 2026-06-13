@@ -7,12 +7,14 @@
  *   t('common:nav.schedule')  // → 'Расписание'
  *
  * Phase 1 lock: FORCED_LOCALE = 'ru'
- * Phase 3: change FORCED_LOCALE to null to enable auto-detection
+ * Phase 3: set FORCED_LOCALE = null to enable per-user locale detection.
+ *          Only locales with status='enabled' or status='internal' (+ internal flag)
+ *          will be accepted — see isLocaleAllowed() below.
  */
 
-import { DEFAULT_LOCALE, FALLBACK_LOCALE } from '/config/locales.js';
+import { DEFAULT_LOCALE, FALLBACK_LOCALE, SUPPORTED_LOCALES, isLocaleEnabled } from '/config/locales.js';
 
-const FORCED_LOCALE = 'ru'; // Phase 1: lock all prod users to Russian
+const FORCED_LOCALE = 'ru'; // Phase 1: all prod users locked to Russian
 
 const NAMESPACES = [
   'common', 'auth', 'dashboard',
@@ -21,6 +23,14 @@ const NAMESPACES = [
 ];
 
 let _initialized = false;
+
+// Resolves the locale to use. Ignores any locale that isn't 'enabled' in prod.
+// Internal locales require explicit opt-in (future: isInternalUser flag).
+function resolveLocale(requested) {
+  if (FORCED_LOCALE) return FORCED_LOCALE;
+  if (requested && isLocaleEnabled(requested)) return requested;
+  return DEFAULT_LOCALE; // always fall back to 'ru'
+}
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -40,7 +50,7 @@ export async function initI18n() {
   await loadScript('/vendor/i18next-http-backend.min.js');
   await loadScript('/vendor/i18next-detector.min.js');
 
-  const lng = FORCED_LOCALE || DEFAULT_LOCALE;
+  const lng = resolveLocale();
 
   await window.i18next
     .use(window.i18nextHttpBackend)

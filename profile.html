@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>AcuTwin</title>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<meta name="theme-color" content="#131313">
+<style>
+.fld-label { font-size:10px; color:#8b90a0; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; display:block; }
+.fld { width:100%; background:#1a1a2a; border:1px solid #414755; border-radius:10px; padding:9px 12px; font-size:13px; color:#e2e2e2; outline:none; transition:border-color .15s; }
+.fld:focus { border-color:#0A84FF; }
+textarea.fld { resize:vertical; min-height:80px; }
+.fld-hint { font-size:11px; color:#6b7280; margin-top:5px; line-height:1.4; }
+.btn-save { padding:10px 24px; background:#0A84FF; color:#fff; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; transition:background .15s; }
+.btn-save:hover { background:#0a6ed4; }
+.btn-save:disabled { background:#2a2a35; color:#6b7280; cursor:not-allowed; }
+.section { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:18px; }
+.section-head { display:flex; align-items:center; gap:8px; margin-bottom:18px; }
+.section-title { font-size:15px; font-weight:700; color:#e2e2e2; font-family:'Hanken Grotesk',sans-serif; }
+.toast { position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px; font-size:13px; font-weight:600; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:100; transition:opacity .25s; }
+.toast.ok  { background:#30D158; }
+.toast.err { background:#FF453A; }
+.preview-link { font-size:12px; color:#0A84FF; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.preview-link:hover { text-decoration:underline; }
+.avatar-prev { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid rgba(255,255,255,0.1); object-fit:cover; }
+.logo-prev   { width:60px; height:60px; border-radius:14px; background:linear-gradient(135deg,#1a1a2e,#16213e); border:1px solid rgba(255,255,255,0.1); object-fit:cover; }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 h-screen flex flex-col">
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-4 px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="profile:header">Профиль</h2>
+    <span class="text-xs text-[#8b90a0]" data-i18n="profile:headerSub">Информация для публичной страницы записи</span>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-6" style="max-width:760px;width:100%;margin:0 auto">
+
+    <!-- ── Профиль врача ── -->
+    <div id="doc-section" class="section hidden">
+      <div class="section-head">
+        <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:22px">badge</span>
+        <div class="section-title" data-i18n="profile:doctor.sectionTitle">Профиль врача</div>
+      </div>
+
+      <div style="display:grid;gap:14px;grid-template-columns:1fr 1fr">
+        <div style="grid-column:1/-1">
+          <label class="fld-label" data-i18n="profile:doctor.nameLabel">ФИО (нельзя изменить)</label>
+          <input id="d-name" class="fld" readonly disabled style="opacity:.6">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:doctor.slugLabel">Slug — короткая ссылка</label>
+          <input id="d-slug" class="fld" placeholder="petrov-p-p">
+          <div class="fld-hint" id="d-slug-hint"></div>
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:doctor.specialtyLabel">Специализация</label>
+          <input id="d-specialty" class="fld" data-i18n-placeholder="profile:doctor.specialtyPh" placeholder="Рефлексотерапевт, ТКМ">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:doctor.priceLabel">Базовая цена приёма, ₽</label>
+          <input id="d-price" type="number" class="fld" placeholder="3500">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:doctor.photoLabel">Фото — URL</label>
+          <input id="d-photo" class="fld" placeholder="https://...">
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="fld-label" data-i18n="profile:doctor.bioLabel">Краткое био</label>
+          <textarea id="d-bio" class="fld" data-i18n-placeholder="profile:doctor.bioPh" placeholder="Стаж 12 лет, специализация по неврологическим заболеваниям..."></textarea>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-top:18px">
+        <img id="d-photo-prev" class="avatar-prev" src="">
+        <div style="flex:1">
+          <a id="d-preview" class="preview-link" target="_blank">
+            <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
+            <span data-i18n="profile:doctor.previewLink">Посмотреть публичную страницу</span>
+          </a>
+        </div>
+        <button class="btn-save" onclick="saveDoctor()" data-i18n="profile:doctor.save">Сохранить</button>
+      </div>
+
+      <div style="margin-top:14px;padding:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8b90a0;margin-bottom:10px" data-i18n="profile:doctor.qrTitle">QR-код для записи</div>
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <img id="d-qr" src="" alt="QR" style="width:96px;height:96px;border-radius:8px;background:#fff;padding:4px;flex-shrink:0">
+          <div>
+            <div style="font-size:12px;color:#c1c6d7;margin-bottom:8px" data-i18n="profile:doctor.qrHint">Пациент сканирует — и сразу попадает на форму записи</div>
+            <a id="d-qr-link" href="#" style="font-size:11px;color:#0A84FF;word-break:break-all;line-height:1.5" target="_blank"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Клиника ── -->
+    <div id="clinic-section" class="section hidden">
+      <div class="section-head">
+        <span class="material-symbols-outlined text-[#30D158]" style="font-size:22px">local_hospital</span>
+        <div class="section-title" data-i18n="profile:clinic.sectionTitle">Клиника</div>
+        <span id="clinic-readonly-badge" class="hidden" style="font-size:10px;padding:2px 8px;border-radius:5px;background:rgba(255,159,10,0.15);color:#FF9F0A;font-weight:700" data-i18n="profile:clinic.readonlyBadge">только просмотр</span>
+      </div>
+
+      <div style="display:grid;gap:14px;grid-template-columns:1fr 1fr">
+        <div style="grid-column:1/-1">
+          <label class="fld-label" data-i18n="profile:clinic.nameLabel">Название (управляется администратором)</label>
+          <input id="c-name" class="fld" readonly disabled style="opacity:.6">
+        </div>
+        <div>
+          <label class="fld-label">Slug</label>
+          <input id="c-slug" class="fld" placeholder="meridian">
+          <div class="fld-hint" id="c-slug-hint"></div>
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:clinic.phoneLabel">Телефон</label>
+          <input id="c-phone" class="fld" placeholder="+7...">
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="fld-label" data-i18n="profile:clinic.addressLabel">Адрес</label>
+          <input id="c-address" class="fld" data-i18n-placeholder="profile:clinic.addressPh" placeholder="Москва, ул. Лесная, 5, 1 этаж">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:clinic.websiteLabel">Сайт</label>
+          <input id="c-website" class="fld" placeholder="https://...">
+        </div>
+        <div>
+          <label class="fld-label" data-i18n="profile:clinic.logoLabel">Лого — URL</label>
+          <input id="c-logo" class="fld" placeholder="https://...">
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-top:18px">
+        <img id="c-logo-prev" class="logo-prev" src="">
+        <div style="flex:1">
+          <a id="c-preview" class="preview-link" target="_blank">
+            <span class="material-symbols-outlined" style="font-size:14px">open_in_new</span>
+            <span data-i18n="profile:clinic.previewLink">Посмотреть страницу клиники</span>
+          </a>
+        </div>
+        <button id="c-save-btn" class="btn-save" onclick="saveClinic()" data-i18n="profile:clinic.save">Сохранить</button>
+      </div>
+    </div>
+
+    <div id="no-clinic" class="hidden text-center text-sm text-[#8b90a0] mt-6">
+      <span data-i18n="profile:clinic.noClinic">Вы не привязаны к клинике. Привязку делает администратор.</span>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc } from './shared.js';
+import { initI18n, t } from '/i18n.js';
+import { requireAuth } from './auth.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+await initI18n();
+document.title = t('profile:pageTitle');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('profile', session);
+initElementClock();
+
+const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
+const _jsonHdr = () => ({ headers: { 'Content-Type':'application/json', Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
+
+let profileData = null;
+
+async function loadProfile() {
+  const r = await fetch('/api/profile', _authHdr());
+  if (!r.ok) { showToast(t('profile:toast.loadError'), 'err'); return; }
+  profileData = await r.json();
+
+  // Doctor section (показываем только doctor/boss)
+  if (profileData.doctor.role === 'doctor' || profileData.doctor.role === 'boss') {
+    document.getElementById('doc-section').classList.remove('hidden');
+    const d = profileData.doctor;
+    document.getElementById('d-name').value = d.name;
+    document.getElementById('d-slug').value = d.slug || '';
+    document.getElementById('d-specialty').value = d.specialty || '';
+    document.getElementById('d-price').value = d.price_default ?? '';
+    document.getElementById('d-photo').value = d.photo || '';
+    document.getElementById('d-bio').value = d.bio || '';
+    updateDoctorPreview();
+  }
+
+  // Clinic section
+  if (profileData.clinic) {
+    document.getElementById('clinic-section').classList.remove('hidden');
+    const c = profileData.clinic;
+    document.getElementById('c-name').value = c.name;
+    document.getElementById('c-slug').value = c.slug || '';
+    document.getElementById('c-phone').value = c.phone || '';
+    document.getElementById('c-address').value = c.address || '';
+    document.getElementById('c-website').value = c.website || '';
+    document.getElementById('c-logo').value = c.logo || '';
+    updateClinicPreview();
+
+    if (!c.canEdit) {
+      document.getElementById('clinic-readonly-badge').classList.remove('hidden');
+      ['c-slug','c-phone','c-address','c-website','c-logo'].forEach(id => {
+        const el = document.getElementById(id);
+        el.readOnly = true; el.disabled = true; el.style.opacity = '.6';
+      });
+      document.getElementById('c-save-btn').style.display = 'none';
+    }
+  } else if (profileData.doctor.role !== 'admin') {
+    document.getElementById('no-clinic').classList.remove('hidden');
+  }
+}
+
+function updateDoctorPreview() {
+  const slug = document.getElementById('d-slug').value.trim() || profileData.doctor.username;
+  const photo = document.getElementById('d-photo').value.trim();
+  document.getElementById('d-preview').href = '/d/' + encodeURIComponent(slug);
+  document.getElementById('d-photo-prev').src = photo || _avatarFallback();
+  const bookUrl = 'https://acutwin.ru/book.html?doctor=' + encodeURIComponent(slug);
+  document.getElementById('d-qr').src = '/api/qr?slug=' + encodeURIComponent(slug);
+  document.getElementById('d-qr-link').href = bookUrl;
+  document.getElementById('d-qr-link').textContent = bookUrl;
+}
+function updateClinicPreview() {
+  const slug = document.getElementById('c-slug').value.trim() || (profileData.clinic && profileData.clinic.slug) || '';
+  const logo = document.getElementById('c-logo').value.trim();
+  document.getElementById('c-preview').href = slug ? '/c/' + encodeURIComponent(slug) : '#';
+  document.getElementById('c-logo-prev').src = logo || _logoFallback();
+}
+function _avatarFallback() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="%231a1a2e"/><text x="50%" y="55%" text-anchor="middle" font-family="Arial" font-size="22" fill="%238b90a0">👨‍⚕️</text></svg>');
+}
+function _logoFallback() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"><rect width="60" height="60" fill="%231a1a2e"/><text x="50%" y="58%" text-anchor="middle" font-family="Arial" font-size="22" fill="%238b90a0">🏥</text></svg>');
+}
+
+document.getElementById('d-slug').addEventListener('input', updateDoctorPreview);
+document.getElementById('d-photo').addEventListener('input', updateDoctorPreview);
+document.getElementById('c-slug').addEventListener('input', updateClinicPreview);
+document.getElementById('c-logo').addEventListener('input', updateClinicPreview);
+
+window.saveDoctor = async () => {
+  const data = {
+    slug: document.getElementById('d-slug').value.trim() || null,
+    specialty: document.getElementById('d-specialty').value.trim() || null,
+    photo: document.getElementById('d-photo').value.trim() || null,
+    bio: document.getElementById('d-bio').value.trim() || null,
+    price_default: document.getElementById('d-price').value || null,
+  };
+  const r = await fetch('/api/profile/doctor', { method:'PUT', ..._jsonHdr(), body: JSON.stringify(data) });
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) return showToast(j.error || t('profile:toast.error'), 'err');
+  showToast(t('profile:toast.doctorSaved'), 'ok');
+  await loadProfile();
+};
+
+window.saveClinic = async () => {
+  const data = {
+    slug: document.getElementById('c-slug').value.trim() || null,
+    address: document.getElementById('c-address').value.trim() || null,
+    tenant_phone: document.getElementById('c-phone').value.trim() || null,
+    website: document.getElementById('c-website').value.trim() || null,
+    logo: document.getElementById('c-logo').value.trim() || null,
+  };
+  const r = await fetch('/api/profile/clinic', { method:'PUT', ..._jsonHdr(), body: JSON.stringify(data) });
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) return showToast(j.error || t('profile:toast.error'), 'err');
+  showToast(t('profile:toast.clinicSaved'), 'ok');
+  await loadProfile();
+};
+
+function showToast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (kind === 'err' ? 'err' : 'ok');
+  t.style.display = 'block';
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 250); }, 2200);
+}
+
+await loadProfile();
+</script>
+</body>
+</html>

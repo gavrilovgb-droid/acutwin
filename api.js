@@ -37,7 +37,7 @@ async function req(method, url, body, signal) {
 // ── Auth ───────────────────────────────────────────────────
 export async function apiLogin(username, password) {
   const r = await req('POST', '/api/login', { username, password, hostname: location.hostname });
-  if (!r) return { ok: false, error: 'Ошибка сети' };
+  if (!r) return { ok: false, error: 'Ошибка сети' }; /* i18n-ok */
   if (r.ok) {
     setToken(r.data.token);
     // Совместимость: сохраняем сессию в старом формате для shared.js

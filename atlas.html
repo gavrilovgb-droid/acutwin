@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
-<title>AcuTwin — Атлас точек</title>
+<title>AcuTwin</title>
 <link rel="stylesheet" href="tailwind.css?v=2">
 <link href="fonts.css?v=2" rel="stylesheet"/>
 <link href="design.css?v=3" rel="stylesheet"/>
@@ -35,14 +35,14 @@
 
   <!-- Top bar -->
   <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-4 px-6 flex-shrink-0">
-    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Атлас точек</h2>
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="atlas:header">Атлас точек</h2>
     <div class="ml-auto flex items-center gap-3">
       <span id="pt-count" class="text-xs text-[#8b90a0] font-mono"></span>
       <div class="relative group">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-base group-focus-within:text-[#00F2FF] transition-colors">search</span>
         <input id="atlas-search"
                class="pl-9 pr-4 py-1.5 w-64 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"
-               placeholder="Поиск точки (код, название)..."/>
+               data-i18n-placeholder="atlas:searchPh" placeholder="Поиск точки (код, название)..."/>
       </div>
     </div>
   </header>
@@ -67,7 +67,7 @@
       <div id="point-detail" class="min-h-full flex items-center justify-center text-[#8b90a0] text-sm">
         <div class="text-center">
           <span class="material-symbols-outlined text-5xl text-[#414755] mb-3 block">adjust</span>
-          Выберите точку из списка
+          <span data-i18n="atlas:selectPoint">Выберите точку из списка</span>
         </div>
       </div>
     </div>
@@ -107,35 +107,38 @@
 
 <script type="module">
 import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
+import { initI18n, t } from '/i18n.js';
 import { requireAuth } from './auth.js';
 import { getToken } from './api.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
+await initI18n();
+document.title = t('atlas:pageTitle');
 
 document.getElementById('nav-mount').innerHTML = buildSidebar('atlas', session);
 initElementClock();
 
 const SPECIAL = [
-  {key:'standard',  icon:'star',      label:'Стандартные точки', color:'#FFD60A'},
-  {key:'pain',      icon:'healing',   label:'Противоболевые',    color:'#00F2FF'},
-  {key:'emergency', icon:'emergency', label:'Скорая помощь',     color:'#ffb4ab'},
-  {key:'dangerous', icon:'warning',   label:'Опасные точки',     color:'#FF9500'},
+  {key:'standard',  icon:'star',      label:'Стандартные точки', color:'#FFD60A'}, /* i18n-ok */
+  {key:'pain',      icon:'healing',   label:'Противоболевые',    color:'#00F2FF'}, /* i18n-ok */
+  {key:'emergency', icon:'emergency', label:'Скорая помощь',     color:'#ffb4ab'}, /* i18n-ok */
+  {key:'dangerous', icon:'warning',   label:'Опасные точки',     color:'#FF9500'}, /* i18n-ok */
 ];
 
 const ALL_MERS = [
-  {key:'P',  label:'P',  name:'Лёгкие',           color:'#5a8fa8'},
-  {key:'Gi', label:'GI', name:'Толст. кишечник',   color:'#5a8fa8'},
-  {key:'E',  label:'E',  name:'Желудок',            color:'#c07840'},
-  {key:'RP', label:'RP', name:'Селезёнка',          color:'#c07840'},
-  {key:'C',  label:'C',  name:'Сердце',             color:'#c0392b'},
-  {key:'iG', label:'IG', name:'Тонк. кишечник',    color:'#c0392b'},
-  {key:'V',  label:'V',  name:'Моч. пузырь',       color:'#2471a3'},
-  {key:'R',  label:'R',  name:'Почки',              color:'#2471a3'},
-  {key:'MC', label:'MC', name:'Перикард',           color:'#a0305a'},
-  {key:'TR', label:'TR', name:'Тр. обогреватель',   color:'#a0305a'},
-  {key:'VB', label:'VB', name:'Желчн. пузырь',     color:'#3d8a5c'},
-  {key:'F',  label:'F',  name:'Печень',             color:'#3d8a5c'},
-  {key:'T',  label:'VG', name:'Задне-Средин.',      color:'#8b6db5'},
-  {key:'J',  label:'VC', name:'Пере.-Средин.',      color:'#8b6db5'},
+  {key:'P',  label:'P',  name:'Лёгкие',           color:'#5a8fa8'}, /* i18n-ok */
+  {key:'Gi', label:'GI', name:'Толст. кишечник',   color:'#5a8fa8'}, /* i18n-ok */
+  {key:'E',  label:'E',  name:'Желудок',            color:'#c07840'}, /* i18n-ok */
+  {key:'RP', label:'RP', name:'Селезёнка',          color:'#c07840'}, /* i18n-ok */
+  {key:'C',  label:'C',  name:'Сердце',             color:'#c0392b'}, /* i18n-ok */
+  {key:'iG', label:'IG', name:'Тонк. кишечник',    color:'#c0392b'}, /* i18n-ok */
+  {key:'V',  label:'V',  name:'Моч. пузырь',       color:'#2471a3'}, /* i18n-ok */
+  {key:'R',  label:'R',  name:'Почки',              color:'#2471a3'}, /* i18n-ok */
+  {key:'MC', label:'MC', name:'Перикард',           color:'#a0305a'}, /* i18n-ok */
+  {key:'TR', label:'TR', name:'Тр. обогреватель',   color:'#a0305a'}, /* i18n-ok */
+  {key:'VB', label:'VB', name:'Желчн. пузырь',     color:'#3d8a5c'}, /* i18n-ok */
+  {key:'F',  label:'F',  name:'Печень',             color:'#3d8a5c'}, /* i18n-ok */
+  {key:'T',  label:'VG', name:'Задне-Средин.',      color:'#8b6db5'}, /* i18n-ok */
+  {key:'J',  label:'VC', name:'Пере.-Средин.',      color:'#8b6db5'}, /* i18n-ok */
 ];
 
 // Inject atlas sub-nav
@@ -155,7 +158,7 @@ const ALL_MERS = [
   sub.id = 'sidebar-atlas';
   sub.style.cssText = 'padding:2px 8px 4px 8px;display:none;flex-direction:column;gap:1px';
   sub.innerHTML = `
-    <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">Меридианы</div>
+    <div class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">${t('atlas:nav.meridians')}</div>
     ${ALL_MERS.map(m => `
       <button onclick="setMer('${m.key}')" data-mer="${m.key}"
         class="atlas-mer-btn flex items-center gap-2 pl-6 pr-3 py-1.5 rounded-lg text-xs font-medium w-full text-left transition-all text-[#8b90a0] hover:bg-white/15 hover:text-[#c1c6d7]">
@@ -163,7 +166,7 @@ const ALL_MERS = [
         <span class="font-bold w-7" style="color:${m.color}">${m.label}</span>
         <span class="truncate" style="color:#c1c6d7">${m.name}</span>
       </button>`).join('')}
-    <div class="px-3 py-1 mt-1 text-[10px] font-bold uppercase tracking-widest text-white">Специальные точки</div>
+    <div class="px-3 py-1 mt-1 text-[10px] font-bold uppercase tracking-widest text-white">${t('atlas:nav.special')}</div>
     ${SPECIAL.map(s => `
       <button onclick="setSection('${s.key}')" data-sec="${s.key}"
         class="atlas-sec-btn flex items-center gap-2.5 pl-6 pr-3 py-2 rounded-lg text-xs font-medium w-full text-left transition-all text-[#c1c6d7] hover:bg-white/15 hover:text-white">
@@ -196,7 +199,7 @@ fetch('/data/points.json', { headers: { Authorization: 'Bearer ' + getToken() } 
       if (ma[1]!==mb[1]) return FULL_ORDER.indexOf(ma[1]) - FULL_ORDER.indexOf(mb[1]);
       return parseInt(ma[2]) - parseInt(mb[2]);
     });
-    document.getElementById('pt-count').textContent = `${allCodes.length} точек`;
+    document.getElementById('pt-count').textContent = t('atlas:nav.pointCount', {n: allCodes.length});
     buildMerTabs();
     buildMobAtlasNav();
     if (initMer) setMer(initMer); else renderList();
@@ -208,7 +211,7 @@ fetch('/data/points.json', { headers: { Authorization: 'Bearer ' + getToken() } 
   })
   .catch(() => {
     document.getElementById('point-list').innerHTML =
-      '<div class="p-4 text-sm text-[#8b90a0]">Ошибка загрузки данных</div>';
+      `<div class="p-4 text-sm text-[#8b90a0]">${t('atlas:loadError')}</div>`;
   });
 
 function buildMerTabs() {
@@ -229,13 +232,13 @@ function buildMerTabs() {
   const ALL_PAIRS = [...PAIRS, ['T', 'J']];
 
   const SHORT = {
-    P:  'Лёгкие',      Gi: 'Толст. киш.',
-    C:  'Сердце',      iG: 'Тонк. киш.',
-    MC: 'Перикард',    TR: 'Тр. обогрев.',
-    RP: 'Селезёнка',   E:  'Желудок',
-    R:  'Почки',       V:  'Моч. пузырь',
-    F:  'Печень',      VB: 'Желчн. пуз.',
-    T:  'Задне-Средин.',  J: 'Пере.-Средин.',
+    P:  'Лёгкие',      Gi: 'Толст. киш.', /* i18n-ok */
+    C:  'Сердце',      iG: 'Тонк. киш.', /* i18n-ok */
+    MC: 'Перикард',    TR: 'Тр. обогрев.', /* i18n-ok */
+    RP: 'Селезёнка',   E:  'Желудок', /* i18n-ok */
+    R:  'Почки',       V:  'Моч. пузырь', /* i18n-ok */
+    F:  'Печень',      VB: 'Желчн. пуз.', /* i18n-ok */
+    T:  'Задне-Средин.',  J: 'Пере.-Средин.', /* i18n-ok */
   };
 
   const tabBtn = (m) => {
@@ -265,7 +268,7 @@ function buildMobAtlasNav() {
   nav.innerHTML = `
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding:6px 8px 0;display:flex;gap:6px;scrollbar-width:none">
       <button id="mob-sec-catalog" onclick="setSection('catalog')" class="mob-atlas-chip" data-color="#00F2FF">
-        <span class="material-symbols-outlined" style="font-size:14px">category</span>Каталог
+        <span class="material-symbols-outlined" style="font-size:14px">category</span>${t('atlas:nav.catalog')}
       </button>
       ${SPECIAL.map(s => `
         <button id="mob-sec-${s.key}" onclick="setSection('${s.key}')" class="mob-atlas-chip" data-color="${s.color}">
@@ -273,7 +276,7 @@ function buildMobAtlasNav() {
         </button>`).join('')}
     </div>
     <div id="mob-mer-row" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 8px 8px;display:flex;gap:4px;scrollbar-width:none">
-      <button id="mob-mer-all" onclick="setMer('all')" class="mob-mer-chip" data-mer="all" data-color="#00F2FF">Все</button>
+      <button id="mob-mer-all" onclick="setMer('all')" class="mob-mer-chip" data-mer="all" data-color="#00F2FF">${t('atlas:nav.all')}</button>
       ${ALL_MERS.map(m => `
         <button id="mob-mer-${m.key}" onclick="setMer('${m.key}')" class="mob-mer-chip" data-mer="${m.key}" data-color="${m.color}">${m.label}</button>`).join('')}
     </div>`;
@@ -356,11 +359,11 @@ function buildMeridianPage(mer) {
               ${merInfo.code ? `<span class="text-sm text-[#8b90a0]">${merInfo.code}</span>` : ''}
               ${merInfo.nameFr ? `<span class="text-xs text-[#414755]">${esc(merInfo.nameFr)}</span>` : ''}
             </div>
-            <h2 class="text-2xl font-bold text-[#e2e2e2] mb-1" style="font-family:'Hanken Grotesk',sans-serif">Меридиан ${esc(merInfo.name || mer)}</h2>
+            <h2 class="text-2xl font-bold text-[#e2e2e2] mb-1" style="font-family:'Hanken Grotesk',sans-serif">${t('atlas:detail.merHeader', {name: esc(merInfo.name || mer)})}</h2>
             <div class="flex items-center gap-3 text-sm text-[#8b90a0]">
-              <span>Стихия: <span style="color:${color}">${esc(merInfo.element || '—')}</span></span>
+              <span>${t('atlas:detail.element')} <span style="color:${color}">${esc(merInfo.element || '—')}</span></span>
               <span>·</span>
-              <span>${merCodes.length} точек</span>
+              <span>${t('atlas:nav.pointCount', {n: merCodes.length})}</span>
             </div>
           </div>
         </div>
@@ -372,7 +375,7 @@ function buildMeridianPage(mer) {
                  onerror="this.closest('div').style.display='none'">
           </video>
         </div>
-        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">© П. В. Белоусов — zhong-yi.narod.ru</div>
+        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">${t('atlas:detail.copyright')}</div>
       </div>
 
       ${signs ? `
@@ -380,14 +383,14 @@ function buildMeridianPage(mer) {
         <div class="glass-panel rounded-xl p-4">
           <div class="text-[10px] text-[#FF9500] uppercase tracking-widest mb-3 flex items-center gap-1.5">
             <span class="material-symbols-outlined" style="font-size:14px">arrow_upward</span>
-            Симптомы избытка
+            ${t('atlas:detail.excess')}
           </div>
           <div>${signs.excess.split(',').map(s => badge(s.trim(), '#FF9500')).join('')}</div>
         </div>
         <div class="glass-panel rounded-xl p-4">
           <div class="text-[10px] text-[#5a8fa8] uppercase tracking-widest mb-3 flex items-center gap-1.5">
             <span class="material-symbols-outlined" style="font-size:14px">arrow_downward</span>
-            Симптомы недостатка
+            ${t('atlas:detail.deficit')}
           </div>
           <div>${signs.defic.split(',').map(s => badge(s.trim(), '#5a8fa8')).join('')}</div>
         </div>
@@ -395,7 +398,7 @@ function buildMeridianPage(mer) {
 
       <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-3 flex items-center gap-2">
         <span class="material-symbols-outlined" style="font-size:14px;color:${color}">adjust</span>
-        Точки меридиана · ${merCodes.length}
+        ${t('atlas:detail.merPointCount', {n: merCodes.length})}
       </div>
       <div class="grid grid-cols-2 gap-3 mb-6">
         ${merCodes.map(ptCard).join('')}
@@ -471,7 +474,7 @@ function renderList(q='') {
         </div>
         <span class="material-symbols-outlined text-sm text-[#414755]">play_circle</span>
       </button>`;
-  }).join('') || '<div class="p-4 text-sm text-[#8b90a0] text-center">Ничего не найдено</div>';
+  }).join('') || `<div class="p-4 text-sm text-[#8b90a0] text-center">${t('atlas:notFound')}</div>`;
 }
 
 window.openVidModal = (code) => {
@@ -527,7 +530,7 @@ window.selectPoint = (code) => {
     <div class="p-6 max-w-2xl mx-auto page-enter">
       <button class="atlas-mob-back" onclick="document.getElementById('panel-catalog').classList.remove('detail-open')">
         <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
-        Список точек
+        ${t('atlas:detail.pointList')}
       </button>
 
       <!-- Header -->
@@ -560,7 +563,7 @@ window.selectPoint = (code) => {
 
         ${pt.location ? `
         <div class="mb-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Локализация</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">${t('atlas:detail.location')}</div>
           <p class="text-sm text-[#e2e2e2] leading-relaxed">${pt.location}</p>
         </div>` : ''}
       </div>
@@ -571,7 +574,7 @@ window.selectPoint = (code) => {
         <div class="glass-panel rounded-xl p-4">
           <div class="text-[10px] text-[#0A84FF] uppercase tracking-widest mb-2 flex items-center gap-1">
             <span class="material-symbols-outlined text-xs">medical_information</span>
-            Показания
+            ${t('atlas:detail.indications')}
           </div>
           <p class="text-sm text-[#c1c6d7] leading-relaxed">${pt.indica}</p>
         </div>` : ''}
@@ -580,7 +583,7 @@ window.selectPoint = (code) => {
         <div class="glass-panel rounded-xl p-4">
           <div class="text-[10px] text-[#FFD60A] uppercase tracking-widest mb-2 flex items-center gap-1">
             <span class="material-symbols-outlined text-xs">precision_manufacturing</span>
-            Техника
+            ${t('atlas:detail.technique')}
           </div>
           <p class="text-sm text-[#c1c6d7] leading-relaxed">${pt.technik}</p>
         </div>` : ''}
@@ -591,7 +594,7 @@ window.selectPoint = (code) => {
       ${mer ? `
       <div class="glass-panel rounded-xl p-4">
         <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-3 flex items-center justify-between">
-          <span>Меридиан ${merInfo.name||mer} — обзорное видео</span>
+          <span>${t('atlas:detail.merVideo', {name: merInfo.name||mer})}</span>
         </div>
         <div class="vid-wrap">
           <video controls class="w-full rounded-lg" src="${merVid}"
@@ -600,7 +603,7 @@ window.selectPoint = (code) => {
                  onerror="this.closest('.glass-panel').style.display='none'">
           </video>
         </div>
-        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">© П. В. Белоусов — zhong-yi.narod.ru</div>
+        <div class="text-[10px] text-[#414755] text-right mt-1 px-1">${t('atlas:detail.copyright')}</div>
       </div>` : ''}
     </div>`;
 };
@@ -608,7 +611,7 @@ window.selectPoint = (code) => {
 // Section tabs
 const STATIC_SECTIONS = {
   standard: {
-    title: 'Стандартные точки меридианов',
+    title: 'Стандартные точки меридианов', /* i18n-ok */
     icon: 'star',
     color: '#FFD60A',
     content: () => {
@@ -627,20 +630,20 @@ const STATIC_SECTIONS = {
         {mer:'F',  tony:'F8',  sedat:'F2',  luo:'F5',  yuan:'F3',  shu:'V18', mu:'F14', xi:'F6' },
       ];
       return `
-        <h3 class="text-base font-bold mb-4 text-[#0A84FF]" style="font-family:'Hanken Grotesk',sans-serif">Стандартные точки меридианов</h3>
+        <h3 class="text-base font-bold mb-4 text-[#0A84FF]" style="font-family:'Hanken Grotesk',sans-serif">${t('atlas:table.standardTitle')}</h3>
         <div class="glass-panel rounded-xl overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-white/10">
-                  <th class="text-left px-4 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Меридиан</th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#FFD60A] uppercase tracking-wider font-bold">Тониз.</th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#ffb4ab] uppercase tracking-wider font-bold">Седат.</th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Ло <span class="normal-case opacity-60">(связующая)</span></th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Юань <span class="normal-case opacity-60">(источник)</span></th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Шу <span class="normal-case opacity-60">(спины)</span></th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Му <span class="normal-case opacity-60">(сигнальная)</span></th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">Си <span class="normal-case opacity-60">(щель/противоболевая)</span></th>
+                  <th class="text-left px-4 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colMeridian')}</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#FFD60A] uppercase tracking-wider font-bold">${t('atlas:table.colTonify')}</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#ffb4ab] uppercase tracking-wider font-bold">${t('atlas:table.colSedate')}</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colLo')} <span class="normal-case opacity-60">${t('atlas:table.colLoSub')}</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colYuan')} <span class="normal-case opacity-60">${t('atlas:table.colYuanSub')}</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colShu')} <span class="normal-case opacity-60">${t('atlas:table.colShuSub')}</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colMu')} <span class="normal-case opacity-60">${t('atlas:table.colMuSub')}</span></th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colXi')} <span class="normal-case opacity-60">${t('atlas:table.colXiSub')}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -670,39 +673,39 @@ const STATIC_SECTIONS = {
     }
   },
   pain: {
-    title: 'Противоболевые точки',
+    title: 'Противоболевые точки', /* i18n-ok */
     icon: 'healing',
     color: '#00F2FF',
     content: () => {
       const DATA = [
-        { code:'P6',   cn:'кун-цзуй',   mer:'Лёгких',                              type:'blood', he:null,              ind:'кашель, одышка, кровохарканье', tech:'укол прямой, глубина 15 мм' },
-        { code:'Gi7',  cn:'вэнь-лю',    mer:'Толстой кишки',                       type:'pain',  he:['Gi11','E37'],     ind:'запор, понос, вздутие живота', tech:'укол наклонный, глубина 10 мм' },
-        { code:'E34',  cn:'лян-цю',     mer:'Желудка',                             type:'pain',  he:['E36'],            ind:'боль в эпигастральной области, рвота, расстройства пищеварения', tech:'укол прямой, глубина 10–15 мм' },
-        { code:'RP8',  cn:'ди-цзи',     mer:'Селезёнки',                           type:'blood', he:null,              ind:'вздутие живота, боль в подреберье, желтуха', tech:'укол прямой, глубина 15–20 мм' },
-        { code:'C6',   cn:'инь-си',     mer:'Сердца',                              type:'blood', he:null,              ind:'боль в области сердца, эпилепсия, сердцебиение, бессонница', tech:'укол прямой, глубина 10 мм' },
-        { code:'iG6',  cn:'ян-лао',     mer:'Тонкой кишки',                        type:'pain',  he:['iG8','E39'],     ind:'мутная моча, диабет', tech:'укол наклонный, глубина 10 мм' },
-        { code:'V63',  cn:'цзинь-мэнь', mer:'Мочевого пузыря',                     type:'pain',  he:['V40'],           ind:'задержка мочи, частое мочеиспускание, недержание мочи', tech:'укол наклонный, глубина 5–10 мм' },
-        { code:'R5',   cn:'шуй-цюань',  mer:'Почек',                               type:'blood', he:null,              ind:'поллюции, бели, боль в пояснице', tech:'укол горизонтальный, глубина 5–10 мм' },
-        { code:'MC4',  cn:'си-мэнь',    mer:'Перикарда',                           type:'blood', he:null,              ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' },
-        { code:'TR7',  cn:'хуэй-цзун',  mer:'Тройного обогревателя',               type:'pain',  he:['TR10','V39'],    ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' },
-        { code:'VB36', cn:'вай-цю',     mer:'Желчного пузыря',                     type:'pain',  he:['VB34'],          ind:'боль и чувство распирания в подреберье, желтуха', tech:'укол прямой, глубина 10–20 мм' },
-        { code:'F6',   cn:'чжун-ду',    mer:'Печени',                              type:'blood', he:null,              ind:'боль в подреберье, желтуха, смена озноба и лихорадки', tech:'' },
+        { code:'P6',   cn:'кун-цзуй',   mer:'Лёгких',                              type:'blood', he:null,              ind:'кашель, одышка, кровохарканье', tech:'укол прямой, глубина 15 мм' }, /* i18n-ok */
+        { code:'Gi7',  cn:'вэнь-лю',    mer:'Толстой кишки',                       type:'pain',  he:['Gi11','E37'],     ind:'запор, понос, вздутие живота', tech:'укол наклонный, глубина 10 мм' }, /* i18n-ok */
+        { code:'E34',  cn:'лян-цю',     mer:'Желудка',                             type:'pain',  he:['E36'],            ind:'боль в эпигастральной области, рвота, расстройства пищеварения', tech:'укол прямой, глубина 10–15 мм' }, /* i18n-ok */
+        { code:'RP8',  cn:'ди-цзи',     mer:'Селезёнки',                           type:'blood', he:null,              ind:'вздутие живота, боль в подреберье, желтуха', tech:'укол прямой, глубина 15–20 мм' }, /* i18n-ok */
+        { code:'C6',   cn:'инь-си',     mer:'Сердца',                              type:'blood', he:null,              ind:'боль в области сердца, эпилепсия, сердцебиение, бессонница', tech:'укол прямой, глубина 10 мм' }, /* i18n-ok */
+        { code:'iG6',  cn:'ян-лао',     mer:'Тонкой кишки',                        type:'pain',  he:['iG8','E39'],     ind:'мутная моча, диабет', tech:'укол наклонный, глубина 10 мм' }, /* i18n-ok */
+        { code:'V63',  cn:'цзинь-мэнь', mer:'Мочевого пузыря',                     type:'pain',  he:['V40'],           ind:'задержка мочи, частое мочеиспускание, недержание мочи', tech:'укол наклонный, глубина 5–10 мм' }, /* i18n-ok */
+        { code:'R5',   cn:'шуй-цюань',  mer:'Почек',                               type:'blood', he:null,              ind:'поллюции, бели, боль в пояснице', tech:'укол горизонтальный, глубина 5–10 мм' }, /* i18n-ok */
+        { code:'MC4',  cn:'си-мэнь',    mer:'Перикарда',                           type:'blood', he:null,              ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' }, /* i18n-ok */
+        { code:'TR7',  cn:'хуэй-цзун',  mer:'Тройного обогревателя',               type:'pain',  he:['TR10','V39'],    ind:'ощущение сдавленности в грудной клетке, затруднённое дыхание', tech:'укол прямой, глубина 10–15 мм' }, /* i18n-ok */
+        { code:'VB36', cn:'вай-цю',     mer:'Желчного пузыря',                     type:'pain',  he:['VB34'],          ind:'боль и чувство распирания в подреберье, желтуха', tech:'укол прямой, глубина 10–20 мм' }, /* i18n-ok */
+        { code:'F6',   cn:'чжун-ду',    mer:'Печени',                              type:'blood', he:null,              ind:'боль в подреберье, желтуха, смена озноба и лихорадки', tech:'' }, /* i18n-ok */
       ];
       const ptBtn = (c) => `<button onclick="openVidModal('${c}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/15 border border-[#414755] hover:border-[#00F2FF]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c)}</button>`;
       return `
-        <p class="text-xs text-[#8b90a0] mb-4">Точки-щели (Си-пункты) — активируются при острой боли и острых состояниях.</p>
+        <p class="text-xs text-[#8b90a0] mb-4">${t('atlas:pain.hint')}</p>
         <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
           ${DATA.map(d => `
             <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
               <div class="flex items-center gap-2 mb-3">
                 ${ptBtn(d.code)}
                 <span class="text-xs text-[#8b90a0]">${d.cn}</span>
-                <span class="flex-1 text-xs text-[#8b90a0] text-right">Меридиан ${d.mer}</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${d.type === 'pain' ? 'bg-[#00F2FF]/10 text-[#00F2FF]' : 'bg-[#ffb4ab]/10 text-[#ffb4ab]'}">${d.type === 'pain' ? 'Противоболевая' : 'Лечение крови'}</span>
+                <span class="flex-1 text-xs text-[#8b90a0] text-right">${t('atlas:pain.merLabel', {mer: d.mer})}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${d.type === 'pain' ? 'bg-[#00F2FF]/10 text-[#00F2FF]' : 'bg-[#ffb4ab]/10 text-[#ffb4ab]'}">${d.type === 'pain' ? t('atlas:pain.typePain') : t('atlas:pain.typeBlood')}</span>
               </div>
               <div class="text-xs text-[#c1c6d7] mb-2 flex-1">${d.ind}</div>
               <div class="mt-auto">
-                ${d.he ? `<div class="flex items-center gap-2 mb-2"><span class="text-[10px] text-[#8b90a0] uppercase tracking-wide">Хэ-точки</span>${d.he.map(ptBtn).join('')}</div>` : ''}
+                ${d.he ? `<div class="flex items-center gap-2 mb-2"><span class="text-[10px] text-[#8b90a0] uppercase tracking-wide">${t('atlas:pain.heLabel')}</span>${d.he.map(ptBtn).join('')}</div>` : ''}
                 ${d.tech ? `<div class="text-[11px] text-[#6b7080]">${d.tech}</div>` : ''}
               </div>
             </div>`).join('')}
@@ -710,25 +713,25 @@ const STATIC_SECTIONS = {
     }
   },
   emergency: {
-    title: 'Точки скорой помощи',
+    title: 'Точки скорой помощи', /* i18n-ok */
     icon: 'emergency',
     color: '#ffb4ab',
     content: () => {
       const DATA = [
-        { title:'Астматический криз',       pts:['E40','V13','J12','J17','J22'] },
-        { title:'Обморок',                  pts:['T26','E36','RP4','C9','R7','V15','V65'],          note:'Точки E36 и T20 рекомендуется прижигать' },
-        { title:'Коллапс, шок',             pts:['E14','E37','V23','R1','VB39'] },
-        { title:'Предынсультное состояние', pts:['Gi11','Gi15','E36','TR22','VB20','VB39','T20'],   note:'Для профилактики инсульта — прижигание E36 «горячей иглой»' },
-        { title:'Стенокардия',              pts:['Gi11','C4','V15','V17','R23','MC6','TR1'] },
-        { title:'Тепловой удар',            pts:['P5','Gi11','V60','V62','VB38','VB41','F8'],       note:'При потере сознания добавить: P7, E41, R1, VB39, J16' },
-        { title:'Люмбаго, ишиас',           pts:['VB30','V32','V40','V60','R27','T4','T26'] },
-        { title:'Почечная колика',          pts:['RP9','V60','R4','TR10','VB25','VB40'] },
-        { title:'Ожог',                     pts:['P7','J16'] },
-        { title:'Отёк Квинке',              pts:['E13','E15','V13','V40','V60'] },
+        { title:'Астматический криз',       pts:['E40','V13','J12','J17','J22'] }, /* i18n-ok */
+        { title:'Обморок',                  pts:['T26','E36','RP4','C9','R7','V15','V65'],          note:'Точки E36 и T20 рекомендуется прижигать' }, /* i18n-ok */
+        { title:'Коллапс, шок',             pts:['E14','E37','V23','R1','VB39'] }, /* i18n-ok */
+        { title:'Предынсультное состояние', pts:['Gi11','Gi15','E36','TR22','VB20','VB39','T20'],   note:'Для профилактики инсульта — прижигание E36 «горячей иглой»' }, /* i18n-ok */
+        { title:'Стенокардия',              pts:['Gi11','C4','V15','V17','R23','MC6','TR1'] }, /* i18n-ok */
+        { title:'Тепловой удар',            pts:['P5','Gi11','V60','V62','VB38','VB41','F8'],       note:'При потере сознания добавить: P7, E41, R1, VB39, J16' }, /* i18n-ok */
+        { title:'Люмбаго, ишиас',           pts:['VB30','V32','V40','V60','R27','T4','T26'] }, /* i18n-ok */
+        { title:'Почечная колика',          pts:['RP9','V60','R4','TR10','VB25','VB40'] }, /* i18n-ok */
+        { title:'Ожог',                     pts:['P7','J16'] }, /* i18n-ok */
+        { title:'Отёк Квинке',              pts:['E13','E15','V13','V40','V60'] }, /* i18n-ok */
       ];
       const ptBtn = (c) => `<button onclick="openVidModal('${c}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#ffb4ab] hover:bg-[#ffb4ab]/15 border border-[#414755] hover:border-[#ffb4ab]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c)}</button>`;
       return `
-        <p class="text-xs text-[#8b90a0] mb-4">Точки первой помощи при неотложных состояниях</p>
+        <p class="text-xs text-[#8b90a0] mb-4">${t('atlas:emergency.hint')}</p>
         <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
           ${DATA.map(d => `
             <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
@@ -743,41 +746,41 @@ const STATIC_SECTIONS = {
     }
   },
   dangerous: {
-    title: 'Опасные точки',
+    title: 'Опасные точки', /* i18n-ok */
     icon: 'warning',
     color: '#FF9500',
     content: () => {
       const DATA = [
-        { mer:'Лёгких (P)',                         needle:'',                                                                                    moxa:'P3, P8, P10, P11' },
-        { mer:'Толстой кишки (Gi)',                 needle:'Gi13',                                                                                moxa:'Gi18, Gi19, Gi20' },
-        { mer:'Желудка (E)',                        needle:'E1, E17, E30',                                                                        moxa:'E1, E7, E8, E9, E17, E30, E31, E32, E33, E35, E38' },
-        { mer:'Селезёнки (RP)',                     needle:'RP10, RP11',                                                                          moxa:'RP1, RP7, RP9, RP11, RP20' },
-        { mer:'Сердца (C)',                         needle:'C2, C9',                                                                              moxa:'' },
-        { mer:'Тонкой кишки (iG)',                  needle:'',                                                                                    moxa:'iG9, iG18' },
-        { mer:'Мочевого пузыря (V)',                needle:'V8, V9, V37, V43, V47, V56',                                                          moxa:'V1, V2, V6, V10, V15, V30, V36, V37, V40, V62' },
-        { mer:'Почек (R)',                          needle:'R11, R24',                                                                            moxa:'' },
-        { mer:'Перикарда и Тр. обогревателя (MC,TR)',needle:'TR8, TR19, TR20',                                                                   moxa:'MC9, TR4, TR16, TR21, TR23' },
-        { mer:'Желчного пузыря (VB)',               needle:'VB3, VB18, VB21',                                                                     moxa:'VB1, VB15, VB22, VB42' },
-        { mer:'Печени (F)',                         needle:'F12',                                                                                 moxa:'' },
-        { mer:'Задне-Срединный (VG/T)',             needle:'T1, T10, T11, T15, T17, T22, T23, T24, T25',                                         moxa:'T3, T6, T15, T16, T25' },
-        { mer:'Передне-Срединный (VC/J)',           needle:'J1, J8, J9, J14, J15, J17',                                                          moxa:'J5, J15' },
+        { mer:'Лёгких (P)',                         needle:'',                                                                                    moxa:'P3, P8, P10, P11' }, /* i18n-ok */
+        { mer:'Толстой кишки (Gi)',                 needle:'Gi13',                                                                                moxa:'Gi18, Gi19, Gi20' }, /* i18n-ok */
+        { mer:'Желудка (E)',                        needle:'E1, E17, E30',                                                                        moxa:'E1, E7, E8, E9, E17, E30, E31, E32, E33, E35, E38' }, /* i18n-ok */
+        { mer:'Селезёнки (RP)',                     needle:'RP10, RP11',                                                                          moxa:'RP1, RP7, RP9, RP11, RP20' }, /* i18n-ok */
+        { mer:'Сердца (C)',                         needle:'C2, C9',                                                                              moxa:'' }, /* i18n-ok */
+        { mer:'Тонкой кишки (iG)',                  needle:'',                                                                                    moxa:'iG9, iG18' }, /* i18n-ok */
+        { mer:'Мочевого пузыря (V)',                needle:'V8, V9, V37, V43, V47, V56',                                                          moxa:'V1, V2, V6, V10, V15, V30, V36, V37, V40, V62' }, /* i18n-ok */
+        { mer:'Почек (R)',                          needle:'R11, R24',                                                                            moxa:'' }, /* i18n-ok */
+        { mer:'Перикарда и Тр. обогревателя (MC,TR)',needle:'TR8, TR19, TR20',                                                                   moxa:'MC9, TR4, TR16, TR21, TR23' }, /* i18n-ok */
+        { mer:'Желчного пузыря (VB)',               needle:'VB3, VB18, VB21',                                                                     moxa:'VB1, VB15, VB22, VB42' }, /* i18n-ok */
+        { mer:'Печени (F)',                         needle:'F12',                                                                                 moxa:'' }, /* i18n-ok */
+        { mer:'Задне-Срединный (VG/T)',             needle:'T1, T10, T11, T15, T17, T22, T23, T24, T25',                                         moxa:'T3, T6, T15, T16, T25' }, /* i18n-ok */
+        { mer:'Передне-Срединный (VC/J)',           needle:'J1, J8, J9, J14, J15, J17',                                                          moxa:'J5, J15' }, /* i18n-ok */
       ];
       const ptBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#ffb4ab] hover:bg-[#ffb4ab]/15 border border-[#414755] hover:border-[#ffb4ab]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c.trim())}</button>`;
       const moxaBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#FFD60A] hover:bg-[#FFD60A]/15 border border-[#414755] hover:border-[#FFD60A]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${c.trim()}</button>`;
       const renderPts = (str, fn) => str ? str.split(',').map(fn).join('') : '<span class="text-xs text-[#414755]">—</span>';
       return `
-        <p class="text-xs text-[#8b90a0] mb-4">Точки, не рекомендуемые для иглоукалывания и прижигания</p>
+        <p class="text-xs text-[#8b90a0] mb-4">${t('atlas:dangerous.hint')}</p>
         <div class="grid grid-cols-2 gap-3" style="grid-auto-rows:1fr">
           ${DATA.map(d => `
             <div class="glass-panel rounded-xl p-4 border border-white/10 flex flex-col h-full">
               <div class="font-bold text-sm text-[#e2e2e2] mb-3" style="font-family:'Hanken Grotesk',sans-serif">${d.mer}</div>
               <div class="grid grid-cols-2 gap-4 flex-1">
                 <div>
-                  <div class="text-[10px] text-[#8b90a0] uppercase tracking-wide mb-2">🚫 Не колоть</div>
+                  <div class="text-[10px] text-[#8b90a0] uppercase tracking-wide mb-2">${t('atlas:dangerous.noNeedle')}</div>
                   <div class="flex flex-wrap gap-1">${renderPts(d.needle, ptBtn)}</div>
                 </div>
                 <div>
-                  <div class="text-[10px] text-[#FFD60A] uppercase tracking-wide mb-2">🔥 Не прижигать</div>
+                  <div class="text-[10px] text-[#FFD60A] uppercase tracking-wide mb-2">${t('atlas:dangerous.noMoxa')}</div>
                   <div class="flex flex-wrap gap-1">${renderPts(d.moxa, moxaBtn)}</div>
                 </div>
               </div>

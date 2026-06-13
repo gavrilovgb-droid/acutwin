@@ -12,7 +12,7 @@ const TG_CHAT_ID       = process.env.TELEGRAM_CHAT_ID     || '';
 const PATIENT_TG_TOKEN = process.env.PATIENT_TG_BOT_TOKEN || '';
 const PATIENT_TG_BOT_NAME = process.env.PATIENT_TG_BOT_NAME || '';
 
-const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' };
+const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' }; /* i18n-ok */
 
 // ── Низкоуровневый HTTP POST к Telegram Bot API ────────────
 function tgApiPost(token, path, payload) {
@@ -91,7 +91,7 @@ function sendTgNotify(contactMethod, contact, ip, email) {
   if (!TG_TOKEN || !TG_CHAT_ID) return;
   const label = TG_METHOD_LABEL[contactMethod] || contactMethod;
   const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
-  const text = `🔔 Новая заявка на триал АкуПро\nEmail: ${email || '—'}\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`;
+  const text = `🔔 Новая заявка на триал АкуПро\nEmail: ${email || '—'}\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`; /* i18n-ok */
   tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
 }
 
@@ -102,13 +102,13 @@ function sendTgBookingNotify(appt, doctorName, clinicName) {
   if (!TG_TOKEN || !TG_CHAT_ID) return;
   const when = new Date(appt.start_at.replace(' ', 'T')).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
   const text =
-    `🩺 Новая заявка на приём\n` +
-    `Врач: ${doctorName}${clinicName ? ' · ' + clinicName : ''}\n` +
-    `Когда: ${when}\n` +
-    `Пациент: ${appt.patient}\n` +
-    `Телефон: ${appt.patient_phone || '—'}\n` +
+    `🩺 Новая заявка на приём\n` + /* i18n-ok */
+    `Врач: ${doctorName}${clinicName ? ' · ' + clinicName : ''}\n` + /* i18n-ok */
+    `Когда: ${when}\n` + /* i18n-ok */
+    `Пациент: ${appt.patient}\n` + /* i18n-ok */
+    `Телефон: ${appt.patient_phone || '—'}\n` + /* i18n-ok */
     `Email: ${appt.patient_email || '—'}\n` +
-    `Жалобы: ${appt.notes || '—'}`;
+    `Жалобы: ${appt.notes || '—'}`; /* i18n-ok */
   tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text });
 }
 

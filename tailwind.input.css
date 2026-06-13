@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@source "./*.html";
+@source "./shared.js";
+
+/* Custom theme colors from tailwind.config in HTML */
+@theme {
+  --color-background: #131313;
+  --color-surface: #131313;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1b1b1b;
+  --color-surface-container: #1f1f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353535;
+  --color-on-surface: #e2e2e2;
+  --color-on-surface-variant: #c1c6d7;
+  --color-primary: #adc6ff;
+  --color-primary-container: #4b8eff;
+  --color-outline: #8b90a0;
+  --color-outline-variant: #414755;
+  --color-meridian-glow: #00F2FF;
+  --color-medical-blue: #0A84FF;
+  --color-clinical-white: #F2F2F7;
+  --color-warning-amber: #FFD60A;
+  --color-error: #ffb4ab;
+}
+
+/* Safelist arbitrary values */
+@source inline("{bg,text,border}-[#00F2FF] {bg,text,border}-[#0A84FF] {bg,text,border}-[#0e0e0e] {bg,text,border}-[#131313] {bg,text,border}-[#1a1a1a] {bg,text,border}-[#1b1b1b] {bg,text,border}-[#1f1f1f] {bg,text,border}-[#2a2a2a] {bg,text,border}-[#353535]");
+@source inline("{bg,text,border}-[#34C759] {bg,text,border}-[#3d8a5c] {bg,text,border}-[#414755] {bg,text,border}-[#5AC85A] {bg,text,border}-[#8b90a0] {bg,text,border}-[#BF5AF2] {bg,text,border}-[#FFD60A] {bg,text,border}-[#adc6ff] {bg,text,border}-[#ff6b6b] {bg,text,border}-[#ffb4ab]");
+@source inline("bg-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.08)]");
+@source inline("text-[#5AC8FA] text-[#6b7080] text-[#c1c6d7] text-[#d68fff] text-[#e2e2e2] text-[#ff8a80] text-[#FF6B6B] text-[#4b8eff]");
+@source inline("text-[9px] text-[10px] text-[11px] text-[12px]");
+@source inline("min-h-0 overflow-y-auto flex-1 flex-shrink-0 whitespace-nowrap");

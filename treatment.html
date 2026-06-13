@@ -43,7 +43,7 @@
 .day-drop { border:1px dashed transparent; transition: border-color .15s, background .15s; }
 .day-drop.drag-over { border-color: rgba(0,242,255,0.5) !important; background: rgba(0,242,255,0.06) !important; }
 
-/* ── Контекстная панель диагностики ── */
+/* ── context-panel ── */
 .ctx-btn { transition: all 0.15s; font-size:0.72rem; padding:3px 9px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); color:#c1c6d7; background:rgba(255,255,255,0.05); font-weight:600; }
 .ctx-btn:hover { border-color:rgba(255,255,255,0.35); color:#fff; background:rgba(255,255,255,0.1); }
 .ctx-btn.active { background:rgba(0,242,255,0.15); border-color:rgba(0,242,255,0.6); color:#00F2FF; box-shadow:0 0 8px rgba(0,242,255,0.2); }
@@ -52,10 +52,10 @@
 .ctx-always { display:inline-flex; align-items:center; gap:3px; background:rgba(90,200,90,0.1); border:1px solid rgba(90,200,90,0.3); color:#5AC85A; border-radius:6px; padding:1px 6px; font-size:9px; font-weight:700; }
 .eb-row-rec { background:rgba(255,214,10,0.06); border-radius:6px; }
 
-/* ── Масштаб: иконки ×1.5 ── */
+/* ── icons scale ── */
 .material-symbols-outlined { zoom: 1.5; }
 
-/* ── Печать ── */
+/* ── print ── */
 @media print {
   body > * { display: none !important; }
   #print-sheet { display: block !important; }
@@ -97,7 +97,7 @@ html, body {
   border-bottom-color: #00F2FF;
 }
 
-/* ── U-Sin grid: левая колонка уже, правая шире ── */
+/* ── usin-grid ── */
 @media (min-width: 1024px) {
   #usin-sub-sym {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) !important;
@@ -147,7 +147,7 @@ html, body {
   <div class="glass-panel rounded-2xl mx-4 flex flex-col" style="width:min(860px,96vw);max-height:92vh">
     <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 flex-shrink-0">
       <div class="flex items-center gap-3">
-        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);color:#FF9F0A">▶ Видеоурок</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);color:#FF9F0A" data-i18n="sessions:treatment.video.lesson">▶ Видеоурок</span>
         <span id="vl-title" class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif"></span>
       </div>
       <button onclick="closeVideoLesson()" class="text-[#8b90a0] hover:text-white transition-colors">
@@ -159,10 +159,10 @@ html, body {
              onerror="document.getElementById('vl-error').classList.remove('hidden');this.style.display='none'"></video>
       <div id="vl-error" class="hidden text-center py-10 text-[#8b90a0] text-sm">
         <span class="material-symbols-outlined text-4xl block mb-2 text-[#414755]">videocam_off</span>
-        Видеофайл не найден — запустите конвертацию MPG → MP4
+        <span data-i18n="sessions:treatment.sound.noFile">Видеофайл не найден — запустите конвертацию MPG → MP4</span>
       </div>
     </div>
-    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right">© П. В. Белоусов — zhong-yi.narod.ru</div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right"><span data-i18n="sessions:treatment.copyrightFull">© П. В. Белоусов — zhong-yi.narod.ru</span></div>
   </div>
 </div>
 
@@ -172,10 +172,10 @@ html, body {
   <div class="flex items-center justify-between px-5 py-3 border-b border-white/10 flex-shrink-0">
     <div class="flex items-center gap-2">
       <span class="material-symbols-outlined text-[#30D158]" style="font-size:18px;zoom:1">music_note</span>
-      <span class="font-bold text-sm" style="font-family:'Hanken Grotesk',sans-serif">Звукотерапия</span>
+      <span class="font-bold text-sm" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.sound.title">Звукотерапия</span>
       <span id="snd-playing-badge" class="hidden items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold" style="background:rgba(48,209,88,0.15);border:1px solid rgba(48,209,88,0.4);color:#30D158">
         <span style="width:6px;height:6px;border-radius:50%;background:#30D158;display:inline-block;animation:pulse 1.2s infinite"></span>
-        ИГРАЕТ
+        <span data-i18n="sessions:treatment.sound.playing">ИГРАЕТ</span>
       </span>
     </div>
     <button onclick="toggleSoundPanel()" class="text-[#8b90a0] hover:text-white transition-colors">
@@ -184,20 +184,20 @@ html, body {
   </div>
   <!-- Element selector -->
   <div class="flex gap-1.5 p-3 flex-shrink-0">
-    <button class="snd-el-btn active-el" data-el="wood"   onclick="selectElement('wood')"  style="color:#5AC85A;border-color:#5AC85A;background:rgba(90,200,90,0.12)">Дерево</button>
-    <button class="snd-el-btn"            data-el="fire"   onclick="selectElement('fire')"  style="color:#FF453A;border-color:#FF453A;background:rgba(255,69,58,0.08)">Огонь</button>
-    <button class="snd-el-btn"            data-el="earth"  onclick="selectElement('earth')" style="color:#FFD60A;border-color:#FFD60A;background:rgba(255,214,10,0.08)">Земля</button>
-    <button class="snd-el-btn"            data-el="metal"  onclick="selectElement('metal')" style="color:#E5E5EA;border-color:#E5E5EA;background:rgba(229,229,234,0.06)">Металл</button>
-    <button class="snd-el-btn"            data-el="water"  onclick="selectElement('water')" style="color:#0A84FF;border-color:#0A84FF;background:rgba(10,132,255,0.08)">Вода</button>
+    <button class="snd-el-btn active-el" data-el="wood"   onclick="selectElement('wood')"  style="color:#5AC85A;border-color:#5AC85A;background:rgba(90,200,90,0.12)" data-i18n="sessions:treatment.sound.elements.wood">Дерево</button>
+    <button class="snd-el-btn"            data-el="fire"   onclick="selectElement('fire')"  style="color:#FF453A;border-color:#FF453A;background:rgba(255,69,58,0.08)" data-i18n="sessions:treatment.sound.elements.fire">Огонь</button>
+    <button class="snd-el-btn"            data-el="earth"  onclick="selectElement('earth')" style="color:#FFD60A;border-color:#FFD60A;background:rgba(255,214,10,0.08)" data-i18n="sessions:treatment.sound.elements.earth">Земля</button>
+    <button class="snd-el-btn"            data-el="metal"  onclick="selectElement('metal')" style="color:#E5E5EA;border-color:#E5E5EA;background:rgba(229,229,234,0.06)" data-i18n="sessions:treatment.sound.elements.metal">Металл</button>
+    <button class="snd-el-btn"            data-el="water"  onclick="selectElement('water')" style="color:#0A84FF;border-color:#0A84FF;background:rgba(10,132,255,0.08)" data-i18n="sessions:treatment.sound.elements.water">Вода</button>
   </div>
   <!-- Hz badge + duration -->
   <div class="flex items-center gap-3 px-4 pb-3 flex-shrink-0">
-    <span id="snd-hz-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(90,200,90,0.12);border:1px solid rgba(90,200,90,0.3);color:#5AC85A">528 Гц · Дерево</span>
+    <span id="snd-hz-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(90,200,90,0.12);border:1px solid rgba(90,200,90,0.3);color:#5AC85A"></span>
     <div class="flex items-center gap-1.5 ml-auto">
-      <span class="text-[10px] text-[#8b90a0]">Длит.</span>
+      <span class="text-[10px] text-[#8b90a0]" data-i18n="sessions:treatment.sound.duration">Длит.</span>
       <input id="snd-duration" type="number" min="5" max="120" value="30"
              class="w-14 text-center text-xs bg-[#1f1f1f] border border-[#414755] rounded-lg px-2 py-1 text-[#e2e2e2] focus:outline-none focus:border-[#30D158] transition-all"/>
-      <span class="text-[10px] text-[#8b90a0]">мин</span>
+      <span class="text-[10px] text-[#8b90a0]" data-i18n="sessions:treatment.sound.min">мин</span>
     </div>
   </div>
   <!-- Track list -->
@@ -210,10 +210,10 @@ html, body {
     </button>
     <button onclick="sndStop()" class="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-white/15 bg-white/5 text-[#8b90a0] hover:text-white hover:border-white/30 text-xs font-bold transition-all">
       <span class="material-symbols-outlined" style="font-size:14px;zoom:1">stop</span>
-      Стоп
+      <span data-i18n="sessions:treatment.sound.stop">Стоп</span>
     </button>
     <div class="flex-1 flex flex-col gap-1 min-w-0">
-      <div id="snd-track-name" class="text-xs text-[#c1c6d7] truncate">Выберите трек</div>
+      <div id="snd-track-name" class="text-xs text-[#c1c6d7] truncate" data-i18n="sessions:treatment.sound.selectTrack">Выберите трек</div>
       <div class="flex items-center gap-2">
         <div class="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
           <div id="snd-progress-bar" class="h-full rounded-full bg-[#30D158] transition-all" style="width:0%"></div>
@@ -247,7 +247,7 @@ html, body {
 <div class="md:ml-64 flex flex-col h-screen overflow-hidden">
 
   <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center px-6 gap-4 flex-shrink-0">
-    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Тактика лечения</h2>
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.title">Тактика лечения</h2>
     <!-- Step indicator (diagnostics path) -->
     <div id="step-indicator" class="hidden items-center gap-1 ml-4">
       <div id="si1" class="step-circle active">1</div>
@@ -260,7 +260,7 @@ html, body {
       <button onclick="toggleSoundPanel()" id="snd-header-btn"
               class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
-        <span id="snd-btn-label">Звукотерапия</span>
+        <span id="snd-btn-label" data-i18n="sessions:treatment.sound.title">Звукотерапия</span>
       </button>
     </div>
   </header>
@@ -284,12 +284,12 @@ html, body {
       <button onclick="printRecipe()" id="pc-print-btn"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#8b90a0]/10 hover:bg-[#8b90a0]/20 text-[#c1c6d7] border border-[#8b90a0]/30 transition-colors text-xs font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">print</span>
-        Печать
+        <span data-i18n="sessions:treatment.print">Печать</span>
       </button>
-      <button onclick="downloadRecipePdf()" title="Скачать PDF"
+      <button onclick="downloadRecipePdf()" title="Скачать PDF" data-i18n-title="sessions:treatment.downloadPdfTitle"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#8b90a0]/10 hover:bg-[#8b90a0]/20 text-[#c1c6d7] border border-[#8b90a0]/30 transition-colors text-xs font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">picture_as_pdf</span>
-        PDF
+        <span data-i18n="sessions:treatment.pdf">PDF</span>
       </button>
       <button onclick="openSoapModal()" id="soap-modal-btn"
               class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors text-xs font-bold flex-shrink-0">
@@ -299,61 +299,61 @@ html, body {
       <button onclick="savePatientSession()" id="pc-save-btn"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3d8a5c]/20 hover:bg-[#3d8a5c]/35 text-[#5AC85A] border border-[#3d8a5c]/40 transition-colors text-xs font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>
-        Записать сессию
+        <span data-i18n="sessions:treatment.saveSession">Записать сессию</span>
       </button>
     </div>
     <!-- ИРТ-поля сессии -->
     <div id="irt-fields" class="hidden flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 mb-3 bg-[#1a1a2e]/60 border border-[#414755]/50 rounded-xl flex-shrink-0 text-xs text-[#8b90a0]">
       <label class="flex items-center gap-1.5">
-        <span>Боль до</span>
+        <span data-i18n="sessions:treatment.nrsBefore">Боль до</span>
         <input id="irt-nrs-before" type="number" min="0" max="10" placeholder="0–10"
-               class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
       </label>
       <label class="flex items-center gap-1.5">
-        <span>Боль после</span>
+        <span data-i18n="sessions:treatment.nrsAfter">Боль после</span>
         <input id="irt-nrs-after" type="number" min="0" max="10" placeholder="0–10"
-               class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
+               class="w-16 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
       </label>
       <div class="flex items-center gap-2">
-        <span>Прогресс</span>
+        <span data-i18n="sessions:treatment.progress.label">Прогресс</span>
         <input type="hidden" id="irt-progress"/>
         <div class="flex gap-1" id="progress-btns">
-          <button type="button" data-v="1" onclick="setProgress(1)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#ff453a]/60" style="color:#ff453a">Плохо</button>
-          <button type="button" data-v="2" onclick="setProgress(2)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FF9F0A]/60" style="color:#FF9F0A">Неудовл.</button>
-          <button type="button" data-v="3" onclick="setProgress(3)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FFD60A]/60" style="color:#FFD60A">Средне</button>
-          <button type="button" data-v="4" onclick="setProgress(4)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#30D158]/60" style="color:#30D158">Хорошо</button>
-          <button type="button" data-v="5" onclick="setProgress(5)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#5AC85A]/60" style="color:#5AC85A">Отлично</button>
+          <button type="button" data-v="1" onclick="setProgress(1)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#ff453a]/60" style="color:#ff453a" data-i18n="sessions:treatment.progress.bad">Плохо</button>
+          <button type="button" data-v="2" onclick="setProgress(2)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FF9F0A]/60" style="color:#FF9F0A" data-i18n="sessions:treatment.progress.poor">Неудовл.</button>
+          <button type="button" data-v="3" onclick="setProgress(3)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#FFD60A]/60" style="color:#FFD60A" data-i18n="sessions:treatment.progress.ok">Средне</button>
+          <button type="button" data-v="4" onclick="setProgress(4)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#30D158]/60" style="color:#30D158" data-i18n="sessions:treatment.progress.good">Хорошо</button>
+          <button type="button" data-v="5" onclick="setProgress(5)" class="progress-btn px-2 py-1 rounded-lg border border-[#414755] text-[10px] font-bold transition-all hover:border-[#5AC85A]/60" style="color:#5AC85A" data-i18n="sessions:treatment.progress.great">Отлично</button>
         </div>
       </div>
       <label class="flex items-center gap-1.5">
-        <span>Воздействие</span>
+        <span data-i18n="sessions:treatment.exposureLabel">Воздействие</span>
         <select id="irt-treatment-type"
                 class="appearance-auto cursor-pointer px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all">
-          <option value="">— выбрать —</option>
-          <option value="Корпоральная">Корпоральная</option>
-          <option value="Аурикулярная">Аурикулярная</option>
-          <option value="Скальпотерапия">Скальпотерапия</option>
-          <option value="ЭАП">ЭАП</option>
+          <option value="" data-i18n="sessions:treatment.select">— выбрать —</option>
+          <option value="Корпоральная" data-i18n="sessions:treatment.exposureTypes.corporal">Корпоральная</option>
+          <option value="Аурикулярная" data-i18n="sessions:treatment.exposureTypes.auricular">Аурикулярная</option>
+          <option value="Скальпотерапия" data-i18n="sessions:treatment.exposureTypes.scalp">Скальпотерапия</option>
+          <option value="ЭАП" data-i18n="sessions:treatment.exposureTypes.eap">ЭАП</option>
         </select>
       </label>
       <label class="flex items-center gap-1.5">
-        <span>Стимуляция</span>
+        <span data-i18n="sessions:treatment.stimulation">Стимуляция</span>
         <select id="irt-needle-type"
                 class="appearance-auto cursor-pointer px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all">
-          <option value="">— выбрать —</option>
-          <option value="Тонизирование">Тонизирование</option>
-          <option value="Седатирование">Седатирование</option>
-          <option value="Гармонизация">Гармонизация</option>
+          <option value="" data-i18n="sessions:treatment.select">— выбрать —</option>
+          <option value="Тонизирование" data-i18n="sessions:treatment.stimulationTypes.tonify">Тонизирование</option>
+          <option value="Седатирование" data-i18n="sessions:treatment.stimulationTypes.sedate">Седатирование</option>
+          <option value="Гармонизация" data-i18n="sessions:treatment.stimulationTypes.harmonize">Гармонизация</option>
         </select>
       </label>
       <label class="flex items-center gap-1.5">
-        <span>Экспозиция, мин</span>
+        <span data-i18n="sessions:treatment.exposureTime">Экспозиция, мин</span>
         <input id="irt-exposure" type="number" min="1" max="120" placeholder="20"
                class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
       </label>
       <label class="flex items-center gap-1.5 cursor-pointer select-none">
         <input id="irt-deqi" type="checkbox" style="width:14px;height:14px;accent-color:#0A84FF;cursor:pointer;flex-shrink:0"/>
-        <span>Де-ци</span>
+        <span data-i18n="sessions:treatment.deqi">Де-ци</span>
       </label>
     </div>
     <div class="flex-1 flex flex-col min-h-0 min-w-0 overflow-x-hidden">
@@ -364,12 +364,12 @@ html, body {
       <!-- ═══════════════════════════════════════════════ -->
       <div id="path-recipe" class="hidden flex-1 flex flex-col min-h-0 min-w-0">
         <div class="flex items-center gap-3 mb-4 flex-shrink-0">
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Выбор точек по показаниям</h3>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.tabs.recipe">Выбор точек по показаниям</h3>
           <span id="dis-count" class="text-xs font-mono text-[#8b90a0] ml-auto"></span>
         </div>
         <div class="relative mb-3 flex-shrink-0">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-lg">search</span>
-          <input id="dis-search" placeholder="Поиск по болезни, симптому..."
+          <input id="dis-search" placeholder="Поиск по болезни, симптому..." data-i18n-placeholder="sessions:treatment.search.disease"
                  oninput="renderDiseaseList(this.value)"
                  class="w-full pl-10 pr-4 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                         placeholder-[#8b90a0] focus:outline-none focus:border-[#0A84FF] focus:ring-1 focus:ring-[#0A84FF]/30 transition-all"/>
@@ -382,7 +382,7 @@ html, body {
           <div id="dis-detail" class="glass-panel rounded-xl p-5 flex items-center justify-center text-[#8b90a0] text-sm overflow-y-auto">
             <div class="text-center">
               <span class="material-symbols-outlined text-4xl text-[#414755] mb-2 block">local_pharmacy</span>
-              Выберите болезнь из списка
+              <span data-i18n="sessions:treatment.empty.disease">Выберите болезнь из списка</span>
             </div>
           </div>
         </div>
@@ -396,12 +396,12 @@ html, body {
           <button onclick="resetPath()" class="text-[#8b90a0] hover:text-white transition-colors">
             <span class="material-symbols-outlined text-lg">arrow_back</span>
           </button>
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Рецепты по синдромам ТКМ</h3>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.tabs.tcm">Рецепты по синдромам ТКМ</h3>
           <span id="tcm-count" class="text-xs font-mono text-[#8b90a0] ml-auto"></span>
         </div>
         <div class="relative mb-3">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-lg">search</span>
-          <input id="tcm-search" placeholder="Поиск по синдрому, симптому..."
+          <input id="tcm-search" placeholder="Поиск по синдрому, симптому..." data-i18n-placeholder="sessions:treatment.search.tcm"
                  class="w-full pl-10 pr-4 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                         placeholder-[#8b90a0] focus:outline-none focus:border-[#FFD60A] focus:ring-1 focus:ring-[#FFD60A]/30 transition-all"/>
         </div>
@@ -413,7 +413,7 @@ html, body {
           <div id="tcm-detail" class="glass-panel rounded-xl p-4 text-[#8b90a0] text-sm overflow-y-auto">
             <div class="text-center">
               <span class="material-symbols-outlined text-4xl text-[#414755] mb-2 block">menu_book</span>
-              Выберите синдром из списка
+              <span data-i18n="sessions:treatment.empty.tcm">Выберите синдром из списка</span>
             </div>
           </div>
         </div>
@@ -429,8 +429,8 @@ html, body {
           <button onclick="resetPath()" class="text-[#8b90a0] hover:text-white transition-colors">
             <span class="material-symbols-outlined text-lg">arrow_back</span>
           </button>
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Подбор рецептов по теории У-Син</h3>
-          <span id="usin-sym-count" class="text-xs font-mono text-[#8b90a0] ml-auto hidden">0 симптомов</span>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.tabs.wuxing">Подбор рецептов по теории У-Син</h3>
+          <span id="usin-sym-count" class="text-xs font-mono text-[#8b90a0] ml-auto hidden"></span>
         </div>
 
         <!-- Sub-tabs (chip style) -->
@@ -440,13 +440,13 @@ html, body {
                    bg-[#BF5AF2]/18 border-[#BF5AF2]/70 text-white"
             style="box-shadow:0 0 8px rgba(191,90,242,0.2)">
             <span class="material-symbols-outlined" style="font-size:14px">checklist</span>
-            По симптомам
+            <span data-i18n="sessions:treatment.wuxing.bySymptoms">По симптомам</span>
           </button>
           <button id="usin-tab-dis" onclick="selectUsinSub('dis')"
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
             style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.18);color:#c1c6d7">
             <span class="material-symbols-outlined" style="font-size:14px">local_hospital</span>
-            По заболеванию
+            <span data-i18n="sessions:treatment.wuxing.byDisease">По заболеванию</span>
           </button>
         </div>
 
@@ -456,22 +456,22 @@ html, body {
             <div class="flex justify-end gap-2 flex-shrink-0">
               <button onclick="resetUsin()"
                 class="px-3 py-1.5 border border-[#414755] text-[#8b90a0] rounded-xl text-xs hover:border-[#8b90a0] transition-all">
-                Сброс
+                <span data-i18n="sessions:treatment.action.reset">Сброс</span>
               </button>
               <button onclick="analyzeUsin()"
                 class="px-4 py-1.5 bg-[#BF5AF2]/10 border border-[#BF5AF2]/40 text-[#BF5AF2] rounded-xl font-bold text-xs hover:bg-[#BF5AF2]/20 transition-all flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm">hub</span>Определить рецепт
+                <span class="material-symbols-outlined text-sm">hub</span><span data-i18n="sessions:treatment.action.determine">Определить рецепт</span>
               </button>
             </div>
             <div id="usin-sym-container" class="glass-panel rounded-xl flex-1 overflow-y-auto p-3">
-              <div class="text-center py-8 text-[#414755] text-sm">Загрузка…</div>
+              <div class="text-center py-8 text-[#414755] text-sm" data-i18n="sessions:treatment.empty.loading">Загрузка…</div>
             </div>
           </div>
           <div id="usin-result-panel" class="glass-panel rounded-xl p-4"
                style="min-width:0;overflow:hidden auto;backdrop-filter:none;-webkit-backdrop-filter:none;clip-path:inset(0 round 12px)">
             <div class="h-full flex flex-col items-center justify-center text-[#8b90a0] text-sm text-center">
               <span class="material-symbols-outlined text-5xl text-[#414755] mb-3">hub</span>
-              <div>Отметьте симптомы<br>и нажмите «Определить рецепт»</div>
+              <div data-i18n="sessions:treatment.empty.wusinPrompt">Отметьте симптомы<br>и нажмите «Определить рецепт»</div>
             </div>
           </div>
         </div>
@@ -482,7 +482,7 @@ html, body {
             <div class="px-3 pt-3 pb-2 flex-shrink-0">
               <div class="relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-lg">search</span>
-                <input id="usin-dis-search" placeholder="Поиск заболевания…"
+                <input id="usin-dis-search" placeholder="Поиск заболевания…" data-i18n-placeholder="sessions:treatment.search.disease2"
                   oninput="filterUsinDis()"
                   class="w-full pl-10 pr-4 py-2 bg-[#1f1f1f] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                          placeholder-[#8b90a0] focus:outline-none focus:border-[#BF5AF2]/60 transition-all"/>
@@ -493,7 +493,7 @@ html, body {
           <div id="usin-dis-detail" class="glass-panel rounded-xl p-4 overflow-y-auto flex items-center justify-center text-[#8b90a0] text-sm">
             <div class="text-center">
               <span class="material-symbols-outlined text-4xl text-[#414755] mb-2 block">local_hospital</span>
-              Выберите заболевание из списка
+              <span data-i18n="sessions:treatment.empty.disease2">Выберите заболевание из списка</span>
             </div>
           </div>
         </div>
@@ -505,8 +505,8 @@ html, body {
       <!-- ═══════════════════════════════════════════════ -->
       <div id="path-custom" class="hidden flex-1 flex flex-col min-h-0 min-w-0">
         <div class="flex items-center gap-3 mb-3 flex-shrink-0">
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Свой рецепт</h3>
-          <span id="custom-sel-count" class="text-xs font-mono text-[#34C759] ml-auto">0 точек</span>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.tabs.custom">Свой рецепт</h3>
+          <span id="custom-sel-count" class="text-xs font-mono text-[#34C759] ml-auto"></span>
         </div>
         <div id="custom-panels" class="mob-master-detail grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
 
@@ -516,7 +516,7 @@ html, body {
             <div class="p-3 border-b border-white/5 flex-shrink-0 space-y-2">
               <div class="relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-lg">search</span>
-                <input id="custom-search" placeholder="Поиск точки (код, название, показание)…"
+                <input id="custom-search" placeholder="Поиск точки (код, название, показание)…" data-i18n-placeholder="sessions:treatment.search.point"
                   oninput="filterCustomPoints()"
                   class="w-full pl-10 pr-4 py-2 bg-[#1f1f1f] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                          placeholder-[#8b90a0] focus:outline-none focus:border-[#34C759]/60 transition-all"/>
@@ -530,7 +530,7 @@ html, body {
           <div class="glass-panel rounded-xl p-4 flex flex-col min-h-0">
             <button class="mob-back-btn" onclick="document.getElementById('custom-panels')?.classList.remove('detail-open')">
               <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
-              Список точек
+              <span data-i18n="sessions:treatment.custom.list">Список точек</span>
             </button>
             <!-- Кнопка наверху — всегда видна -->
             <div class="mb-3 flex-shrink-0">
@@ -538,30 +538,30 @@ html, body {
                 class="w-full py-2 rounded-xl border transition-all flex items-center justify-center gap-2 text-xs font-bold cursor-pointer opacity-40"
                 style="border-color:rgba(52,199,89,0.3);color:#34C759;background:transparent">
                 <span class="material-symbols-outlined text-sm">add_task</span>
-                <span>Добавить рецепт в карточку</span>
+                <span data-i18n="sessions:treatment.action.addRecipe">Добавить рецепт в карточку</span>
               </button>
             </div>
             <div class="flex items-center justify-between mb-2 flex-shrink-0">
-              <div class="text-[10px] font-bold uppercase tracking-widest text-[#8b90a0]">Выбранные точки</div>
+              <div class="text-[10px] font-bold uppercase tracking-widest text-[#8b90a0]" data-i18n="sessions:treatment.custom.selected">Выбранные точки</div>
               <div class="flex items-center gap-2">
                 <button onclick="printCustomRecipe()"
                   class="text-[10px] text-[#8b90a0] hover:text-[#00F2FF] transition-colors flex items-center gap-1">
-                  <span class="material-symbols-outlined text-xs">print</span>Печать
+                  <span class="material-symbols-outlined text-xs">print</span><span data-i18n="sessions:treatment.print">Печать</span>
                 </button>
                 <button onclick="downloadCustomRecipePdf()"
                   class="text-[10px] text-[#8b90a0] hover:text-[#00F2FF] transition-colors flex items-center gap-1">
-                  <span class="material-symbols-outlined text-xs">picture_as_pdf</span>PDF
+                  <span class="material-symbols-outlined text-xs">picture_as_pdf</span><span data-i18n="sessions:treatment.pdf">PDF</span>
                 </button>
                 <button onclick="clearCustomSelection()"
                   class="text-[10px] text-[#414755] hover:text-[#ffb4ab] transition-colors flex items-center gap-1">
-                  <span class="material-symbols-outlined text-xs">delete_sweep</span>Очистить
+                  <span class="material-symbols-outlined text-xs">delete_sweep</span><span data-i18n="sessions:treatment.action.clearPoints">Очистить</span>
                 </button>
               </div>
             </div>
             <div id="custom-basket" class="flex flex-wrap gap-2 flex-1 overflow-y-auto content-start">
               <div class="w-full text-center text-[#414755] text-sm py-8">
                 <span class="material-symbols-outlined text-3xl block mb-2">tune</span>
-                Выберите точки из списка слева
+                <span data-i18n="sessions:treatment.empty.points">Выберите точки из списка слева</span>
               </div>
             </div>
           </div>
@@ -574,12 +574,12 @@ html, body {
       <!-- ═══════════════════════════════════════════════ -->
       <div id="path-diag" class="hidden flex-1 flex flex-col min-h-0 min-w-0">
         <div class="flex items-center gap-3 mb-4 flex-shrink-0">
-          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif">Меридиональная диагностика</h3>
-          <span id="sym-count" class="text-xs font-mono text-[#8b90a0] ml-auto">0 выбрано</span>
+          <h3 class="text-base font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:treatment.tabs.diag">Меридиональная диагностика</h3>
+          <span id="sym-count" class="text-xs font-mono text-[#8b90a0] ml-auto"></span>
         </div>
         <div class="relative mb-3 flex-shrink-0">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-lg">search</span>
-          <input id="sym-search" placeholder="Поиск симптома..."
+          <input id="sym-search" placeholder="Поиск симптома..." data-i18n-placeholder="sessions:treatment.search.symptom"
                  class="w-full pl-10 pr-4 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-xl text-sm text-[#e2e2e2]
                         placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
         </div>
@@ -588,7 +588,7 @@ html, body {
           <!-- Время суток -->
           <div class="flex items-center gap-1.5 glass-panel rounded-xl px-3 py-1.5">
             <span class="material-symbols-outlined text-[#FFD60A]" style="font-size:13px;zoom:1">schedule</span>
-            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Время</span>
+            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:context.time">Время</span>
             <input id="ctx-time" type="time"
               class="bg-transparent border-none text-xs text-[#e2e2e2] outline-none w-[4.5rem] cursor-pointer"
               oninput="onCtxChange()"/>
@@ -596,27 +596,27 @@ html, body {
           <!-- Сезон -->
           <div class="flex items-center gap-1.5 glass-panel rounded-xl px-3 py-1.5">
             <span id="ctx-season-icon" class="material-symbols-outlined" style="font-size:13px;zoom:1;color:#5AC8FA">ac_unit</span>
-            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Сезон</span>
+            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:context.season">Сезон</span>
             <select id="ctx-season" onchange="onCtxChange()"
               class="bg-transparent border-none text-xs text-[#e2e2e2] outline-none cursor-pointer">
-              <option value="spring">Весна</option>
-              <option value="summer">Лето</option>
-              <option value="latesummer">Поздн. лето</option>
-              <option value="autumn">Осень</option>
-              <option value="winter">Зима</option>
+              <option value="spring" data-i18n="sessions:context.seasons.spring">Весна</option>
+              <option value="summer" data-i18n="sessions:context.seasons.summer">Лето</option>
+              <option value="latesummer" data-i18n="sessions:context.seasons.latesummer">Поздн. лето</option>
+              <option value="autumn" data-i18n="sessions:context.seasons.autumn">Осень</option>
+              <option value="winter" data-i18n="sessions:context.seasons.winter">Зима</option>
             </select>
           </div>
           <!-- Пол -->
           <div class="flex items-center gap-1 glass-panel rounded-xl px-2 py-1.5">
-            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider mr-1">Пол</span>
-            <button id="ctx-m" onclick="setCtxGender('m')" class="ctx-btn">М</button>
-            <button id="ctx-f" onclick="setCtxGender('f')" class="ctx-btn">Ж</button>
+            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider mr-1" data-i18n="sessions:context.gender">Пол</span>
+            <button id="ctx-m" onclick="setCtxGender('m')" class="ctx-btn" data-i18n="sessions:context.genderM">М</button>
+            <button id="ctx-f" onclick="setCtxGender('f')" class="ctx-btn" data-i18n="sessions:context.genderF">Ж</button>
           </div>
           <!-- Острое / хроническое -->
           <div class="flex items-center gap-1 glass-panel rounded-xl px-2 py-1.5">
-            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider mr-1">Тип</span>
-            <button id="ctx-acute" onclick="setCtxType('acute')" class="ctx-btn">Острое</button>
-            <button id="ctx-chronic" onclick="setCtxType('chronic')" class="ctx-btn">Хроническое</button>
+            <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider mr-1" data-i18n="sessions:context.type">Тип</span>
+            <button id="ctx-acute" onclick="setCtxType('acute')" class="ctx-btn" data-i18n="sessions:context.acute">Острое</button>
+            <button id="ctx-chronic" onclick="setCtxType('chronic')" class="ctx-btn" data-i18n="sessions:context.chronic">Хроническое</button>
           </div>
         </div>
 
@@ -626,11 +626,11 @@ html, body {
             <div class="px-3 pt-2 pb-1 flex justify-end gap-2 flex-shrink-0 border-b border-white/5">
               <button onclick="clearDiagSyms()"
                 class="px-3 py-1.5 border border-[#414755] text-[#8b90a0] rounded-xl text-xs hover:border-[#8b90a0] transition-all">
-                Сброс
+                <span data-i18n="sessions:treatment.action.reset">Сброс</span>
               </button>
               <button onclick="showDiagResult()"
                 class="px-4 py-1.5 bg-[#00F2FF]/10 border border-[#00F2FF]/40 text-[#00F2FF] rounded-xl font-bold text-xs hover:bg-[#00F2FF]/20 transition-all flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm">biotech</span>Анализ меридианов
+                <span class="material-symbols-outlined text-sm">biotech</span><span data-i18n="sessions:treatment.action.analyze">Анализ меридианов</span>
               </button>
             </div>
             <div id="sym-groups" class="overflow-y-auto flex-1 p-3 space-y-1"></div>
@@ -638,7 +638,7 @@ html, body {
           <div id="diag-result" class="glass-panel rounded-xl p-4 overflow-y-auto flex items-center justify-center text-[#8b90a0] text-sm">
             <div class="text-center">
               <span class="material-symbols-outlined text-5xl text-[#414755] mb-3 block">biotech</span>
-              <div>Выберите симптомы слева<br>и нажмите «Анализ меридианов»</div>
+              <div data-i18n="sessions:treatment.empty.symptoms">Выберите симптомы слева<br>и нажмите «Анализ меридианов»</div>
             </div>
           </div>
         </div>
@@ -666,7 +666,9 @@ html, body {
 import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, OWN, EB, DIST, parseSyms, ptVideoSrc, merVideoSrc, extractPoints, esc, safeSetItem, uniqueId, displayCode } from './shared.js';
 import { requireAuth } from './auth.js';
 import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic, apiGetTrialStatus } from './api.js';
+import { initI18n, t } from '/i18n.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
+await initI18n();
 let _clinicName = '';
 apiGetClinic().then(c => { _clinicName = c.name || ''; });
 
@@ -712,32 +714,32 @@ try {
       if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
     });
     document.getElementById('pc-name').textContent = patient;
-    document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
+    document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' /* i18n-ok */ : ''].filter(Boolean).join(', ');
     document.getElementById('pc-reason').textContent = reason;
     window._pendingPath = 'recipe';
     window._spPatientSet = true;
-    const gMap = { 'М': 'm', 'Ж': 'f' };
+    const gMap = { 'М': 'm', 'Ж': 'f' }; /* i18n-ok */
     window._pendingGender = gMap[gender] || null;
   }
 } catch(e) {}
 
 // ── Inject sub-nav под «Тактика лечения» ──
 const PATH_NAV = [
-  { path:'custom', icon:'tune',          color:'#34C759', label:'Свой рецепт' },
-  { path:'recipe', icon:'library_books', color:'#0A84FF', label:'Выбор точек по показаниям' },
-  { path:'tcm',    icon:'menu_book',     color:'#FFD60A', label:'Рецепты ТКМ' },
-  { path:'usin',   icon:'hub',           color:'#BF5AF2', label:'Подбор по У-Син' },
-  { path:'diag',   icon:'biotech',       color:'#00F2FF', label:'Мерид. диагностика' },
+  { path:'custom', icon:'tune',          color:'#34C759', label: t('sessions:treatment.nav.custom') },
+  { path:'recipe', icon:'library_books', color:'#0A84FF', label: t('sessions:treatment.nav.recipe') },
+  { path:'tcm',    icon:'menu_book',     color:'#FFD60A', label: t('sessions:treatment.nav.tcm') },
+  { path:'usin',   icon:'hub',           color:'#BF5AF2', label: t('sessions:treatment.nav.usin') },
+  { path:'diag',   icon:'biotech',       color:'#00F2FF', label: t('sessions:treatment.nav.diag') },
 ];
 const PATH_GROUPS = [
   {
-    label: 'Симптоматическое лечение',
+    label: t('sessions:treatment.groups.symptomatic'),
     icon: 'healing',
     color: '#0A84FF',
     paths: ['custom','recipe','tcm']
   },
   {
-    label: 'Энергобаланс',
+    label: t('sessions:treatment.groups.energy'),
     icon: 'hub',
     color: '#BF5AF2',
     paths: ['usin','diag']
@@ -806,9 +808,9 @@ let activeDis = null;
 let manualSessions = [];
 
 const GRADE_CFG = {
-  A: { color:'#30D158', bg:'#30D15818', border:'#30D15844', title:'Уровень A — сильная доказательность (Cochrane-обзоры, множественные РКИ)' },
-  B: { color:'#FFD60A', bg:'#FFD60A18', border:'#FFD60A44', title:'Уровень B — умеренная доказательность (систематические обзоры, отдельные РКИ)' },
-  C: { color:'#8b90a0', bg:'#8b90a018', border:'#8b90a044', title:'Уровень C — ограниченная доказательность (экспертное мнение, клинический опыт)' },
+  A: { color:'#30D158', bg:'#30D15818', border:'#30D15844', title:'Уровень A — сильная доказательность (Cochrane-обзоры, множественные РКИ)' }, /* i18n-ok */
+  B: { color:'#FFD60A', bg:'#FFD60A18', border:'#FFD60A44', title:'Уровень B — умеренная доказательность (систематические обзоры, отдельные РКИ)' }, /* i18n-ok */
+  C: { color:'#8b90a0', bg:'#8b90a018', border:'#8b90a044', title:'Уровень C — ограниченная доказательность (экспертное мнение, клинический опыт)' }, /* i18n-ok */
 };
 
 function gradeHtml(key, compact = false) {
@@ -816,7 +818,7 @@ function gradeHtml(key, compact = false) {
   if (!ev) return '';
   const g = GRADE_CFG[ev.grade];
   if (!g) return '';
-  const tip = ev.ref ? `${g.title}\nИсточник: ${ev.ref}${ev.note ? '\n' + ev.note : ''}` : g.title;
+  const tip = ev.ref ? `${g.title}\n${t('sessions:treatment.source')} ${ev.ref}${ev.note ? '\n' + ev.note : ''}` : g.title;
   if (compact) {
     return `<span title="${tip}" style="cursor:help;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${g.bg};border:1px solid ${g.border};color:${g.color};white-space:nowrap">Grade ${ev.grade}</span>`;
   }
@@ -824,6 +826,41 @@ function gradeHtml(key, compact = false) {
 }
 
 // Load data
+
+// ─── Medical data (lazy loaded from /data/*.json) ───────────────────────────
+let MUSCULO_SECTION, MUSCULO_NAMES, SECTION_ORDER, SECTION_LABELS;
+let MODERN_NAMES, SECTION_COLORS, DIS_CATEGORIES, SYM_CATEGORIES;
+let USIN_MD, USIN_EN, USIN_SYMS, USIN_DISEASES;
+let SND_TRACKS;
+
+let _usinDataLoaded = false;
+let _usinDataLoading = null;
+async function loadUsinData() {
+  if (_usinDataLoaded) return;
+  if (_usinDataLoading) return _usinDataLoading;
+  _usinDataLoading = fetch('/data/usin-data.json', _authHdr())
+    .then(r => r.json())
+    .then(d => {
+      USIN_MD       = d.meridians;
+      USIN_EN       = d.elementNames;
+      USIN_SYMS     = d.symptoms;
+      USIN_DISEASES = d.diseases;
+      _usinDataLoaded = true;
+    })
+    .catch(() => {
+      console.error('Failed to load usin-data.json');
+    });
+  return _usinDataLoading;
+}
+
+let _sndTracksLoaded = false;
+async function loadSndTracks() {
+  if (_sndTracksLoaded) return;
+  const d = await fetch('/data/snd-tracks.json', _authHdr()).then(r => r.json()).catch(() => ({ tracks: {} }));
+  SND_TRACKS = d.tracks;
+  _sndTracksLoaded = true;
+}
+
 const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
 Promise.all([
   fetch('/data/points.json',   _authHdr()).then(r=>r.json()).catch(()=>({})),
@@ -831,18 +868,28 @@ Promise.all([
   fetch('/data/evidence.json', _authHdr()).then(r=>r.json()).catch(()=>({})),
   fetch('/data/ikb10.json',    _authHdr()).then(r=>r.json()).catch(()=>({})),
   fetch('/data/videos.json',   _authHdr()).then(r=>r.json()).catch(()=>({})),
-]).then(([pts, dis, ev, ik, vid]) => {
+  fetch('/data/disease-meta.json',_authHdr()).then(r=>r.json()).catch(()=>({})),
+]).then(([pts, dis, ev, ik, vid, dm]) => {
   points = pts;
   diseases = dis;
   evidence = ev;
   ikb10 = ik;
   videosByDisease = vid.byDisease || {};
+  // Assign disease metadata from external JSON
+  MUSCULO_SECTION = dm.musculoSection;
+  MUSCULO_NAMES   = new Set(dm.musculoNames);
+  SECTION_ORDER   = dm.sectionOrder;
+  SECTION_LABELS  = dm.sectionLabels;
+  MODERN_NAMES    = dm.modernNames;
+  SECTION_COLORS  = dm.sectionColors;
+  DIS_CATEGORIES  = dm.disCategories;
+  SYM_CATEGORIES  = dm.symCategories;
   diseaseKeys = Object.keys(diseases);
   buildSymGroups();
   buildGrouped();
   renderRecipeChips();
   renderDiseaseList('');
-  document.getElementById('dis-count').textContent = `${diseaseKeys.length} рецептов`;
+  document.getElementById('dis-count').textContent = t('sessions:treatment.recipeCount', { count: diseaseKeys.length });
   // Auto-open on page load
   const sub = document.getElementById('sidebar-paths');
   if (sub) sub.style.display = 'flex';
@@ -857,15 +904,15 @@ Promise.all([
 
 // ─── PATH HINT ───────────────────────────────────────────
 const PATH_HINTS = {
-  recipe: 'Когда диагноз уже поставлен. Найдите болезнь или симптом в базе — система выдаст готовый набор точек для иглоукалывания.',
-  diag:   'Когда нужно разобраться в причине. Укажите симптомы — система определит дисбаланс меридианов и составит индивидуальный энергетический рецепт.'
+  recipe: t('sessions:treatment.hint.recipe'),
+  diag:   t('sessions:treatment.hint.diag'),
 };
 window.setPathHint = (path) => {
   const el = document.getElementById('path-hint-text');
   if (!el) return;
   el.style.opacity = '0';
   setTimeout(() => {
-    el.textContent = path ? PATH_HINTS[path] : 'Наведите на вариант, чтобы узнать подробнее';
+    el.textContent = path ? PATH_HINTS[path] : t('sessions:treatment.hint.default');
     el.style.opacity = '1';
   }, 120);
 };
@@ -892,11 +939,11 @@ function updateSidebarActive(path) {
 // ── Mobile path nav: build buttons ──────────────────────────
 (function() {
   const MOB_LABELS = {
-    custom: 'Свой рецепт',
-    recipe: 'Показания',
-    tcm:    'ТКМ',
-    usin:   'У-Син',
-    diag:   'Меридианы',
+    custom: t('sessions:treatment.tabsShort.custom'),
+    recipe: t('sessions:treatment.tabsShort.recipe'),
+    tcm:    t('sessions:treatment.tabsShort.tcm'),
+    usin:   t('sessions:treatment.tabsShort.wuxing'),
+    diag:   t('sessions:treatment.tabsShort.diag'),
   };
   const nav = document.getElementById('mob-path-nav');
   if (!nav) return;
@@ -1056,117 +1103,10 @@ function getTcmVideo(name) {
   return key ? videosByDisease[key] : null;
 }
 
-const MUSCULO_SECTION = 'ОПОРНО-ДВИГАТЕЛЬНЫЕ БОЛЕЗНИ';
-const MUSCULO_NAMES = new Set([
-  'Боль в пояснице',
-  'Ревматизм',
-  'Слабость и нарушение чувствительности в конечностях',
-  'Растяжение',
-  'Плечелопаточный периартрит',
-  'Синдром запястного канала',
-]);
 
-const SECTION_ORDER = [
-  'НЕОТЛОЖНАЯ ПОМОЩЬ',
-  MUSCULO_SECTION,
-  'ВНУТРЕННИЕ БОЛЕЗНИ',
-  'ЖЕНСКИЕ БОЛЕЗНИ',
-  'ЗАБОЛЕВАНИЕ «ПЯТИ ОРГАНОВ ЧУВСТВ»',
-  'НАРУЖНЫЕ БОЛЕЗНИ',
-  'БОЛЕЗНИ ЗАПАДНОЙ МЕДИЦИНЫ',
-];
 
-const SECTION_LABELS = {
-  'НЕОТЛОЖНАЯ ПОМОЩЬ':                  'Неотложная помощь',
-  [MUSCULO_SECTION]:                    'Опорно-двигательные',
-  'ВНУТРЕННИЕ БОЛЕЗНИ':                 'Внутренние болезни',
-  'ЖЕНСКИЕ БОЛЕЗНИ':                    'Женские болезни',
-  'ЗАБОЛЕВАНИЕ «ПЯТИ ОРГАНОВ ЧУВСТВ»': 'Органы чувств',
-  'НАРУЖНЫЕ БОЛЕЗНИ':                   'Наружные болезни',
-  'БОЛЕЗНИ ЗАПАДНОЙ МЕДИЦИНЫ':          'Зап. медицина',
-};
 
-const MODERN_NAMES = {
-  // Неотложная помощь
-  'Укачивание на транспорте, морская болезнь': 'кинетоз',
-  'Высокая температура':          'гипертермия, лихорадка',
-  'Обморок':                      'синкопе',
-  'Солнечный удар':               'тепловой удар',
-  // Внутренние болезни
-  'Апоплексия':                   'инсульт, ОНМК',
-  'Асимметрия лица':              'паралич лицевого нерва (Белла)',
-  'Асцит':                        'водянка живота',
-  'Водянка':                      'отёки, анасарка',
-  'Желтуха':                      'иктеричность, гепатит',
-  'Задержка мочи':                'ишурия',
-  'Запор':                        'констипация',
-  'Затруднение глотания':         'дисфагия',
-  'Икота':                        'сингульт',
-  'Кашель':                       'бронхит, трахеит',
-  'Лихорадка из-за внутренних нарушений': 'субфебрилитет',
-  'Лицевая боль':                 'прозопалгия, невралгия',
-  'Меланхолия':                   'депрессия',
-  'Одышка':                       'диспноэ',
-  'Понос':                        'диарея',
-  'Простуда':                     'ОРВИ, ОРЗ',
-  'Ревматизм':                    'ревматоидный артрит',
-  'Сердцебиение':                 'тахикардия, аритмия',
-  'Слабость и нарушение чувствительности в конечностях': 'полинейропатия, парез',
-  'Снижение памяти':              'амнезия, деменция',
-  'Сонливость':                   'гиперсомния',
-  'Странгурия':                   'дизурия (болезненное мочеиспускание)',
-  'Сумасшествие':                 'психоз, шизофрения',
-  'Поллюции':                     'ночные эмиссии',
-  'Импотенция':                   'эректильная дисфункция',
-  'Малярия':                      'малярия (плазмодиоз)',
-  // Женские болезни
-  'Альгоменорея':                 'болезненные менструации (дисменорея)',
-  'Аменорея':                     'отсутствие менструаций',
-  'Бели':                         'лейкорея, вагинальные выделения',
-  'Выпадение матки':              'пролапс матки',
-  'Дисменорея':                   'нарушения менструального цикла',
-  'Задержка лохий':               'задержка послеродовых выделений',
-  'Маточные кровотечения':        'метроррагия, меноррагия',
-  'Рвота беременных':             'ранний токсикоз беременных',
-  'Эклампсия':                    'тяжёлый гестоз, преэклампсия',
-  'Уплотнения в молочной железе': 'мастопатия, фиброаденома',
-  'Недостаточность лактации':     'гипогалактия',
-  // Органы чувств
-  'Бельмо':                       'лейкома, помутнение роговицы',
-  'Гноетечение из уха':           'гнойный отит, оторея',
-  'Гнойные выделения из носа':    'гнойный ринит, синусит',
-  'Шум в ушах, глухота':          'тиннитус, нейросенсорная тугоухость',
-  'Ячмень':                       'гордеолум',
-  'Воспаление горла':             'фарингит, тонзиллит',
-  'Утрата зрения':                'амавроз, амблиопия',
-  'Слезотечение':                 'эпифора, дакриоцистит',
-  // Наружные болезни
-  'Выпадение прямой кишки':       'ректальный пролапс',
-  'Крапивница':                   'уртикария',
-  'Рожа':                         'рожистое воспаление',
-  'Зоб':                          'тиреомегалия',
-  'Растяжение':                   'растяжение связок, дисторсия',
-  // Болезни западной медицины
-  'Болезнь отсутствия пульса':    'артериит Такаясу',
-  'Климактерический синдром':     'менопауза, климакс',
-  'Невралгия тройничного нерва':  'тригеминальная невралгия',
-  'Неврастения':                  'астено-невротический синдром, ВСД',
-  'Гастроптоз':                   'опущение желудка',
-  'Синдром запястного канала':    'карпальный туннельный синдром',
-  'Фобия':                        'тревожное расстройство',
-  'Плечелопаточный периартрит':   'адгезивный капсулит, периартрит',
-  'Гиперлипидемия':               'дислипидемия, атеросклероз',
-};
 
-const SECTION_COLORS = {
-  'НЕОТЛОЖНАЯ ПОМОЩЬ':                  '#ffb4ab',
-  [MUSCULO_SECTION]:                    '#FF9500',
-  'ВНУТРЕННИЕ БОЛЕЗНИ':                 '#0A84FF',
-  'ЖЕНСКИЕ БОЛЕЗНИ':                    '#FF6B9D',
-  'ЗАБОЛЕВАНИЕ «ПЯТИ ОРГАНОВ ЧУВСТВ»': '#FFD60A',
-  'НАРУЖНЫЕ БОЛЕЗНИ':                   '#3d8a5c',
-  'БОЛЕЗНИ ЗАПАДНОЙ МЕДИЦИНЫ':          '#adc6ff',
-};
 
 function loadTcm() {
   fetch('./data/belov.json', _authHdr())
@@ -1516,41 +1456,6 @@ document.getElementById('tcm-search').addEventListener('input', e => {
 });
 
 // ─── ГОТОВЫЙ РЕЦЕПТ ──────────────────────────────────────
-const DIS_CATEGORIES = [
-  { id: 'musculo', label: 'Костно-мышечные',     icon: 'accessibility',  keywords: [
-    'артрит','артроз','остеохондроз','спондил',
-    'люмбаго','люмбалг','ревматизм','периартрит',
-    'тендинит','бурсит','миозит',
-  ]},
-  { id: 'locomotor',label: 'Опорно-двигательные',  icon: 'orthopedics',    keywords: [
-    // Суставы
-    'сустав','колен','тазобедр','голеностопн',
-    // Позвоночник и спина
-    'позвоночн','поясни','крестц','копчик','спин',
-    // Нижние конечности
-    'бедр','ягодиц','голен','лодыжк','пятк','стоп','пальц',
-    // Верхние конечности
-    'предплечь','запяст','лопат','плечелопат','плеч','локт',
-    // Шея и затылок
-    'шейн','затыл','шеи','шее',
-    // Нервы конечностей
-    'ишиас','седалищн','контрактур','ригидност',
-    // Конечности (фразы)
-    'верхних конечн','нижних конечн','в рук','в ног',
-  ]},
-  { id: 'pain',    label: 'Болевые синдромы',    icon: 'healing',        keywords: ['боль','болевой','болезненн','невралг','радикул','мигрен','головная боль'] },
-  { id: 'neuro',   label: 'Неврологические',     icon: 'neurology',      keywords: ['парез','паралич','неврит','невроз','судорог','тремор','головокружен','обморок','энцефал','менингит','эпилепс','инсульт','нейро','рассеянн','апоплекс','гемиплег','кровоизлиян','мозговой'] },
-  { id: 'cardio',  label: 'Сердечно-сосудистые', icon: 'cardiology',     keywords: ['сердц','гипертон','гипотон','аритм','стенокард','тахикард','брадикард','атеросклер','варикоз','тромб','сосуд','давлен','инфаркт'] },
-  { id: 'digest',  label: 'Пищеварительные',     icon: 'gastroenterology',keywords: ['желудок','кишечник','гастрит','колит','запор','диарея','понос','гепатит','печень','желчн','поджелудоч','язва','панкреатит','холецист','геморрой','дисбактериоз','пищевод','рвота','тошнот','вздутие'] },
-  { id: 'resp',    label: 'Дыхательные',         icon: 'pulmonology',    keywords: ['бронхит','астма','ринит','синусит','гайморит','трахеит','ларингит','кашель','бронх','легк','плеврит','пневмон','носоглотк','горл','насморк'] },
-  { id: 'uro',     label: 'Урогенитальные',      icon: 'urology',        keywords: ['почк','мочевой','цистит','простатит','уретрит','нефрит','пиелонефрит','моч','половой','импотенц','фригидн'] },
-  { id: 'gyneco',  label: 'Гинекологические',    icon: 'gynecology',     keywords: ['менструац','климакс','матка','яичник','вагинит','мастопатия','бесплодие','беременн','гинеколог','молочная железа'] },
-  { id: 'psych',   label: 'Психологические',     icon: 'psychology',     keywords: ['депресс','бессонниц','тревог','стресс','невроз','психоз','психик','расстройств','навязч','фобия','апатия','раздражит','нарушение сна'] },
-  { id: 'derma',   label: 'Дерматологические',   icon: 'dermatology',    keywords: ['экзема','дерматит','псориаз','крапивниц','кожа','кожный','угри','фурункул','алопеция','облысение','зуд кожи'] },
-  { id: 'ent',     label: 'ЛОР',                 icon: 'hearing',        keywords: ['ухо','слух','отит','глухота','носоглотк','аденоид','тонзиллит','ангина','глотка','голос','афония'] },
-  { id: 'eye',     label: 'Офтальмологические',  icon: 'ophthalmology',  keywords: ['глаз','зрение','конъюнктивит','катаракт','глаукома','миопия','косоглазие','блефарит'] },
-  { id: 'other',   label: 'Прочее',              icon: 'more_horiz',     keywords: [] },
-];
 
 function getCategory(name) {
   const n = name.toLowerCase();
@@ -2156,7 +2061,7 @@ window.savePatientSession = async () => {
 
   // ── Если есть подтверждённые рецепты — сохраняем каждый отдельно ──
   if (confirmedRecipes.length > 0) {
-    if (!confirm(`Записать ${confirmedRecipes.length} рецепт(ов) отдельными сессиями для:\n${patientName}\n\nПодтвердить?`)) { _savingSession = false; return; }
+    if (!confirm(t('sessions:treatment.alert.confirmSessions', { count: confirmedRecipes.length, name: patientName }))) { _savingSession = false; return; }
 
     const now = new Date();
     const irt = getIrtFields();
@@ -2292,7 +2197,7 @@ let _pdfIntercept = null;
     if (_pdfIntercept) {
       const cfg = _pdfIntercept; _pdfIntercept = null;
       _downloadPdfFromSheet(cfg.sheetId, cfg.filename).catch(e => {
-        console.error('[PDF]', e); alert('Ошибка генерации PDF');
+        console.error('[PDF]', e); alert(t('sessions:treatment.alert.pdfError'));
       });
     } else { _orig(); }
   };
@@ -2300,7 +2205,7 @@ let _pdfIntercept = null;
 
 async function _downloadPdfFromSheet(sheetId, filename) {
   const sheet = document.getElementById(sheetId);
-  if (!sheet?.innerHTML.trim()) { alert('Сначала сформируйте рецепт'); return; }
+  if (!sheet?.innerHTML.trim()) { alert(t('sessions:treatment.alert.formRecipeFirst')); return; }
   const saved = sheet.getAttribute('style') || '';
   sheet.style.cssText = 'display:block!important;position:fixed;top:-9999px;left:0;width:680px;padding:28px 32px;box-sizing:border-box;background:#fff;color:#111;font-family:Arial,sans-serif';
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -2412,7 +2317,7 @@ window.printRecipe = () => {
     const m = (typeof manualSessions !== 'undefined') ? manualSessions.flatMap(s => s.pts||[]).filter(Boolean) : [];
     return m.length > 0 ? [...new Set(m)] : (window._currentPts||[]).slice();
   })();
-  if (!pts.length) { alert('Сначала выберите рецепт или добавьте точки вручную.'); return; }
+  if (!pts.length) { alert(t('sessions:treatment.alert.selectRecipeFirst')); return; }
 
   const disKey  = window._currentDisKey || '';
   const disName = window._currentDisName || (disKey.startsWith('tcm_') ? disKey.replace('tcm_','') : disKey);
@@ -2586,16 +2491,6 @@ function buildSymGroups() {
   });
 }
 
-const SYM_CATEGORIES = [
-  { id: 'pain',    label: 'Болевые',                   icon: 'crisis_alert',    keywords: ['боль','болезненн','ломот','жжение','покалыван','рез','колик','спазм','судорог','тяжесть'] },
-  { id: 'temp',    label: 'Температурные',              icon: 'thermostat',      keywords: ['температур','жар','озноб','потли','горяч','холод','лихорадк','прилив','пот'] },
-  { id: 'psych',   label: 'Психоэмоциональные',        icon: 'psychology',      keywords: ['тревог','страх','беспокойств','раздраж','депресс','апати','вялост','усталост','слабост','сон','бессонниц','нервоз','плакс','уныни','тоск','возбужд'] },
-  { id: 'digest',  label: 'Пищеварительные',           icon: 'gastroenterology',keywords: ['желудок','кишечник','тошнот','рвот','запор','диарея','понос','вздутие','изжог','отрыжк','аппетит','жажд','питани','пищеварен','живот'] },
-  { id: 'resp',    label: 'Дыхательные',               icon: 'pulmonology',     keywords: ['кашель','одышк','дыхани','мокрот','астм','бронх','горл','нос','насморк','чихани','голос','хрипот'] },
-  { id: 'cardio',  label: 'Сердечно-сосудистые',       icon: 'cardiology',      keywords: ['сердц','пульс','сердцебиени','тахикард','давлен','голов','голово','обморок','головокружен','шум в ушах','звон','отёк','отек'] },
-  { id: 'uro',     label: 'Мочеполовые',               icon: 'urology',         keywords: ['мочеиспускани','моч','почк','отёк','потенц','эрекц','менструац','выделени','половой','либидо','импотенц'] },
-  { id: 'other',   label: 'Общие',                     icon: 'more_horiz',      keywords: [] },
-];
 
 function getSymCategory(s) {
   const n = s.toLowerCase();
@@ -2692,7 +2587,7 @@ let selectedMers = new Set();
 
 window.showStep2 = () => {
   if (!checkedSyms.size) {
-    alert('Выберите хотя бы один симптом');
+    alert(t('sessions:treatment.alert.selectSymptom'));
     return;
   }
 
@@ -2800,7 +2695,7 @@ window.backToStep1 = () => {
 
 // ─── ШАГ 3: ПЛАН ЛЕЧЕНИЯ ─────────────────────────────────
 window.showDiagResult = function() {
-  if (!checkedSyms.size) { alert('Выберите хотя бы один симптом'); return; }
+  if (!checkedSyms.size) { alert(t('sessions:treatment.alert.selectSymptom')); return; }
   merScores = {};
   MER_ORDER.forEach(m => { merScores[m] = {excess:0, defic:0, total:0}; });
   checkedSyms.forEach(({mer, type}) => {
@@ -3302,7 +3197,7 @@ window.openVid = (code) => {
                oncontextmenu="return false"
                onerror="this.closest('.glass-panel').style.display='none'"></video>
       </div>
-      <div style="font-size:10px;color:#6b7280;text-align:right;margin-top:6px">© П. В. Белоусов — zhong-yi.narod.ru</div>
+      <div style="font-size:10px;color:#6b7280;text-align:right;margin-top:6px"><span data-i18n="sessions:treatment.copyrightFull">© П. В. Белоусов — zhong-yi.narod.ru</span></div>
     </div>` : ''}
   `;
   document.getElementById('vid-modal').classList.remove('hidden');
@@ -3655,7 +3550,7 @@ window.clearCustomSelection = () => {
 
 window.printCustomRecipe = () => {
   const pts = [...customSelected];
-  if (!pts.length) { alert('Выберите хотя бы одну точку'); return; }
+  if (!pts.length) { alert(t('sessions:treatment.alert.selectPoint')); return; }
   const _s     = JSON.parse(sessionStorage.getItem('acutwin_session') || '{}');
   const _p     = JSON.parse(sessionStorage.getItem('acutwin_diag_patient') || '{}');
   const doctor  = _s.name || '';
@@ -3744,7 +3639,7 @@ const pendingRecipeData = {};
 
 window.addConfirmed = (containerId) => {
   const d = pendingRecipeData[containerId];
-  if (!d || !d.pts.length) { alert('Нет точек для добавления'); return; }
+  if (!d || !d.pts.length) { alert(t('sessions:treatment.alert.noPoints')); return; }
   const existIdx = confirmedRecipes.findIndex(r => r._key === d.key);
   if (existIdx >= 0) {
     confirmedRecipes.splice(existIdx, 1);
@@ -3837,182 +3732,19 @@ window.selectUsinSub = function(sub) {
   if (!isSym && !usinDisInited) initUsinDiseases();
 };
 
-const USIN_MD = {
-  P:  { name:'Лёгкие',           el:'metal',  yin:true,  ap:'V',
-        ton:{c:'P9', n:'Тай-юань',  l:'Лучезапястная складка, у лучевой артерии'},
-        sed:{c:'P5', n:'Чи-цзе',    l:'Локтевая складка, у двуглавой мышцы'},
-        src:{c:'P9', n:'Тай-юань',  l:'Лучезапястная складка'} },
-  Gi : { name:'Толстый кишечник', el:'metal',  yin:false, ap:'R',
-        ton:{c:'Gi11',n:'Цюй-чи',   l:'Конец локтевой складки при согнутом локте'},
-        sed:{c:'Gi2', n:'Эр-цзянь', l:'Указательный палец, перед 2-м пястно-фаланговым'},
-        src:{c:'Gi4', n:'Хэ-гу',    l:'Тыл кисти, между 1-й и 2-й пястными костями'} },
-  E:  { name:'Желудок',          el:'earth',  yin:false, ap:'MC',
-        ton:{c:'E41', n:'Цзе-си',   l:'Передняя поверхность голеностопа, центр'},
-        sed:{c:'E45', n:'Ли-дуй',   l:'Угол ногтя 2-го пальца стопы, снаружи'},
-        src:{c:'E42', n:'Чун-ян',   l:'Тыл стопы, наибольший подъём'} },
-  RP: { name:'Селезёнка–Поджел.',el:'earth',  yin:true,  ap:'TR',
-        ton:{c:'RP2', n:'Да-ду',    l:'Большой палец стопы, медиальная сторона, перед суставом'},
-        sed:{c:'RP5', n:'Шан-цю',   l:'Медиальная лодыжка, кпереди и книзу'},
-        src:{c:'RP3', n:'Тай-бай',  l:'Медиальная сторона стопы, у основания 1-й плюсны'} },
-  C:  { name:'Сердце',           el:'fire',   yin:true,  ap:'VB',
-        ton:{c:'C9',  n:'Шао-чун',  l:'Мизинец, медиальный угол ногтя'},
-        sed:{c:'C7',  n:'Шэнь-мэнь',l:'Лучезапястная складка, у гороховидной кости'},
-        src:{c:'C7',  n:'Шэнь-мэнь',l:'Лучезапястная складка, у гороховидной кости'} },
-  iG : { name:'Тонкий кишечник',  el:'fire',   yin:false, ap:'F',
-        ton:{c:'iG3', n:'Хоу-си',   l:'Ладонная сторона кисти, за 5-м пястно-фаланговым'},
-        sed:{c:'iG8', n:'Сяо-хай',  l:'Между локтевым отростком и медиальным мыщелком'},
-        src:{c:'iG4', n:'Вань-гу',  l:'Локтевая сторона кисти, у основания 5-й пястной'} },
-  V:  { name:'Мочевой пузырь',  el:'water',  yin:false, ap:'P',
-        ton:{c:'V67', n:'Чжи-инь',  l:'Мизинец стопы, латеральный угол ногтя'},
-        sed:{c:'V65', n:'Шу-гу',    l:'Латеральный край стопы, за 5-м плюснефаланговым'},
-        src:{c:'V64', n:'Цзин-гу',  l:'Латеральный край стопы, перед бугристостью 5-й плюсны'} },
-  R:  { name:'Почки',            el:'water',  yin:true,  ap:'GI',
-        ton:{c:'R7',  n:'Фу-лю',    l:'2 цунь выше медиальной лодыжки, у ахиллова сухожилия'},
-        sed:{c:'R1',  n:'Юн-цюань', l:'Подошва, углубление в передней трети стопы'},
-        src:{c:'R3',  n:'Тай-си',   l:'Между медиальной лодыжкой и ахилловым сухожилием'} },
-  MC: { name:'Перикард',         el:'fire2',  yin:true,  ap:'E',
-        ton:{c:'MC9', n:'Чжун-чун', l:'Средний палец, кончик'},
-        sed:{c:'MC7', n:'Да-лин',   l:'Центр лучезапястной складки'},
-        src:{c:'MC7', n:'Да-лин',   l:'Центр лучезапястной складки'} },
-  TR: { name:'Три обогревателя', el:'fire2',  yin:false, ap:'RP',
-        ton:{c:'TR3', n:'Чжун-чжу', l:'Тыл кисти, между 4-й и 5-й пястными костями'},
-        sed:{c:'TR10',n:'Тянь-цзин',l:'1 цунь выше локтевого отростка'},
-        src:{c:'TR4', n:'Ян-чи',    l:'Центр тыльной лучезапястной складки'} },
-  VB: { name:'Желчный пузырь',   el:'wood',   yin:false, ap:'C',
-        ton:{c:'VB43',n:'Ся-си',    l:'Между 4-м и 5-м пальцами стопы, у перепонки'},
-        sed:{c:'VB38',n:'Ян-фу',    l:'4 цунь выше латеральной лодыжки, кпереди от малоберцовой'},
-        src:{c:'VB40',n:'Цю-сюй',   l:'Кпереди и книзу от латеральной лодыжки'} },
-  F:  { name:'Печень',           el:'wood',   yin:true,  ap:'IG',
-        ton:{c:'F8',  n:'Цюй-цюань',l:'Медиальная сторона подколенной ямки'},
-        sed:{c:'F2',  n:'Синь-цзянь',l:'Между 1-м и 2-м пальцами стопы, у перепонки'},
-        src:{c:'F3',  n:'Тай-чун',  l:'Тыл стопы, между 1-й и 2-й плюсневыми костями'} }
-};
 
 const USIN_EP = { metal:'earth', earth:'fire2', fire:'wood', fire2:'wood', wood:'water', water:'metal' };
 const USIN_EC = { metal:'water', earth:'metal', fire:'earth', fire2:'earth', wood:'fire', water:'wood' };
-const USIN_EN = { metal:'Металл', earth:'Земля', fire:'Огонь', fire2:'Огонь(вт.)', wood:'Дерево', water:'Вода' };
 const USIN_HOURS = {
   P:'3:00–5:00', GI:'5:00–7:00', E:'7:00–9:00', RP:'9:00–11:00',
   C:'11:00–13:00', IG:'13:00–15:00', V:'15:00–17:00', R:'17:00–19:00',
   MC:'19:00–21:00', TR:'21:00–23:00', VB:'23:00–1:00', F:'1:00–3:00'
 };
 
-const USIN_SYMS = [
-  { sec:'Дыхательная система', items:[
-    {m:'P', t:'excess',w:3, tx:'Острый кашель, бронхоспазм, свистящее дыхание'},
-    {m:'P', t:'defic', w:3, tx:'Хронический кашель, одышка при нагрузке'},
-    {m:'P', t:'excess',w:2, tx:'Боль и тяжесть в груди'},
-    {m:'P', t:'defic', w:2, tx:'Частые ОРВИ, слабый иммунитет'},
-    {m:'P', t:'excess',w:2, tx:'Лихорадка с ознобом, острый насморк'},
-    {m:'P', t:'defic', w:2, tx:'Хриплый голос, повышенная потливость'},
-  ]},
-  { sec:'ЖКТ — желудок', items:[
-    {m:'E', t:'excess',w:3, tx:'Острая боль в желудке, изжога, жжение'},
-    {m:'E', t:'defic', w:3, tx:'Снижение аппетита, хроническая тошнота'},
-    {m:'E', t:'excess',w:2, tx:'Сильный голод, полифагия'},
-    {m:'E', t:'defic', w:2, tx:'Вздутие живота, метеоризм'},
-    {m:'E', t:'excess',w:2, tx:'Рвота, отрыжка кислым'},
-    {m:'E', t:'defic', w:2, tx:'Отёки лица и ног по утрам, мышечная слабость'},
-  ]},
-  { sec:'ЖКТ — кишечник', items:[
-    {m:'Gi',t:'excess',w:3, tx:'Запор, схваткообразные боли в животе'},
-    {m:'Gi',t:'defic', w:3, tx:'Хронический понос, жидкий стул'},
-    {m:'Gi',t:'excess',w:2, tx:'Зубная боль, воспаление дёсен'},
-    {m:'Gi',t:'excess',w:2, tx:'Носовые кровотечения'},
-    {m:'iG',t:'defic', w:2, tx:'Боли в шее, плечах, лопатках'},
-    {m:'iG',t:'defic', w:2, tx:'Плохое усвоение пищи'},
-  ]},
-  { sec:'Селезёнка — поджелудочная', items:[
-    {m:'RP',t:'defic', w:3, tx:'Хроническая усталость, слабость мышц, атрофия'},
-    {m:'RP',t:'defic', w:3, tx:'Отёки ног, пастозность'},
-    {m:'RP',t:'defic', w:2, tx:'Синяки без причины, кровоточивость'},
-    {m:'RP',t:'excess',w:2, tx:'Тяжесть во всём теле, ломота'},
-    {m:'RP',t:'defic', w:2, tx:'Трудно сосредоточиться, «туман в голове»'},
-    {m:'RP',t:'defic', w:2, tx:'Опущение органов (птоз желудка, матки)'},
-  ]},
-  { sec:'Сердечно-сосудистая система', items:[
-    {m:'C', t:'excess',w:3, tx:'Тахикардия, ощущение сильного сердцебиения'},
-    {m:'C', t:'defic', w:3, tx:'Брадикардия, слабый пульс, бледность'},
-    {m:'C', t:'excess',w:3, tx:'Боль в груди по типу стенокардии'},
-    {m:'C', t:'excess',w:2, tx:'Бессонница, возбуждение, жар в груди'},
-    {m:'C', t:'defic', w:2, tx:'Тревога, страх, холодные конечности'},
-    {m:'MC',t:'excess',w:2, tx:'Аритмия, жар в ладонях, возбуждение'},
-    {m:'MC',t:'defic', w:2, tx:'Сердечная слабость, депрессия'},
-    {m:'F', t:'excess',w:3, tx:'Гипертония, покраснение лица'},
-  ]},
-  { sec:'Почки и мочевой пузырь', items:[
-    {m:'V', t:'excess',w:3, tx:'Цистит, болезненное мочеиспускание, рези'},
-    {m:'V', t:'defic', w:3, tx:'Энурез, недержание мочи, частые позывы'},
-    {m:'V', t:'excess',w:2, tx:'Головная боль в затылке, напряжение в шее'},
-    {m:'V', t:'excess',w:2, tx:'Боль вдоль позвоночника, скованность спины'},
-    {m:'R', t:'defic', w:3, tx:'Хроническая боль в пояснице, «ватность» ног'},
-    {m:'R', t:'defic', w:2, tx:'Звон в ушах, постепенное снижение слуха'},
-    {m:'R', t:'defic', w:2, tx:'Выпадение волос, ранняя седина'},
-    {m:'R', t:'defic', w:2, tx:'Слабые кости, частые переломы'},
-    {m:'R', t:'defic', w:2, tx:'Хронический страх, фобии, ночное мочеиспускание'},
-    {m:'R', t:'defic', w:2, tx:'Снижение либидо, холодные поясница и колени'},
-  ]},
-  { sec:'Печень и желчный пузырь', items:[
-    {m:'F', t:'excess',w:3, tx:'Раздражительность, гнев, вспыльчивость'},
-    {m:'F', t:'excess',w:2, tx:'Боль в правом подреберье или боку'},
-    {m:'F', t:'excess',w:2, tx:'Судороги, тики, мышечные спазмы'},
-    {m:'F', t:'excess',w:2, tx:'Головная боль в темени'},
-    {m:'F', t:'defic', w:2, tx:'Сухость и усталость глаз, ухудшение зрения'},
-    {m:'F', t:'defic', w:2, tx:'Онемение конечностей, тремор'},
-    {m:'VB',t:'excess',w:3, tx:'Мигрень (висок, за ухо), горечь во рту'},
-    {m:'VB',t:'excess',w:2, tx:'Желтуха, боль в правом подреберье'},
-    {m:'VB',t:'defic', w:2, tx:'Нерешительность, трудно засыпать'},
-    {m:'VB',t:'defic', w:2, tx:'Головокружение, шаткость при ходьбе'},
-  ]},
-  { sec:'Нервная система и психика', items:[
-    {m:'C', t:'excess',w:2, tx:'Бессонница, частые ночные пробуждения'},
-    {m:'MC',t:'defic', w:2, tx:'Депрессия, апатия, хроническая тоска'},
-    {m:'TR',t:'defic', w:2, tx:'Снижение иммунитета, чувствительность к температуре'},
-    {m:'F', t:'excess',w:2, tx:'Межрёберная невралгия, боль в боку'},
-    {m:'V', t:'excess',w:2, tx:'Боль по задней поверхности ноги (ишиас)'},
-    {m:'VB',t:'excess',w:2, tx:'Боль по наружной поверхности бедра и голени'},
-  ]},
-  { sec:'ЛОР — нос, горло, уши', items:[
-    {m:'Gi',t:'excess',w:2, tx:'Острый ринит, заложенность носа'},
-    {m:'P', t:'defic', w:2, tx:'Хронический ринит, постоянные выделения'},
-    {m:'Gi',t:'excess',w:2, tx:'Синусит, давление в области пазух'},
-    {m:'P', t:'defic', w:2, tx:'Хронический фарингит, першение в горле'},
-    {m:'Gi',t:'excess',w:2, tx:'Острый тонзиллит, боль в горле'},
-    {m:'R', t:'defic', w:3, tx:'Хронический шум и звон в ушах (тиннитус)'},
-    {m:'R', t:'defic', w:2, tx:'Постепенное снижение слуха'},
-  ]},
-  { sec:'Кожа и аллергия', items:[
-    {m:'P', t:'excess',w:3, tx:'Экзема, нейродермит, мокнущие высыпания'},
-    {m:'P', t:'excess',w:3, tx:'Крапивница, аллергическая сыпь'},
-    {m:'Gi',t:'excess',w:2, tx:'Акне, угри, гнойничковые высыпания'},
-    {m:'P', t:'defic', w:2, tx:'Сухость кожи, шелушение, зуд без высыпаний'},
-  ]},
-  { sec:'Гинекология', items:[
-    {m:'F', t:'excess',w:3, tx:'Болезненные месячные (спазмы), ПМС'},
-    {m:'RP',t:'defic', w:3, tx:'Обильные месячные, кровотечения'},
-    {m:'R', t:'defic', w:2, tx:'Скудные или редкие месячные, аменорея'},
-    {m:'R', t:'defic', w:2, tx:'Приливы, потливость, климактерический синдром'},
-    {m:'RP',t:'defic', w:2, tx:'Белые выделения (бели)'},
-  ]},
-  { sec:'Мужское здоровье', items:[
-    {m:'R', t:'defic', w:3, tx:'Снижение потенции, эректильная дисфункция'},
-    {m:'R', t:'defic', w:2, tx:'Преждевременное семяизвержение'},
-    {m:'V', t:'excess',w:3, tx:'Простатит, боль при мочеиспускании'},
-    {m:'R', t:'defic', w:2, tx:'Аденома простаты, затруднённое мочеиспускание'},
-  ]},
-  { sec:'Опорно-двигательный аппарат', items:[
-    {m:'V', t:'excess',w:2, tx:'Шейный остеохондроз, боль и скованность в шее'},
-    {m:'V', t:'excess',w:2, tx:'Поясничный остеохондроз, грыжа диска'},
-    {m:'V', t:'excess',w:2, tx:'Ишиас, боль по задней поверхности ноги'},
-    {m:'Gi',t:'excess',w:2, tx:'Плечелопаточный периартрит'},
-    {m:'Gi',t:'excess',w:2, tx:'Эпикондилит («локоть теннисиста»)'},
-    {m:'RP',t:'defic', w:2, tx:'Боль в коленных суставах'},
-    {m:'VB',t:'excess',w:2, tx:'Боль по наружной поверхности бедра и голени'},
-  ]},
-];
 
-window.initUsin = function initUsin() {
+window.initUsin = async function initUsin() {
   usinInited = true;
+  await loadUsinData();
   const cont = document.getElementById('usin-sym-container');
   let uid = 0;
   cont.innerHTML = USIN_SYMS.map(sec => `
@@ -4060,7 +3792,7 @@ window.analyzeUsin = () => {
   const symCount = {};
   Object.keys(USIN_MD).forEach(k => { sc[k] = {excess:0, defic:0}; symCount[k] = 0; });
   const checked = document.querySelectorAll('.usin-cb:checked');
-  if (!checked.length) { alert('Отметьте хотя бы один симптом'); return; }
+  if (!checked.length) { alert(t('sessions:treatment.alert.markSymptom')); return; }
   const totalSyms = checked.length;
   checked.forEach(cb => {
     const {m,t,w} = cb.dataset;
@@ -4092,7 +3824,7 @@ window.analyzeUsin = () => {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  if (!top3.length) { alert('Отметьте хотя бы один симптом'); return; }
+  if (!top3.length) { alert(t('sessions:treatment.alert.markSymptom')); return; }
   const extra = { top3, symCount, totalSyms, ctx };
   window._lastSc = sc;
   window._lastExtra = extra;
@@ -4414,7 +4146,7 @@ window.renderUsinResult = function renderUsinResult(sc, mk, mtype, extra) {
 
 window.printUsinRecipe = function() {
   const d = window._uPrintData;
-  if (!d) { alert('Сначала выполните анализ.'); return; }
+  if (!d) { alert(t('sessions:treatment.alert.analyzeFirst')); return; }
   _printPrioSheet({
     patientSource: 'usin',
     subtitle: 'У-Син · ' + d.merName,
@@ -4441,7 +4173,7 @@ window.printUsinRecipe = function() {
 
 window.printDiagMerRecipe = function(mer) {
   const d = window._diagPrintMap && window._diagPrintMap[mer];
-  if (!d) { alert('Нет данных для печати. Выполните анализ.'); return; }
+  if (!d) { alert(t('sessions:treatment.alert.noPrintData')); return; }
   _printPrioSheet({
     subtitle: 'Мерид. диагностика · ' + mer + ' ' + d.merName,
     status: d.condLabel,
@@ -4513,210 +4245,11 @@ function _printPrioSheet({subtitle, status, accentCol, prio}) {
 
 // ─── У-СИНЬ: БОЛЕЗНИ ────────────────────────────────────
 
-const USIN_DISEASES = [
-  { name:'Артериальная гипертония', meta:'F↑ VB↑ R↓ · Избыток Ян Печени',
-    pts:[{c:'F2',n:'Синь-цзянь',l:'Между 1–2 пальцами стопы',r:'Седатирование F'},
-         {c:'F3',n:'Тай-чун',l:'Тыл стопы, 1–2 плюсневые',r:'Источник F'},
-         {c:'VB38',n:'Ян-фу',l:'4 цунь выше латеральной лодыжки',r:'Седатирование VB'},
-         {c:'VB20',n:'Фэн-чи',l:'Затылочная ямка',r:'Местная (голова)'},
-         {c:'Gi11',n:'Цюй-чи',l:'Конец локтевой складки',r:'Гипотензивная'},
-         {c:'R7',n:'Фу-лю',l:'2 цунь выше медиальной лодыжки',r:'Тонизирование R'}],
-    logic:'F↑ — Ян-избыток Печени. Седатируем F и VB. Тонизируем R (мать-элемент). GI11 — гипотензивная точка.' },
-  { name:'Бронхиальная астма', meta:'P↓ R↓ · Дефицит Лёгких',
-    pts:[{c:'P9',n:'Тай-юань',l:'Лучезапястная складка',r:'Тонизирование P'},
-         {c:'P7',n:'Ле-цюэ',l:'1.5 цунь выше запястья',r:'Ло-пункт Лёгких'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Почки укореняют дыхание'},
-         {c:'V13',n:'Фэй-шу',l:'Th3, 1.5 цунь от средней линии',r:'Шу-точка Лёгких'},
-         {c:'J22',n:'Тянь-ту',l:'Яремная вырезка грудины',r:'Снимает спазм бронхов'},
-         {c:'E40',n:'Фэн-лун',l:'Середина голени + 2 цунь кнаружи',r:'Растворяет флегму'}],
-    logic:'P↓ — хроническая нехватка Ци Лёгких. Почки (R↓) удерживают вдох. E40 — главная при мокроте.' },
-  { name:'Хронический бронхит', meta:'P↓ RP↓ · Флегма Селезёнки',
-    pts:[{c:'P9',n:'Тай-юань',l:'Лучезапястная складка',r:'Тонизирование P'},
-         {c:'V13',n:'Фэй-шу',l:'Th3, 1.5 цунь от средней линии',r:'Шу-точка Лёгких'},
-         {c:'RP3',n:'Тай-бай',l:'Медиальная стопа, у 1-й плюсны',r:'Тонизирование RP'},
-         {c:'E40',n:'Фэн-лун',l:'Середина голени + 2 цунь',r:'Растворяет флегму'},
-         {c:'J17',n:'Тань-чжун',l:'По средней линии, 4-е ребро',r:'Открывает грудь'}],
-    logic:'Флегма порождается RP, хранится Лёгкими. E40 — главная точка растворения флегмы.' },
-  { name:'Бессонница', meta:'C↑ MC · Беспокойный Дух (Шэнь)',
-    pts:[{c:'C7',n:'Шэнь-мэнь',l:'Лучезапястная складка, у гороховидной',r:'Седатирование C'},
-         {c:'MC6',n:'Нэй-гуань',l:'2 цунь выше лучезапястной складки',r:'Успокоение Шэнь'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Инь трёх меридианов'},
-         {c:'VB20',n:'Фэн-чи',l:'Затылочная ямка',r:'Рассеивание Ян'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Питание Инь Почек'}],
-    logic:'Бессонница = беспокойный Шэнь. C7 + MC6 успокаивают Дух. RP6 питает Инь всего тела.' },
-  { name:'Стенокардия', meta:'C↑ MC · Застой Ци и Крови',
-    pts:[{c:'MC6',n:'Нэй-гуань',l:'2 цунь выше лучезапястной складки',r:'Главная при боли в груди'},
-         {c:'MC4',n:'Си-мэнь',l:'5 цунь выше лучезапястной складки',r:'Щелевая точка (острая боль)'},
-         {c:'C7',n:'Шэнь-мэнь',l:'Лучезапястная складка',r:'Источник C'},
-         {c:'J17',n:'Тань-чжун',l:'По средней линии, 4-е ребро',r:'Открывает грудь'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти, 1–2 пястные',r:'Движение Ци'}],
-    logic:'Застой Ци и Крови в Сердце. MC6 — ключевая кардиопротективная точка. MC4 при острой боли.' },
-  { name:'Хроническая боль в пояснице', meta:'R↓ V · Дефицит Почек',
-    pts:[{c:'R7',n:'Фу-лю',l:'2 цунь выше медиальной лодыжки',r:'Тонизирование R'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Источник R'},
-         {c:'V23',n:'Шэнь-шу',l:'1.5 цунь от L2',r:'Шу-точка Почек'},
-         {c:'T4',n:'Мин-мэнь',l:'Между L2–L3',r:'Врата Жизни (мокса)'},
-         {c:'V40',n:'Вэй-чжун',l:'Центр подколенной ямки',r:'Командная точка поясницы'}],
-    logic:'R↓ — корень хронической боли. V40 по правилу четырёх команд — главная для поясницы.' },
-  { name:'Депрессия / Апатия', meta:'F застой · MC↓ · Застой Ци Печени',
-    pts:[{c:'F3',n:'Тай-чун',l:'Тыл стопы, 1–2 плюсневые',r:'Движение Ци Печени'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти, 1–2 пястные',r:'Пара с F3 — движение Ци'},
-         {c:'MC9',n:'Чжун-чун',l:'Кончик среднего пальца',r:'Тонизирование MC'},
-         {c:'MC6',n:'Нэй-гуань',l:'2 цунь выше запястья',r:'Открытие груди'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Инь и Крови'}],
-    logic:'GI4+F3 — классика движения Ци. MC6 открывает грудь. RP6 питает кровь для Шэнь.' },
-  { name:'Мигрень', meta:'VB↑ · Восходящий Ян',
-    pts:[{c:'VB38',n:'Ян-фу',l:'4 цунь выше латеральной лодыжки',r:'Седатирование VB'},
-         {c:'VB40',n:'Цю-сюй',l:'Кпереди от латеральной лодыжки',r:'Источник VB'},
-         {c:'VB20',n:'Фэн-чи',l:'Затылочная ямка',r:'Местная (голова)'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Анальгетик'},
-         {c:'TR5',n:'Вай-гуань',l:'2 цунь выше тыльной запястной',r:'Открытие боковой зоны'}],
-    logic:'VB — путь мигрени (висок, за ухо). GI4 — мощный аналгетик. TR5 — для боковой зоны тела.' },
-  { name:'Гастрит / Язва желудка', meta:'E↑↓ · Нарушение Желудка',
-    pts:[{c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника, 1 цунь кнаружи',r:'Главная точка ЖКТ'},
-         {c:'E45',n:'Ли-дуй',l:'2-й палец стопы, угол ногтя',r:'Седатирование E (гиперацидность)'},
-         {c:'E41',n:'Цзе-си',l:'Передняя поверхность голеностопа',r:'Тонизирование E (атрофия)'},
-         {c:'RP4',n:'Гун-сунь',l:'Медиальная стопа, у 1-й плюсны',r:'Ло-пункт RP→E'},
-         {c:'J12',n:'Чжун-вань',l:'4 цунь выше пупка',r:'Мо-точка Желудка'}],
-    logic:'E36 — универсальная точка ЖКТ. E45 при гиперацидности, E41 при атрофии.' },
-  { name:'Синдром раздражённого кишечника', meta:'RP↓ F · Атака Печени на Селезёнку',
-    pts:[{c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание RP'},
-         {c:'RP3',n:'Тай-бай',l:'Медиальная стопа, у 1-й плюсны',r:'Источник RP'},
-         {c:'F3',n:'Тай-чун',l:'Тыл стопы, 1–2 плюсневые',r:'Успокоение Печени'},
-         {c:'E25',n:'Тянь-шу',l:'2 цунь от пупка',r:'Мо-точка Толстого кишечника'},
-         {c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Укрепление пищеварения'}],
-    logic:'RP↓ + атака F на Селезёнку. F3 успокаивает Печень, RP3 укрепляет Селезёнку.' },
-  { name:'Ишиас (седалищный нерв)', meta:'V↑ VB↑ · Блок меридианов',
-    pts:[{c:'V40',n:'Вэй-чжун',l:'Центр подколенной ямки',r:'Командная точка поясницы и ноги'},
-         {c:'VB30',n:'Хуань-тяо',l:'Латеральная ягодичная область',r:'Главная при ишиасе'},
-         {c:'V60',n:'Кунь-лунь',l:'Между лодыжкой и ахиллом (лат.)',r:'Проходимость V'},
-         {c:'VB34',n:'Ян-лин-цюань',l:'Кпереди от головки малоберцовой кости',r:'Влиятельная сухожилий'},
-         {c:'V57',n:'Чэн-шань',l:'Середина икры',r:'Местная (голень)'}],
-    logic:'V40 — командная точка задней поверхности ноги. VB30 — главная для ягодично-бедренной боли.' },
-  { name:'Шейный остеохондроз', meta:'V↑ VB · Блок меридианов шеи',
-    pts:[{c:'V10',n:'Тянь-чжу',l:'1.5 цунь от задней линии, под затылком',r:'Местная (шея)'},
-         {c:'VB20',n:'Фэн-чи',l:'Затылочная ямка',r:'Местная (шея, голова)'},
-         {c:'iG3',n:'Хоу-си',l:'Ладонная сторона кисти, за 5-м пястно-фаланговым',r:'Ключевая — шея и позвоночник'},
-         {c:'V67',n:'Чжи-инь',l:'Мизинец стопы, угол ногтя',r:'Тонизирование V'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Анальгетик'}],
-    logic:'IG3 — ключевая для шеи (ДУ-МАЙ). V10 + VB20 — местное воздействие. GI4 — анальгетик.' },
-  { name:'Поясничный остеохондроз / Грыжа', meta:'V↑ R↓ · Блок V, дефицит R',
-    pts:[{c:'V23',n:'Шэнь-шу',l:'1.5 цунь от L2',r:'Шу-точка Почек'},
-         {c:'V25',n:'Да-чан-шу',l:'1.5 цунь от L4',r:'Местная'},
-         {c:'V40',n:'Вэй-чжун',l:'Центр подколенной ямки',r:'Командная точка поясницы'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Источник Почек'},
-         {c:'T4',n:'Мин-мэнь',l:'Между L2–L3',r:'Врата Жизни (мокса)'}],
-    logic:'V23+V25 снимают мышечный спазм. R3 тонизирует Почки — управляют костью.' },
-  { name:'Плечелопаточный периартрит', meta:'GI↑ IG · Блок меридианов плеча',
-    pts:[{c:'Gi15',n:'Цзянь-юй',l:'Плечевой сустав, спереди сверху',r:'Местная'},
-         {c:'iG9',n:'Цзянь-чжэнь',l:'1 цунь выше задней подмышечной складки',r:'Местная (сзади)'},
-         {c:'TR14',n:'Цзянь-ляо',l:'Кзади от GI15, у акромиона',r:'Местная (латерально)'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Дистальная, анальгетик'},
-         {c:'iG3',n:'Хоу-си',l:'Ладонная сторона кисти',r:'Дистальная (шея–плечо)'}],
-    logic:'GI15 + IG9 + TR14 охватывают плечевой сустав с трёх сторон. GI4 и IG3 — дистальные анальгетики.' },
-  { name:'Невралгия тройничного нерва', meta:'E↑ GI↑ · Жар в меридианах лица',
-    pts:[{c:'E7',n:'Ся-гуань',l:'Кпереди от козелка уха',r:'Местная (лицо)'},
-         {c:'E6',n:'Цзя-чэ',l:'Угол нижней челюсти + 1 цунь вперёд',r:'Местная (нижняя ветвь)'},
-         {c:'E4',n:'Ди-цан',l:'0.4 цунь от угла рта',r:'Местная'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Главная дистальная точка лица'},
-         {c:'E44',n:'Нэй-тин',l:'Между 2–3 пальцами стопы',r:'Седатирование E'}],
-    logic:'Тройничный нерв — зона меридиана E. GI4: «лицо и рот» по правилу четырёх команд.' },
-  { name:'Хронический ринит / Синусит', meta:'P↓ GI↑ · Дефицит Лёгких',
-    pts:[{c:'Gi20',n:'Ин-сян',l:'У крыла носа',r:'Главная точка носа'},
-         {c:'T23',n:'Шан-син',l:'1 цунь кзади от линии волос',r:'Фронтальные пазухи'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Нос и лицо'},
-         {c:'P7',n:'Ле-цюэ',l:'1.5 цунь выше лучезапястной складки',r:'Ло-пункт, открывает нос'},
-         {c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Укрепление иммунитета'}],
-    logic:'GI20 — ключевая точка носа. P7 открывает нос через Лёгкие. E36 — общеукрепляющая.' },
-  { name:'Экзема / Нейродермит', meta:'P↑ GI↑ · Жар-ветер в крови',
-    pts:[{c:'Gi11',n:'Цюй-чи',l:'Конец локтевой складки',r:'Очищает жар, главная кожная'},
-         {c:'RP10',n:'Сюэ-хай',l:'2 цунь выше медиального надколенника',r:'Море крови, кожный зуд'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Рассеивание ветра'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Инь и крови'},
-         {c:'VB20',n:'Фэн-чи',l:'Затылочная ямка',r:'Рассеивание внешнего ветра'}],
-    logic:'GI11 + RP10 — классическая пара для кожи. VB20 рассеивает ветер (причина зуда).' },
-  { name:'Геморрой', meta:'GI↑ RP↓ · Жар в Толстом кишечнике',
-    pts:[{c:'T1',n:'Чан-цян',l:'Между копчиком и анусом',r:'Местная (главная)'},
-         {c:'T20',n:'Бай-хуэй',l:'Темя',r:'Поднимает Ци (против выпадения)'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание RP'},
-         {c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Укрепление Ци'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Регуляция GI'}],
-    logic:'VG1 — прямое воздействие. VG20 поднимает опавшую Ци. GI4 регулирует Толстый кишечник.' },
-  { name:'Болезненные месячные', meta:'F↑ RP↓ · Застой Ци Печени, холод',
-    pts:[{c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Три Инь, гинекология'},
-         {c:'F3',n:'Тай-чун',l:'Тыл стопы, 1–2 плюсневые',r:'Движение застоя'},
-         {c:'J4',n:'Гуань-юань',l:'3 цунь ниже пупка',r:'Матка, согревание (мокса)'},
-         {c:'RP8',n:'Ди-цзи',l:'5 цунь выше медиальной лодыжки',r:'Щелевая точка RP (острая боль)'},
-         {c:'J6',n:'Ци-хай',l:'1.5 цунь ниже пупка',r:'Море Ци'}],
-    logic:'Дисменорея — застой Ци и крови. F3 движет застой. RP6+RP8 — главная пара при болях.' },
-  { name:'Климактерический синдром', meta:'R↓ C · Истощение Инь Почек',
-    pts:[{c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Источник, питание Инь R'},
-         {c:'R7',n:'Фу-лю',l:'2 цунь выше медиальной лодыжки',r:'Тонизирование R'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Инь трёх меридианов'},
-         {c:'C7',n:'Шэнь-мэнь',l:'Лучезапястная складка',r:'Успокоение Духа, приливы'},
-         {c:'T20',n:'Бай-хуэй',l:'Темя',r:'Удержание Ян'}],
-    logic:'Приливы — истощение Инь Почек, пустой Ян поднимается. R3+RP6 восполняют Инь.' },
-  { name:'Импотенция / Снижение либидо', meta:'R↓ · Дефицит Ян Почек',
-    pts:[{c:'R7',n:'Фу-лю',l:'2 цунь выше медиальной лодыжки',r:'Тонизирование R'},
-         {c:'T4',n:'Мин-мэнь',l:'Между L2–L3',r:'Врата Жизни (мокса — обязательно)'},
-         {c:'J4',n:'Гуань-юань',l:'3 цунь ниже пупка',r:'Связь с эссенцией Цзин'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Источник Почек'},
-         {c:'J6',n:'Ци-хай',l:'1.5 цунь ниже пупка',r:'Море Ци'}],
-    logic:'Дефицит Ян Почек. Мокса на VG4 и VC4 — обязательный компонент при холодном типе.' },
-  { name:'Простатит / Цистит', meta:'V↑ R · Сырость-жар в нижнем обогревателе',
-    pts:[{c:'RP9',n:'Инь-лин-цюань',l:'Медиальная сторона голени, под коленом',r:'Выводит сырость'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Нижний обогреватель'},
-         {c:'J3',n:'Чжун-цзи',l:'4 цунь ниже пупка',r:'Мо-точка Мочевого пузыря'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Источник Почек'},
-         {c:'V23',n:'Шэнь-шу',l:'1.5 цунь от L2',r:'Шу-точка Почек'}],
-    logic:'RP9 — главная для выведения сырости. VC3 местно на мочевой пузырь. R3 укрепляет основу.' },
-  { name:'Диабет (вспомогательная терапия)', meta:'R↓ E↓ P↓ · Синдром Сяо-Кэ',
-    pts:[{c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Инь всех трёх Инь'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Тонизирование Почек'},
-         {c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Регуляция обмена'},
-         {c:'P9',n:'Тай-юань',l:'Лучезапястная складка',r:'Лёгкие — верхний уровень'},
-         {c:'J4',n:'Гуань-юань',l:'3 цунь ниже пупка',r:'Питание Юань-Ци'}],
-    logic:'Сяо-Кэ — дефицит Инь трёх уровней: Лёгкие, Желудок, Почки. Только вспомогательная терапия.' },
-  { name:'Шум в ушах (Тиннитус)', meta:'R↓ VB · Дефицит Почек',
-    pts:[{c:'TR17',n:'И-фэн',l:'За мочкой уха',r:'Главная точка уха'},
-         {c:'VB2',n:'Тин-хуэй',l:'Кпереди от козелка',r:'Местная (ухо)'},
-         {c:'TR21',n:'Эр-мэнь',l:'Кпереди от козелка, выемка',r:'Местная (ухо)'},
-         {c:'R3',n:'Тай-си',l:'Между лодыжкой и ахиллом',r:'Почки открываются в ухо'},
-         {c:'VB43',n:'Ся-си',l:'Между 4–5 пальцами стопы',r:'Тонизирование VB'}],
-    logic:'Ухо — «отверстие» Почек. Хронический тиннитус = R↓. TR17+VB2+TR21 — локально.' },
-  { name:'Энурез / Недержание мочи', meta:'R↓ V↓ · Дефицит Почек',
-    pts:[{c:'J4',n:'Гуань-юань',l:'3 цунь ниже пупка',r:'Матрица, Почки'},
-         {c:'J3',n:'Чжун-цзи',l:'4 цунь ниже пупка',r:'Мо-точка V'},
-         {c:'R7',n:'Фу-лю',l:'2 цунь выше медиальной лодыжки',r:'Тонизирование R'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Три Инь'},
-         {c:'V23',n:'Шэнь-шу',l:'1.5 цунь от L2',r:'Шу-точка Почек'}],
-    logic:'R↓+V↓ — не могут удержать мочу. VC4+VC3 закрепляют мочевой пузырь. Мокса при холоде.' },
-  { name:'Межрёберная невралгия', meta:'F↑ VB · Застой Ци Печени',
-    pts:[{c:'F3',n:'Тай-чун',l:'Тыл стопы, 1–2 плюсневые',r:'Движение Ци Печени'},
-         {c:'VB34',n:'Ян-лин-цюань',l:'Кпереди от головки малоберцовой',r:'Влиятельная сухожилий'},
-         {c:'MC6',n:'Нэй-гуань',l:'2 цунь выше запястья',r:'Открывает грудь'},
-         {c:'VB41',n:'Цзу-линь-ци',l:'Тыл стопы, между 4–5 плюсневыми',r:'Боковая зона'},
-         {c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Анальгетик'}],
-    logic:'Застой Ци по F и VB (бок и рёбра). F3+VB34 движут Ци. MC6+VB41 — пара для бока.' },
-  { name:'Снижение иммунитета / ВСД', meta:'TR↓ P↓ · Дефицит Вэй-Ци',
-    pts:[{c:'Gi4',n:'Хэ-гу',l:'Тыл кисти',r:'Движение Вэй-Ци по поверхности'},
-         {c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Укрепление постнатальной Ци'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Питание Крови и Инь'},
-         {c:'J6',n:'Ци-хай',l:'1.5 цунь ниже пупка',r:'Море Ци'},
-         {c:'MC6',n:'Нэй-гуань',l:'2 цунь выше запястья',r:'Вегетативная регуляция'}],
-    logic:'Вэй-Ци контролируется Лёгкими, питается от RP/E. E36+VC6 — основа Ци. MC6 стабилизирует вегетатику.' },
-  { name:'Ожирение', meta:'RP↓ E↑ · Флегма-сырость',
-    pts:[{c:'E36',n:'Цзу-сань-ли',l:'3 цунь ниже надколенника',r:'Регуляция обмена'},
-         {c:'RP6',n:'Сань-инь-цзяо',l:'3 цунь выше медиальной лодыжки',r:'Выведение влаги'},
-         {c:'TR6',n:'Чжи-гоу',l:'3 цунь выше тыльной запястной',r:'Улучшает проходимость'},
-         {c:'E25',n:'Тянь-шу',l:'2 цунь от пупка',r:'Мо-точка GI, локально на живот'},
-         {c:'RP9',n:'Инь-лин-цюань',l:'Медиальная сторона голени, под коленом',r:'Выводит сырость'}],
-    logic:'Ожирение = накопление флегмы-сырости от слабости RP. RP9+RP6 выводят сырость.' },
-];
 
 let usinDisFilter = '';
 
-window.initUsinDiseases = function() {
+window.initUsinDiseases = async function() {
+  await loadUsinData();
   usinDisInited = true;
   renderUsinDisList();
 };
@@ -4909,7 +4442,7 @@ window.showUsinDisease = function(i) {
 
 window.printUsinDisRecipe = function() {
   const d = window._uDisPrintData;
-  if (!d) { alert('Выберите заболевание из списка.'); return; }
+  if (!d) { alert(t('sessions:treatment.alert.selectDisease')); return; }
   _printPrioSheet({
     subtitle: 'У-Син · По заболеванию',
     status: d.disName + (d.meta ? ' · ' + d.meta : ''),
@@ -5061,7 +4594,7 @@ window.printUsinDisRecipe = function() {
     <div id="herb-grid" class="overflow-y-auto p-4" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
     <!-- Копирайт -->
     <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#414755;text-align:right">
-      © П. В. Белоусов — <a href="http://zhong-yi.narod.ru/" target="_blank" style="color:#30D158;text-decoration:none">zhong-yi.narod.ru</a>
+      <span data-i18n="sessions:treatment.copyrightAuthor">© П. В. Белоусов</span> — <a href="http://zhong-yi.narod.ru/" target="_blank" style="color:#30D158;text-decoration:none">zhong-yi.narod.ru</a>
     </div>
   </div>
 </div>
@@ -5296,7 +4829,7 @@ function insertPulse(cat, idx) {
     </div>
     <div class="text-[10px] text-[#8b90a0] px-5 pb-2 flex-shrink-0">Нажмите на карточку — описание добавится в поле «O»</div>
     <div id="tongue-grid" class="overflow-y-auto p-4 grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))"></div>
-    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right">© П. В. Белоусов — zhong-yi.narod.ru</div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right"><span data-i18n="sessions:treatment.copyrightFull">© П. В. Белоусов — zhong-yi.narod.ru</span></div>
   </div>
 </div>
 
@@ -5426,50 +4959,13 @@ function insertTongue(cat, idx) {
 const SND_BASE = '/media/sound';
 
 const SND_ELEMENTS = {
-  wood:  { label: 'Дерево', hz: 528, color: '#5AC85A', bg: 'rgba(90,200,90,0.12)',   border: 'rgba(90,200,90,0.35)' },
-  fire:  { label: 'Огонь',  hz: 639, color: '#FF453A', bg: 'rgba(255,69,58,0.12)',   border: 'rgba(255,69,58,0.35)' },
-  earth: { label: 'Земля',  hz: 396, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', border: 'rgba(255,214,10,0.35)' },
-  metal: { label: 'Металл', hz: 741, color: '#E5E5EA', bg: 'rgba(229,229,234,0.08)', border: 'rgba(229,229,234,0.3)' },
-  water: { label: 'Вода',   hz: 852, color: '#0A84FF', bg: 'rgba(10,132,255,0.12)',  border: 'rgba(10,132,255,0.35)' },
+  wood:  { label: t('sessions:treatment.sound.elements.wood'),  hz: 528, color: '#5AC85A', bg: 'rgba(90,200,90,0.12)',   border: 'rgba(90,200,90,0.35)' },
+  fire:  { label: t('sessions:treatment.sound.elements.fire'),  hz: 639, color: '#FF453A', bg: 'rgba(255,69,58,0.12)',   border: 'rgba(255,69,58,0.35)' },
+  earth: { label: t('sessions:treatment.sound.elements.earth'), hz: 396, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', border: 'rgba(255,214,10,0.35)' },
+  metal: { label: t('sessions:treatment.sound.elements.metal'), hz: 741, color: '#E5E5EA', bg: 'rgba(229,229,234,0.08)', border: 'rgba(229,229,234,0.3)' },
+  water: { label: t('sessions:treatment.sound.elements.water'), hz: 852, color: '#0A84FF', bg: 'rgba(10,132,255,0.12)',  border: 'rgba(10,132,255,0.35)' },
 };
 
-const SND_TRACKS = {
-  wood:  [
-    { id: 'wood_med1',   name: 'Медитация 528 Гц · Декагон',         type: 'Медит.',  dur: '~45 мин' },
-    { id: 'wood_med2',   name: 'Буддийская флейта · медитация',         type: 'Медит.',  dur: '~60 мин' },
-    { id: 'wood_class1', name: 'Бах · Сюита для виолончели №3',       type: 'Класс.',  dur: '~20 мин' },
-    { id: 'wood_class2', name: 'Вивальди · Четыре сезона',            type: 'Класс.',  dur: '~38 мин' },
-    { id: 'wood_class3', name: 'Бах · Сюита для виолончели №6',       type: 'Класс.',  dur: '~27 мин' },
-  ],
-  fire:  [
-    { id: 'fire_med1',   name: 'Медитация 639 Гц · Декагон',         type: 'Медит.',  dur: '~45 мин' },
-    { id: 'fire_med2',   name: 'Китайское фортепиано · медитация',       type: 'Медит.',  dur: '~61 мин' },
-    { id: 'fire_class1', name: 'Бах · Сюита для виолончели №5',       type: 'Класс.',  dur: '~26 мин' },
-    { id: 'fire_class2', name: 'Бах · Сюита для виолончели №1',       type: 'Класс.',  dur: '~19 мин' },
-    { id: 'fire_class3', name: 'Бах · Сюита для виолончели №2',       type: 'Класс.',  dur: '~22 мин' },
-  ],
-  earth: [
-    { id: 'earth_med1',   name: 'Медитация 396 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
-    { id: 'earth_med2',   name: 'Сакральная Земля · внутренний покой',   type: 'Медит.',  dur: '~26 мин' },
-    { id: 'earth_class1', name: 'Сати · Гимнопедии и фортепианные пьесы', type: 'Класс.', dur: '~60 мин' },
-    { id: 'earth_class2', name: 'Бах · Сюита для виолончели №1',      type: 'Класс.',  dur: '~19 мин' },
-    { id: 'earth_class3', name: 'Бах · Сюита для виолончели №4',      type: 'Класс.',  dur: '~24 мин' },
-  ],
-  metal: [
-    { id: 'metal_med1',   name: 'Медитация 741 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
-    { id: 'metal_med2',   name: 'Кельтская арфа · инструментал',       type: 'Медит.',  dur: '~90 мин' },
-    { id: 'metal_class1', name: 'Бах · Сюита для виолончели №4',      type: 'Класс.',  dur: '~24 мин' },
-    { id: 'metal_class2', name: 'Бах · Сюита для виолончели №6',      type: 'Класс.',  dur: '~27 мин' },
-    { id: 'metal_class3', name: 'Бах · Сюита для виолончели №3',      type: 'Класс.',  dur: '~20 мин' },
-  ],
-  water: [
-    { id: 'water_med1',   name: 'Медитация 852 Гц · Декагон',        type: 'Медит.',  dur: '~45 мин' },
-    { id: 'water_med2',   name: 'Арфа · исцеляющая медитация',          type: 'Медит.',  dur: '~46 мин' },
-    { id: 'water_class1', name: 'Бах · Сюита для виолончели №2',      type: 'Класс.',  dur: '~22 мин' },
-    { id: 'water_class2', name: 'Бах · Сюита для виолончели №5',      type: 'Класс.',  dur: '~26 мин' },
-    { id: 'water_class3', name: 'Вивальди · Четыре сезона',           type: 'Класс.',  dur: '~38 мин' },
-  ],
-};
 
 let _sndEl = 'wood';
 let _sndTrackId = null;
@@ -5478,8 +4974,9 @@ let _sndTimer = null;
 let _sndRemain = 0;
 let _sndPanelOpen = false;
 
-function toggleSoundPanel() {
+async function toggleSoundPanel() {
   _sndPanelOpen = !_sndPanelOpen;
+  if (_sndPanelOpen && !_sndTracksLoaded) await loadSndTracks();
   const panel = document.getElementById('sound-panel');
   const btn = document.getElementById('snd-header-btn');
   if (_sndPanelOpen) {
@@ -5501,7 +4998,7 @@ function selectElement(el) {
   if (activeBtn) activeBtn.classList.add('active-el');
   // Hz badge
   const badge = document.getElementById('snd-hz-badge');
-  badge.textContent = `${meta.hz} Гц · ${meta.label}`;
+  badge.textContent = `${meta.hz} ${t('sessions:treatment.sound.hz')} · ${meta.label}`;
   badge.style.background = meta.bg;
   badge.style.borderColor = meta.border;
   badge.style.color = meta.color;

@@ -20,9 +20,12 @@ const NAMESPACES = [
   'common', 'auth', 'dashboard',
   'acupoints', 'sessions', 'subscription',
   'notifications', 'errors',
+  'profile', 'schedule', 'atlas', 'admin',
+  'book', 'clinic',
 ];
 
 let _initialized = false;
+let _initPromise = null; // singleton: concurrent calls share one init
 
 // Resolves the locale to use. Ignores any locale that isn't 'enabled' in prod.
 // Internal locales require explicit opt-in (future: isInternalUser flag).
@@ -34,7 +37,14 @@ function resolveLocale(requested) {
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      // Script tag exists but may still be loading — wait for its onload
+      if (window[_globalFor(src)]) return resolve();
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error(`i18n: failed to load ${src}`)), { once: true });
+      return;
+    }
     const s = document.createElement('script');
     s.src = src;
     s.onload = resolve;
@@ -43,9 +53,13 @@ function loadScript(src) {
   });
 }
 
-export async function initI18n() {
-  if (_initialized) return;
+function _globalFor(src) {
+  if (src.includes('i18next-http-backend')) return 'i18nextHttpBackend';
+  if (src.includes('i18next-detector')) return 'i18nextBrowserLanguageDetector';
+  return 'i18next';
+}
 
+async function _doInit() {
   await loadScript('/vendor/i18next.min.js');
   await loadScript('/vendor/i18next-http-backend.min.js');
   await loadScript('/vendor/i18next-detector.min.js');
@@ -66,6 +80,11 @@ export async function initI18n() {
     });
 
   _initialized = true;
+}
+
+export function initI18n() {
+  if (!_initPromise) _initPromise = _doInit();
+  return _initPromise;
 }
 
 export function t(key, opts) {

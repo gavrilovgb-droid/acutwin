@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
-<title>AcuTwin — История</title>
+<title>AcuTwin</title>
 <link rel="stylesheet" href="tailwind.css?v=2">
 <link href="fonts.css?v=2" rel="stylesheet"/>
 <link href="design.css?v=3" rel="stylesheet"/>
@@ -26,46 +26,46 @@
 
   <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 flex-shrink-0">
     <div class="h-16 flex items-center justify-between px-6">
-      <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">История приёмов</h2>
+      <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif" data-i18n="sessions:history.title">История приёмов</h2>
       <div class="flex items-center gap-3">
         <div id="doctor-filter-wrap" class="hidden">
           <select id="doctor-filter" class="px-3 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
-            <option value="">Все врачи</option>
+            <option value="" data-i18n="sessions:history.filter.allDoctors">Все врачи</option>
           </select>
         </div>
         <select id="patient-filter" class="px-3 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
-          <option value="">Все пациенты</option>
+          <option value="" data-i18n="sessions:history.filter.allPatients">Все пациенты</option>
         </select>
         <div class="relative">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#8b90a0] text-base">search</span>
-          <input id="h-search" placeholder="Поиск..." class="pl-9 pr-4 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] transition-all w-48"/>
+          <input id="h-search" data-i18n-placeholder="sessions:history.filter.search" placeholder="Поиск..." class="pl-9 pr-4 py-1.5 bg-[#1f1f1f] border border-[#414755] rounded-full text-xs text-[#e2e2e2] placeholder-[#8b90a0] focus:outline-none focus:border-[#00F2FF] transition-all w-48"/>
         </div>
       </div>
     </div>
     <!-- Date + controls filter row -->
     <div class="flex items-center gap-3 px-6 border-t border-white/5 flex-wrap py-2">
       <span class="material-symbols-outlined text-[#8b90a0]" style="font-size:16px;zoom:1">calendar_month</span>
-      <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider">Период</span>
+      <span class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:history.filter.period">Период</span>
       <input id="date-from" type="date" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
       <span class="text-[10px] text-[#8b90a0]">—</span>
       <input id="date-to" type="date" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all"/>
       <button id="date-reset" class="hidden text-[10px] text-[#ffb4ab] hover:text-[#ff8a80] transition-colors flex items-center gap-1" onclick="resetDateFilter()">
-        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">close</span>сбросить
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">close</span><span data-i18n="sessions:history.filter.reset">сбросить</span>
       </button>
       <span class="text-[#414755]">|</span>
       <select id="status-filter" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
-        <option value="">Все статусы</option>
-        <option value="started">Начат</option>
-        <option value="active">В процессе</option>
-        <option value="completed">Завершён</option>
+        <option value="" data-i18n="sessions:history.filter.allStatuses">Все статусы</option>
+        <option value="started" data-i18n="sessions:history.status.started">Начат</option>
+        <option value="active" data-i18n="sessions:history.status.active">В процессе</option>
+        <option value="completed" data-i18n="sessions:history.status.completed">Завершён</option>
       </select>
       <button id="sort-toggle" onclick="toggleSort()" class="flex items-center gap-1 px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] hover:border-[#00F2FF] transition-all">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1" id="sort-icon">arrow_downward</span>
-        <span class="text-[10px]" id="sort-label">Дата</span>
+        <span class="text-[10px]" id="sort-label" data-i18n="sessions:history.sort.label">Дата</span>
       </button>
       <select id="page-size" class="px-2.5 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-xs text-[#e2e2e2] focus:outline-none focus:border-[#00F2FF] transition-all">
-        <option value="50">50 / стр.</option>
-        <option value="100">100 / стр.</option>
+        <option value="50" data-i18n="sessions:history.page.size50">50 / стр.</option>
+        <option value="100" data-i18n="sessions:history.page.size100">100 / стр.</option>
       </select>
     </div>
   </header>
@@ -76,25 +76,25 @@
       <!-- Stats row -->
       <div class="grid grid-cols-4 gap-3">
         <div class="glass-panel rounded-xl p-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Сессий</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1" data-i18n="sessions:history.stats.sessions">Сессий</div>
           <div id="stat-sessions" class="text-2xl font-bold font-mono text-[#00F2FF]">0</div>
         </div>
         <div class="glass-panel rounded-xl p-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Пациентов</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1" data-i18n="sessions:history.stats.patients">Пациентов</div>
           <div id="stat-patients" class="text-2xl font-bold font-mono text-[#adc6ff]">0</div>
         </div>
         <div class="glass-panel rounded-xl p-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Точек исп.</div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1" data-i18n="sessions:history.stats.points">Точек исп.</div>
           <div id="stat-points" class="text-2xl font-bold font-mono text-[#FFD60A]">0</div>
         </div>
         <div class="glass-panel rounded-xl p-3">
-          <div class="text-[10px] text-[#8b90a0] uppercase mb-1">Ср. сессия</div>
-          <div id="stat-avg" class="text-2xl font-bold font-mono text-[#ffb4ab]">0<span class="text-sm">м</span></div>
+          <div class="text-[10px] text-[#8b90a0] uppercase mb-1" data-i18n="sessions:history.stats.avgSession">Ср. сессия</div>
+          <div id="stat-avg" class="text-2xl font-bold font-mono text-[#ffb4ab]">0<span class="text-sm" data-i18n="sessions:history.stats.minUnit">м</span></div>
         </div>
       </div>
 
       <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider">Хронология сессий</h3>
+        <h3 class="text-sm font-bold text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:history.timeline.header">Хронология сессий</h3>
         <span class="text-xs font-mono text-[#8b90a0] bg-[#1f1f1f] px-2 py-0.5 rounded" id="session-count"></span>
       </div>
       <div id="timeline" class="space-y-3 relative">
@@ -106,9 +106,12 @@
 
 <script type="module">
 import { buildSidebar, initElementClock, MERIDIANS, MER_ORDER, esc, displayCode } from './shared.js';
+import { initI18n, t } from '/i18n.js';
 import { requireAuth } from './auth.js';
 import { apiGetRecords, apiDeleteRecord } from './api.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
+await initI18n();
+document.title = t('sessions:history.pageTitle');
 
 document.getElementById('nav-mount').innerHTML = buildSidebar('history', session);
 initElementClock();
@@ -127,7 +130,7 @@ function rebuildPatientFilter(doctorVal) {
     ? sessions.filter(s => s.doctor === doctorVal)
     : sessions;
   const patients = [...new Set(visible.map(s => s.patient))].sort((a,b) => a.localeCompare(b, 'ru'));
-  sel.innerHTML = '<option value="">Все пациенты</option>' +
+  sel.innerHTML = `<option value="">${t('sessions:history.filter.allPatients')}</option>` +
     patients.map(p => `<option value="${esc(p)}"${p===prev?' selected':''}>${esc(p)}</option>`).join('');
 }
 
@@ -169,9 +172,9 @@ document.getElementById('date-to').addEventListener('change', onDateChange);
 
 // ── Исход сеанса ──────────────────────────────────────────
 const OUTCOME_CFG = {
-  positive: { icon:'trending_up',   color:'#3d8a5c', label:'Улучшение' },
-  neutral:  { icon:'trending_flat', color:'#8b90a0', label:'Нейтрально' },
-  negative: { icon:'trending_down', color:'#c0392b', label:'Ухудшение'  },
+  positive: { icon:'trending_up',   color:'#3d8a5c', label: t('sessions:history.trend.positive') },
+  neutral:  { icon:'trending_flat', color:'#8b90a0', label: t('sessions:history.trend.neutral') },
+  negative: { icon:'trending_down', color:'#c0392b', label: t('sessions:history.trend.negative') },
 };
 function renderOutcomeBtn(id, outcome) {
   const o = OUTCOME_CFG[outcome] || OUTCOME_CFG.neutral;
@@ -210,15 +213,15 @@ window.setOutcome = (id, outcome) => {
 
 // ── Статус лечения ────────────────────────────────────────
 const STATUS_CFG = {
-  started:   { label:'Начат',      color:'#0A84FF' },
-  active:    { label:'В процессе', color:'#FFD60A' },
-  completed: { label:'Завершён',   color:'#5AC85A' },
+  started:   { label: t('sessions:history.status.started'),   color:'#0A84FF' },
+  active:    { label: t('sessions:history.status.active'),    color:'#FFD60A' },
+  completed: { label: t('sessions:history.status.completed'), color:'#5AC85A' },
 };
 function renderStatusBadge(id, status) {
   const s = STATUS_CFG[status];
   const badge = s
     ? `<span style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${s.color}18;border:1px solid ${s.color}55;color:${s.color}">${s.label}</span>`
-    : `<span style="font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#1f1f1f;border:1px solid #414755;color:#8b90a0">Статус</span>`;
+    : `<span style="font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:10px;background:#1f1f1f;border:1px solid #414755;color:#8b90a0">${t('sessions:history.card.statusUnknown')}</span>`;
   const opts = Object.entries(STATUS_CFG).map(([k,v]) =>
     `<button onclick='event.stopPropagation();setStatus("${id}","${k}")' style="display:block;width:100%;text-align:left;padding:5px 12px;font-size:.7rem;font-weight:600;color:${v.color};background:none;border:none;cursor:pointer;transition:background .1s" onmouseover="this.style.background='${v.color}18'" onmouseout="this.style.background='none'">${v.label}</button>`
   ).join('');
@@ -254,7 +257,7 @@ let sortDir = 'desc';
 window.toggleSort = () => {
   sortDir = sortDir === 'desc' ? 'asc' : 'desc';
   document.getElementById('sort-icon').textContent  = sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward';
-  document.getElementById('sort-label').textContent = sortDir === 'desc' ? 'Дата ↓' : 'Дата ↑';
+  document.getElementById('sort-label').textContent = sortDir === 'desc' ? t('sessions:history.sort.desc') : t('sessions:history.sort.asc');
   renderTimeline(document.getElementById('h-search').value);
 };
 
@@ -264,7 +267,7 @@ let lastFiltered = [];
 // Разбивает soap_o на: Язык / Пульс / остаток
 function splitSoapO(text) {
   if (!text) return {tongue:'',pulse:'',other:''};
-  const ti = text.search(/\bЯзык\b/i), pi = text.search(/\bПульс\b/i);
+  const ti = text.search(/\bЯзык\b/i), pi = text.search(/\bПульс\b/i); /* i18n-ok */
   if (ti === -1 && pi === -1) return {tongue:'',pulse:'',other:text};
   let tongue='',pulse='',other='';
   if (ti !== -1 && pi !== -1) {
@@ -283,7 +286,7 @@ function splitSoapO(text) {
 // Разбивает soap_p на: Фитотерапия / остаток
 function splitSoapP(text) {
   if (!text) return {phyto:'',other:''};
-  const fi = text.search(/Фитотерапия/i);
+  const fi = text.search(/Фитотерапия/i); /* i18n-ok */
   if (fi === -1) return {phyto:'',other:text};
   return {phyto: text.slice(fi).trim(), other: fi>0 ? text.slice(0,fi).trim() : ''};
 }
@@ -320,12 +323,12 @@ function renderTimeline(filter='', page=0) {
     ? lastFiltered.slice().reverse()
     : lastFiltered;
 
-  document.getElementById('session-count').textContent = `${sorted.length} сессий`;
+  document.getElementById('session-count').textContent = t('sessions:history.timeline.sessCount', {n: sorted.length});
   renderStats(sorted);
 
   const tl = document.getElementById('timeline');
   if (!sorted.length) {
-    tl.innerHTML = '<div class="pl-12 text-sm text-[#8b90a0] py-6">Записей по заданным фильтрам нет</div>';
+    tl.innerHTML = `<div class="pl-12 text-sm text-[#8b90a0] py-6">${t('sessions:history.timeline.empty')}</div>`;
     return;
   }
 
@@ -334,10 +337,10 @@ function renderTimeline(filter='', page=0) {
 
   const pagerHtml = totalPages > 1 ? `
     <div class="pl-12 flex items-center gap-2 mt-4 flex-wrap">
-      <button onclick="_tlPage(${page-1})" ${page===0?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">← Пред.</button>
+      <button onclick="_tlPage(${page-1})" ${page===0?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">${t('sessions:history.page.prev')}</button>
       <span class="text-xs text-[#8b90a0] font-mono">${page+1} / ${totalPages}</span>
-      <button onclick="_tlPage(${page+1})" ${page===totalPages-1?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">След. →</button>
-      <span class="text-[10px] text-[#8b90a0] ml-2">${sorted.length} записей</span>
+      <button onclick="_tlPage(${page+1})" ${page===totalPages-1?'disabled':''} class="px-3 py-1 rounded-lg bg-[#1f1f1f] border border-[#414755] text-xs text-[#8b90a0] hover:text-[#e2e2e2] disabled:opacity-30 transition-colors">${t('sessions:history.page.next')}</button>
+      <span class="text-[10px] text-[#8b90a0] ml-2">${t('sessions:history.timeline.recCount', {n: sorted.length})}</span>
     </div>` : '';
 
   tl.innerHTML = pageData.map((s, idx) => {
@@ -349,8 +352,8 @@ function renderTimeline(filter='', page=0) {
     const noteText  = s.notes || s.reason || '';
     const hasSoap   = s.soap_s || s.soap_o || s.soap_a || s.soap_p;
     const timeText  = s.time ? ` · ${s.time}` : '';
-    const metaRight = s.duration ? `<span class="text-xs font-mono text-[#8b90a0]">${s.duration}м</span>` :
-                      s.gender   ? `<span class="text-xs text-[#8b90a0]">${esc(s.gender)}${s.age ? ', ' + esc(s.age) + ' л' : ''}</span>` : '';
+    const metaRight = s.duration ? `<span class="text-xs font-mono text-[#8b90a0]">${s.duration}${t('sessions:history.card.minUnit')}</span>` :
+                      s.gender   ? `<span class="text-xs text-[#8b90a0]">${esc(s.gender)}${s.age ? ', ' + esc(s.age) + ' ' + t('sessions:history.card.ageUnit') : ''}</span>` : '';
 
     return `
       <div class="relative pl-12 group" style="animation:fadeUp 0.3s ease-out ${idx*0.05}s both">
@@ -366,8 +369,8 @@ function renderTimeline(filter='', page=0) {
                 ${s.treatment_type ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#BF5AF2]/10 text-[#BF5AF2] border border-[#BF5AF2]/20">${esc(s.treatment_type)}</span>` : ''}
                 ${s.stimulation ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#FFD60A]/10 text-[#FFD60A] border border-[#FFD60A]/20">${esc(s.stimulation)}</span>` : ''}
                 ${(s.nrs_before != null || s.nrs_after != null) ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/20">NRS ${s.nrs_before ?? '?'}→${s.nrs_after ?? '?'}</span>` : ''}
-                ${s.deqi ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20">Де-ци</span>` : ''}
-                ${s.session && s.session!=='1/1' ? `<span class="text-[10px] font-mono text-[#adc6ff] bg-[#adc6ff]/10 px-1.5 py-0.5 rounded">сессия ${esc(s.session)}</span>` : ''}
+                ${s.deqi ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20">${t('sessions:history.card.deqi')}</span>` : ''}
+                ${s.session && s.session!=='1/1' ? `<span class="text-[10px] font-mono text-[#adc6ff] bg-[#adc6ff]/10 px-1.5 py-0.5 rounded">${t('sessions:history.card.sessionBadge')} ${esc(s.session)}</span>` : ''}
                 ${isBoss && s.doctorName ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#0A84FF]/10 text-[#0A84FF] border border-[#0A84FF]/20">${esc(s.doctorName)}</span>` : ''}
                 ${renderStatusBadge(s.id, s.status)}
               </div>
@@ -378,10 +381,10 @@ function renderTimeline(filter='', page=0) {
               ${renderOutcomeBtn(s.id, outcome)}
               ${metaRight}
               <button onclick='event.stopPropagation();sessionStorage.setItem("acutwin_diag_patient",${JSON.stringify(JSON.stringify({patient:s.patient,age:s.age||'',gender:s.gender||'',reason:''}))});location.href="treatment.html"'
-                      title="К тактике лечения"
+                      title="${t('sessions:history.card.toRecipe')}"
                       class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0A84FF]/10 hover:bg-[#0A84FF]/20 text-[#0A84FF] border border-[#0A84FF]/30 transition-colors flex-shrink-0 text-[10px] font-bold">
                 <span class="material-symbols-outlined" style="font-size:13px;zoom:1">medical_services</span>
-                Рецепт
+                ${t('sessions:history.card.recipe')}
               </button>
             </div>
           </div>
@@ -397,18 +400,18 @@ function renderTimeline(filter='', page=0) {
                 : '';
               return `
             <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-              ${soapField('S — Жалобы', s.soap_s)}
+              ${soapField(t('sessions:history.card.soapS'), s.soap_s)}
               ${s.soap_o ? `<div>
-                <span style="font-size:10px;font-weight:700;color:#8b90a0">O — Объективно</span>
+                <span style="font-size:10px;font-weight:700;color:#8b90a0">${t('sessions:history.card.soapO')}</span>
                 ${oSplit.other ? `<p style="font-size:11px;color:#c1c6d7;margin:3px 0 0;line-height:1.5">${esc(oSplit.other)}</p>` : ''}
-                ${soapSub('🫦 Язык', oSplit.tongue, '#00F2FF')}
-                ${soapSub('💓 Пульс', oSplit.pulse, '#BF5AF2')}
+                ${soapSub(t('sessions:history.card.tongue'), oSplit.tongue, '#00F2FF')}
+                ${soapSub(t('sessions:history.card.pulse'), oSplit.pulse, '#BF5AF2')}
               </div>` : ''}
-              ${soapField('A — Оценка', s.soap_a)}
+              ${soapField(t('sessions:history.card.soapA'), s.soap_a)}
               ${s.soap_p ? `<div>
-                <span style="font-size:10px;font-weight:700;color:#8b90a0">P — План</span>
+                <span style="font-size:10px;font-weight:700;color:#8b90a0">${t('sessions:history.card.soapP')}</span>
                 ${pSplit.other ? `<p style="font-size:11px;color:#c1c6d7;margin:3px 0 0;line-height:1.5">${esc(pSplit.other)}</p>` : ''}
-                ${soapSub('🌿 Фитотерапия', pSplit.phyto ? pSplit.phyto.replace(/^Фитотерапия:\s*/i,'') : '', '#34C759')}
+                ${soapSub(t('sessions:history.card.phyto'), pSplit.phyto ? pSplit.phyto.replace(/^Фитотерапия:\s*/i,'') : '', '#34C759') /* i18n-ok */}
               </div>` : ''}
             </div>`;
             })() : ''}
@@ -440,7 +443,7 @@ function renderStats(data) {
   document.getElementById('stat-sessions').textContent = data.length;
   document.getElementById('stat-patients').textContent = uniquePatients;
   document.getElementById('stat-points').textContent = totalPoints;
-  document.getElementById('stat-avg').innerHTML = `${avgDur}<span class="text-sm">м</span>`;
+  document.getElementById('stat-avg').innerHTML = `${avgDur}<span class="text-sm">${t('sessions:history.stats.minUnit')}</span>`;
 }
 
 renderStats(sessions);

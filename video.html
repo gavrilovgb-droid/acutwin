@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>AcuTwin — Видеообучение</title>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#131313">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+#body-bg {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  left: 16rem;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.md\:ml-64 > header, .md\:ml-64 > * { position: relative; z-index: 1; }
+
+.vid-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  display: flex;
+  flex-direction: column;
+}
+.vid-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+  border-color: rgba(255,159,10,0.35);
+}
+.vid-thumb {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.vid-thumb .play-btn {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.18s;
+  background: rgba(0,0,0,0.38);
+}
+.vid-card:hover .play-btn { opacity: 1; }
+.play-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255,159,10,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(255,159,10,0.5);
+}
+.tag-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div id="body-bg"></div>
+
+<!-- Video player modal -->
+<div id="vl-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
+     onclick="if(event.target===this)closeVL()">
+  <div class="glass-panel rounded-2xl mx-4 flex flex-col" style="width:min(900px,96vw);max-height:92vh">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);color:#FF9F0A">▶ Видеоурок</span>
+        <span id="vl-title" class="font-bold text-[#e2e2e2]" style="font-family:'Hanken Grotesk',sans-serif"></span>
+      </div>
+      <button onclick="closeVL()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex-1 p-4 overflow-hidden flex flex-col" style="min-height:0">
+      <video id="vl-player" controls class="w-full rounded-xl flex-1" style="min-height:0;background:#000;max-height:calc(92vh - 120px)"
+             onerror="document.getElementById('vl-err').classList.remove('hidden');this.style.display='none'"></video>
+      <div id="vl-err" class="hidden text-center py-10 text-[#8b90a0] text-sm">
+        <span class="material-symbols-outlined text-4xl block mb-2 text-[#414755]">videocam_off</span>
+        Видеофайл не найден — запустите конвертацию MPG → MP4
+      </div>
+    </div>
+    <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#9ca3af;text-align:right">© П. В. Белоусов — zhong-yi.narod.ru</div>
+  </div>
+</div>
+
+<div class="md:ml-64 h-screen flex flex-col">
+
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-4 px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Видеообучение</h2>
+    <span id="vid-count" class="text-xs text-[#8b90a0] font-mono ml-1"></span>
+    <div class="ml-auto flex items-center gap-2" id="tag-filters"></div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-6">
+
+    <!-- Авторы -->
+    <div class="glass-panel rounded-xl px-5 py-3 mb-6 flex flex-wrap items-center gap-x-5 gap-y-1 border border-white/10" style="font-size:12px;color:#8b90a0">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#00F2FF;padding:2px 7px;border-radius:5px;background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);flex-shrink:0">Об авторах</span>
+      <span><span style="color:#5a5f70">Производство:</span> Институт китайской медицины провинции Чжэцзян</span>
+      <span><span style="color:#5a5f70">Автор:</span> Гао Чжэньу</span>
+      <span><span style="color:#5a5f70">Перевод:</span> П. Белоусов</span>
+    </div>
+
+    <!-- Сетка видео -->
+    <div id="vid-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+
+  </main>
+</div>
+
+<script type="module">
+import { buildSidebar, initElementClock, esc } from './shared.js';
+import { requireAuth } from './auth.js';
+const session = await requireAuth(); if (!session) throw new Error('redirect');
+
+document.getElementById('nav-mount').innerHTML = buildSidebar('video', session);
+initElementClock();
+
+const TAG_COLORS = {
+  'гинекология':      { bg:'rgba(191,90,242,0.13)', border:'rgba(191,90,242,0.4)', color:'#BF5AF2' },
+  'неврология':       { bg:'rgba(0,242,255,0.10)',  border:'rgba(0,242,255,0.4)',  color:'#00F2FF' },
+  'ортопедия':        { bg:'rgba(48,209,88,0.12)',  border:'rgba(48,209,88,0.4)',  color:'#30D158' },
+  'гастроэнтерология':{ bg:'rgba(255,159,10,0.12)', border:'rgba(255,159,10,0.4)', color:'#FF9F0A' },
+  'урология':         { bg:'rgba(10,132,255,0.12)', border:'rgba(10,132,255,0.4)', color:'#0A84FF' },
+  'пульмонология':    { bg:'rgba(90,143,168,0.15)', border:'rgba(90,143,168,0.4)', color:'#5a8fa8' },
+  'кардиология':      { bg:'rgba(255,69,58,0.12)',  border:'rgba(255,69,58,0.4)',  color:'#FF453A' },
+  'общая':            { bg:'rgba(139,144,160,0.12)',border:'rgba(139,144,160,0.4)',color:'#8b90a0' },
+};
+
+const THUMB_GRADIENTS = {
+  'гинекология':      'linear-gradient(135deg,#2d1b3d,#1a0a2e)',
+  'неврология':       'linear-gradient(135deg,#0a1628,#0d2137)',
+  'ортопедия':        'linear-gradient(135deg,#0d2416,#0a1e12)',
+  'гастроэнтерология':'linear-gradient(135deg,#2d1e00,#1e1400)',
+  'урология':         'linear-gradient(135deg,#0a1a2d,#051020)',
+  'пульмонология':    'linear-gradient(135deg,#0e1e28,#0a1620)',
+  'кардиология':      'linear-gradient(135deg,#2d0a08,#1e0605)',
+  'общая':            'linear-gradient(135deg,#1a1a1a,#111)',
+};
+
+const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
+const vidData = await fetch('/data/videos.json', _authHdr()).then(r=>r.json()).catch(()=>({ catalog:[], byDisease:{} }));
+const catalog = vidData.catalog || [];
+
+document.getElementById('vid-count').textContent = `${catalog.length} видеоуроков`;
+
+let activeTag = null;
+
+function renderGrid() {
+  const items = activeTag ? catalog.filter(v => v.tags.includes(activeTag)) : catalog;
+  document.getElementById('vid-grid').innerHTML = items.map(v => {
+    const tag = v.tags[0] || 'общая';
+    const tc = TAG_COLORS[tag] || TAG_COLORS['общая'];
+    const grad = THUMB_GRADIENTS[tag] || THUMB_GRADIENTS['общая'];
+    const tagBadge = v.tags[0] ? `<span class="tag-badge" style="background:${tc.bg};border:1px solid ${tc.border};color:${tc.color}">${esc(v.tags[0])}</span>` : '';
+    return `
+      <div class="vid-card" onclick="openVL('${esc(v.file)}','${esc(v.title)}')">
+        <div class="vid-thumb">
+          <div style="position:absolute;inset:0;background:${grad}"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,${tc.bg},transparent 70%)"></div>
+          <span class="material-symbols-outlined" style="position:absolute;bottom:8px;right:10px;font-size:28px;color:${tc.color};opacity:0.35;zoom:1">play_circle</span>
+          <div class="play-btn">
+            <div class="play-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="p-3 flex flex-col gap-1.5">
+          <div class="text-sm font-semibold text-[#e2e2e2] leading-tight">${esc(v.title)}</div>
+          <div>${tagBadge}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderTagFilters() {
+  const tags = [...new Set(catalog.flatMap(v => v.tags))].filter(Boolean);
+  const wrap = document.getElementById('tag-filters');
+  const btnStyle = (active) => active
+    ? 'background:rgba(255,159,10,0.2);border-color:rgba(255,159,10,0.6);color:#FF9F0A'
+    : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:#c1c6d7';
+  wrap.innerHTML = [
+    `<button onclick="setTag(null)" style="${btnStyle(!activeTag)};padding:4px 10px;border-radius:8px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s">Все</button>`,
+    ...tags.map(t => {
+      const tc = TAG_COLORS[t] || TAG_COLORS['общая'];
+      return `<button onclick="setTag('${t}')" style="padding:4px 10px;border-radius:8px;border:1px solid;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.15s;${activeTag===t ? `background:${tc.bg};border-color:${tc.border};color:${tc.color}` : 'background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.15);color:#c1c6d7'}">${t}</button>`;
+    })
+  ].join('');
+}
+
+window.setTag = function(tag) {
+  activeTag = tag;
+  renderTagFilters();
+  renderGrid();
+};
+
+window.openVL = function(file, title) {
+  const modal  = document.getElementById('vl-modal');
+  const player = document.getElementById('vl-player');
+  const err    = document.getElementById('vl-err');
+  document.getElementById('vl-title').textContent = title;
+  err.classList.add('hidden');
+  player.style.display = '';
+  player.src = `/media/videos/${encodeURIComponent(file)}`;
+  modal.classList.remove('hidden');
+  player.play().catch(()=>{});
+};
+
+window.closeVL = function() {
+  const modal  = document.getElementById('vl-modal');
+  const player = document.getElementById('vl-player');
+  modal.classList.add('hidden');
+  player.pause();
+  player.src = '';
+};
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVL(); });
+
+renderTagFilters();
+renderGrid();
+</script>
+</body>
+</html>

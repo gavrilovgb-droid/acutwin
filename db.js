@@ -88,6 +88,9 @@ try { db.exec("ALTER TABLE appointments ADD COLUMN tg_reminder_1h_at TEXT"); } c
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_tg_token ON appointments(tg_token) WHERE tg_token IS NOT NULL'); } catch(e) {}
 try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_unique_slot ON appointments(doctor, start_at) WHERE status != 'cancelled'"); } catch(e) {}
 
+// i18n: user language preference
+try { db.exec("ALTER TABLE users ADD COLUMN preferred_locale TEXT NOT NULL DEFAULT 'ru'"); } catch(e) {}
+
 // Sprint 7: billing audit log — migrate to new schema if old columns present
 try {
   const cols = db.prepare("PRAGMA table_info(billing_audit)").all().map(c => c.name);

@@ -1,0 +1,31 @@
+{
+  "plan": {
+    "free":          "Free",
+    "solo":          "Solo",
+    "clinic":        "Clinic",
+    "enterprise":    "Enterprise",
+    "demo":          "Demo",
+    "trial":         "Пробный"
+  },
+  "billing": {
+    "title":         "Биллинг",
+    "currentPlan":   "Текущий тариф",
+    "trialDays":     "Осталось дней: {{n}}",
+    "trialExpired":  "Пробный период истёк",
+    "upgrade":       "Улучшить тариф",
+    "manage":        "Управление подпиской",
+    "perMonth":      "₽/мес",
+    "auditLog":      "Журнал аудита"
+  },
+  "limit": {
+    "records":       "Записи приёмов",
+    "patients":      "Пациенты",
+    "reached":       "Лимит исчерпан",
+    "upgrade":       "Перейдите на платный тариф",
+    "recordsUsed":   "{{used}} из {{max}} записей"
+  },
+  "grace": {
+    "banner":        "Пробный период истёк. Осталось {{days}} дн. до блокировки.",
+    "expired":       "Доступ заблокирован. Оплатите подписку для продолжения."
+  }
+}

@@ -151,6 +151,15 @@ textarea.fld { resize:vertical; min-height:80px; }
       <span data-i18n="profile:clinic.noClinic">Вы не привязаны к клинике. Привязку делает администратор.</span>
     </div>
 
+    <!-- ── Язык интерфейса ── -->
+    <div id="lang-section" class="section hidden">
+      <div class="section-head">
+        <span class="material-symbols-outlined text-[#BF5AF2]" style="font-size:22px">language</span>
+        <div class="section-title" data-i18n="profile:language.sectionTitle">Язык интерфейса</div>
+      </div>
+      <div id="lang-buttons" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+    </div>
+
   </main>
 </div>
 
@@ -158,8 +167,9 @@ textarea.fld { resize:vertical; min-height:80px; }
 
 <script type="module">
 import { buildSidebar, initElementClock, esc } from './shared.js';
-import { initI18n, t } from '/i18n.js';
+import { initI18n, t, setLocale, getLocale } from '/i18n.js';
 import { requireAuth } from './auth.js';
+import { SUPPORTED_LOCALES } from '/config/locales.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 await initI18n();
 document.title = t('profile:pageTitle');
@@ -282,7 +292,27 @@ function showToast(msg, kind) {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 250); }, 2200);
 }
 
+function initLangSection(currentLocale) {
+  const enabled = Object.entries(SUPPORTED_LOCALES).filter(([, v]) => v.status === 'enabled');
+  if (enabled.length <= 1) return;
+  document.getElementById('lang-section').classList.remove('hidden');
+  const token = sessionStorage.getItem('acutwin_token') || '';
+  document.getElementById('lang-buttons').innerHTML = enabled.map(([code, info]) => {
+    const active = code === currentLocale;
+    return `<button onclick="window._switchLocale('${code}')"
+      style="padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;
+             border:1px solid ${active ? '#BF5AF2' : 'rgba(255,255,255,0.12)'};
+             background:${active ? 'rgba(191,90,242,0.15)' : 'rgba(255,255,255,0.04)'};
+             color:${active ? '#BF5AF2' : '#c1c6d7'}">${info.label}</button>`;
+  }).join('');
+  window._switchLocale = async (locale) => {
+    if (locale === currentLocale) return;
+    await setLocale(locale, token);
+  };
+}
+
 await loadProfile();
+initLangSection(getLocale());
 </script>
 </body>
 </html>

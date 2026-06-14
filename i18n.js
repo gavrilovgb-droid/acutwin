@@ -50,6 +50,9 @@ function resolveLocale() {
   const override = _getStagingOverride();
   if (override) return override;
   if (FORCED_LOCALE) return FORCED_LOCALE;
+  // Phase 4 (FORCED_LOCALE=null): use saved preference
+  const saved = sessionStorage.getItem('acutwin_locale');
+  if (saved && SUPPORTED_LOCALES[saved]?.status === 'enabled') return saved;
   return DEFAULT_LOCALE;
 }
 
@@ -112,4 +115,19 @@ export function t(key, opts) {
 
 export function getLocale() {
   return window.i18next?.language || FORCED_LOCALE || DEFAULT_LOCALE;
+}
+
+// Сохраняет выбранную локаль: в cookie (для staging override) + sessionStorage (для Phase 4)
+// Перезагружает страницу чтобы применить новую локаль.
+export async function setLocale(locale, token) {
+  document.cookie = `i18n_locale=${locale};path=/;max-age=31536000`;
+  sessionStorage.setItem('acutwin_locale', locale);
+  if (token) {
+    await fetch('/api/me/locale', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ locale }),
+    }).catch(() => {});
+  }
+  location.reload();
 }

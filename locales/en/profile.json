@@ -30,6 +30,10 @@
     "save": "Save",
     "noClinic": "You are not linked to a clinic. The administrator handles clinic assignments."
   },
+  "language": {
+    "sectionTitle": "Interface language",
+    "saved": "Language changed"
+  },
   "toast": {
     "loadError": "Failed to load profile",
     "error": "Error",

@@ -291,6 +291,12 @@
     border-bottom: 1px solid var(--glass-border);
   }
   .price-features li::before { content: '✓'; color: var(--accent); flex-shrink: 0; }
+  .price-features li.feat-new { color: var(--text); font-weight: 600; }
+  .price-features li.feat-new::before { content: '✦'; color: var(--accent); }
+  .price-features li.feat-no { opacity: 0.45; text-decoration: line-through; }
+  .price-features li.feat-no::before { content: '✗'; color: #ff453a; }
+  .price-features li.feat-sep { font-size: 10px; color: var(--muted); opacity: 0.55; padding: 10px 0 2px; border-bottom: none; font-style: italic; letter-spacing: 0.03em; }
+  .price-features li.feat-sep::before { content: none; }
   .price-cta {
     display: block; text-align: center;
     background: var(--glass);
@@ -705,8 +711,10 @@
         <ul class="price-features">
           <li>1 врач</li>
           <li>Атлас 361 точки</li>
-          <li>Тактика лечения</li>
-          <li>Карточка пациента</li>
+          <li>Тактика лечения (677 болезней)</li>
+          <li>Карточка пациента + SOAP</li>
+          <li>Расписание и онлайн-запись</li>
+          <li>Видеообучение</li>
         </ul>
         <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
@@ -717,12 +725,9 @@
         <div class="price-period price-period-val">в месяц</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:16px;margin-top:-12px">Для частной практики и ИП</div>
         <ul class="price-features">
-          <li>1 врач</li>
-          <li>Без лимита записей</li>
-          <li>Атлас 361 точки</li>
-          <li>Тактика лечения</li>
-          <li>Карточка пациента</li>
-          <li>PDF-отчёты</li>
+          <li>1 врач · без лимита по времени</li>
+          <li>Все инструменты тарифа Старт</li>
+          <li class="feat-new">PDF-отчёты пациента</li>
         </ul>
         <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
@@ -733,10 +738,12 @@
         <div class="price-amount price-val">3 900 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
-          <li>До 3 врачей</li>
-          <li>Без лимита записей</li>
-          <li>Все функции Практика</li>
-          <li>Панель руководителя</li>
+          <li>До 3 врачей · без лимита записей</li>
+          <li>Все инструменты Практика</li>
+          <li class="feat-new">Онлайн-запись пациентов</li>
+          <li class="feat-new">QR-код для визитки</li>
+          <li class="feat-new">Панель руководителя</li>
+          <li class="feat-new">Статистика по клинике</li>
         </ul>
         <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
@@ -746,10 +753,10 @@
         <div class="price-amount price-val">5 990 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
-          <li>До 5 врачей</li>
-          <li>Без лимита записей</li>
-          <li>Все функции Практика</li>
-          <li>Панель руководителя</li>
+          <li>До 5 врачей · без лимита записей</li>
+          <li>Все инструменты Клиники S</li>
+          <li class="feat-new">Расширенная аналитика</li>
+          <li class="feat-new">Email-уведомления пациентам</li>
         </ul>
         <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
@@ -759,10 +766,13 @@
         <div class="price-amount price-val">7 900 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
         <ul class="price-features">
-          <li>Неограниченно врачей</li>
-          <li>Без лимита записей</li>
-          <li>Все функции Практика</li>
-          <li>Панель руководителя</li>
+          <li>Без ограничений врачей</li>
+          <li>Все инструменты Клиники M</li>
+          <li class="feat-new">СЭМД-экспорт / 152-ФЗ</li>
+          <li class="feat-new">Экспорт данных (CSV/Excel)</li>
+          <li class="feat-new">Кастомный брендинг</li>
+          <li class="feat-new">API-доступ</li>
+          <li class="feat-new">Приоритетная поддержка</li>
         </ul>
         <a href="mailto:info@acutwin.ru" class="price-cta">Обсудить</a>
       </div>

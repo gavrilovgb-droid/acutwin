@@ -6,15 +6,17 @@
  *   await initI18n();
  *   t('common:nav.schedule')  // → 'Расписание'
  *
- * Phase 1 lock: FORCED_LOCALE = 'ru'
- * Phase 3: set FORCED_LOCALE = null to enable per-user locale detection.
- *          Only locales with status='enabled' or status='internal' (+ internal flag)
- *          will be accepted — see isLocaleAllowed() below.
+ * Phase 1/2: FORCED_LOCALE = 'ru' — all prod users see Russian.
+ * Phase 3 (Step 3): EN available on staging via ?locale=en or cookie i18n_locale=en.
+ *   Only locales with status='internal' are accepted as overrides — EN is 'internal'.
+ * Phase 4: set FORCED_LOCALE = null to enable per-user locale detection.
  */
 
-import { DEFAULT_LOCALE, FALLBACK_LOCALE, SUPPORTED_LOCALES, isLocaleEnabled } from '/config/locales.js';
+import { DEFAULT_LOCALE, FALLBACK_LOCALE, SUPPORTED_LOCALES, isLocaleEnabled, isLocaleInternal } from '/config/locales.js';
 
 const FORCED_LOCALE = 'ru'; // Phase 1: all prod users locked to Russian
+// Step 3: internal users can override via ?locale=en (or i18n_locale cookie)
+// FORCED_LOCALE still wins for everyone else — no accidental EN in prod
 
 const NAMESPACES = [
   'common', 'auth', 'dashboard',
@@ -27,12 +29,28 @@ const NAMESPACES = [
 let _initialized = false;
 let _initPromise = null; // singleton: concurrent calls share one init
 
-// Resolves the locale to use. Ignores any locale that isn't 'enabled' in prod.
-// Internal locales require explicit opt-in (future: isInternalUser flag).
-function resolveLocale(requested) {
+// Resolves the locale to use.
+// Step 3 staging override: ?locale=en or cookie i18n_locale=en bypasses FORCED_LOCALE
+// ONLY for locales with status='internal'. Prod users always get FORCED_LOCALE.
+function _getStagingOverride() {
+  // 1. Query param: ?locale=en
+  const qp = new URLSearchParams(window.location.search).get('locale');
+  if (qp && isLocaleInternal(qp)) return qp;
+  // 2. Cookie: i18n_locale=en
+  const cookie = document.cookie.split(';').map(c => c.trim())
+    .find(c => c.startsWith('i18n_locale='));
+  if (cookie) {
+    const val = cookie.split('=')[1];
+    if (val && isLocaleInternal(val)) return val;
+  }
+  return null;
+}
+
+function resolveLocale() {
+  const override = _getStagingOverride();
+  if (override) return override;
   if (FORCED_LOCALE) return FORCED_LOCALE;
-  if (requested && isLocaleEnabled(requested)) return requested;
-  return DEFAULT_LOCALE; // always fall back to 'ru'
+  return DEFAULT_LOCALE;
 }
 
 function loadScript(src) {

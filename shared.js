@@ -314,9 +314,9 @@ export function buildSidebar(activePage, session) {
       </div>
       <button onclick="window._logoutConfirm && window._logoutConfirm()"
         class="flex items-center gap-1 px-2 py-1 rounded-lg text-[#8b90a0] hover:text-[#ffb4ab] hover:bg-[#ffb4ab]/10 transition-colors text-xs font-medium"
-        data-i18n-title="auth:login.logout" title="Выйти">
+        data-i18n-title="auth:login.logout" title="${t('auth:login.logout')}">
         <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
-        <span data-i18n="auth:login.logout">Выйти</span>
+        <span data-i18n="auth:login.logout">${t('auth:login.logout')}</span>
       </button>
     </div>` : '';
   return `
@@ -349,7 +349,7 @@ export function buildSidebar(activePage, session) {
                       : 'text-[#c1c6d7] hover:bg-white/15 hover:text-white'}"
           >
             <span class="material-symbols-outlined text-xl">${i.icon}</span>
-            <span style="font-family:'Inter',sans-serif;font-weight:600" data-i18n="${NAV_I18N[i.id] || ''}">${i.label}</span>
+            <span style="font-family:'Inter',sans-serif;font-weight:600" data-i18n="${NAV_I18N[i.id] || ''}">${NAV_I18N[i.id] ? t(NAV_I18N[i.id]) : i.label}</span>
           </a>`).join('')}
       </nav>
       <div style="padding:5px 16px 4px;display:flex;justify-content:center;margin-top:auto">
@@ -400,7 +400,7 @@ export function buildSidebar(activePage, session) {
       ${items.filter(i => i.id !== 'divider').map(i => `
         <a href="${i.href}" class="${activePage===i.id ? 'mob-active' : ''}">
           <span class="material-symbols-outlined">${i.icon}</span>
-          <span data-i18n="${NAV_I18N[i.id] || ''}">${i.label}</span>
+          <span data-i18n="${NAV_I18N[i.id] || ''}">${NAV_I18N[i.id] ? t(NAV_I18N[i.id]) : i.label}</span>
         </a>`).join('')}
     </nav>`;
 }
@@ -639,13 +639,13 @@ function _injectMobileUser() {
       <div style="font-size:13px;font-weight:600;color:#e2e2e2;margin-bottom:2px;white-space:nowrap">${esc(session.name)}</div>
       <div style="font-size:11px;color:#8b90a0;margin-bottom:14px">${esc(session.username)}</div>
       <button onclick="window._logoutConfirm && window._logoutConfirm()"
-        data-i18n-title="auth:login.logout" title="Выйти"
+        data-i18n-title="auth:login.logout" title="${t('auth:login.logout')}"
         style="width:100%;padding:9px 12px;background:rgba(255,180,171,0.1);
                border:1px solid rgba(255,180,171,0.3);border-radius:8px;
                color:#ffb4ab;font-size:13px;font-weight:600;cursor:pointer;
                display:flex;align-items:center;gap:8px">
         <span class="material-symbols-outlined" style="font-size:16px;zoom:1">logout</span>
-        <span data-i18n="auth:login.logout">Выйти</span>
+        <span data-i18n="auth:login.logout">${t('auth:login.logout')}</span>
       </button>
     </div>`;
   // Закрытие панели при клике вне

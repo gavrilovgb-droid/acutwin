@@ -1,0 +1,39 @@
+{
+  "pageTitle": "AcuTwin — Profile",
+  "header": "Profile",
+  "headerSub": "Information for your public booking page",
+  "doctor": {
+    "sectionTitle": "Doctor Profile",
+    "nameLabel": "Full name (cannot be changed)",
+    "slugLabel": "Slug — short URL",
+    "specialtyLabel": "Specialty",
+    "specialtyPh": "Acupuncturist, TCM",
+    "priceLabel": "Base appointment fee",
+    "photoLabel": "Photo — URL",
+    "bioLabel": "Short bio",
+    "bioPh": "12 years of experience, specializing in neurological conditions...",
+    "previewLink": "View public page",
+    "save": "Save",
+    "qrTitle": "QR code for booking",
+    "qrHint": "Patient scans — and goes directly to the booking form"
+  },
+  "clinic": {
+    "sectionTitle": "Clinic",
+    "readonlyBadge": "read only",
+    "nameLabel": "Name (managed by administrator)",
+    "phoneLabel": "Phone",
+    "addressLabel": "Address",
+    "addressPh": "123 Main St, Suite 100",
+    "websiteLabel": "Website",
+    "logoLabel": "Logo — URL",
+    "previewLink": "View clinic page",
+    "save": "Save",
+    "noClinic": "You are not linked to a clinic. The administrator handles clinic assignments."
+  },
+  "toast": {
+    "loadError": "Failed to load profile",
+    "error": "Error",
+    "doctorSaved": "Profile saved",
+    "clinicSaved": "Clinic saved"
+  }
+}

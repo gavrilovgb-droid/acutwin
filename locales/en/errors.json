@@ -1,0 +1,27 @@
+{
+  "auth": {
+    "unauthorized": "Authorization required",
+    "forbidden": "Access denied",
+    "sessionExpired": "Session expired. Please sign in again."
+  },
+  "network": {
+    "offline": "No internet connection",
+    "timeout": "Request timed out",
+    "serverError": "Server error. Please try again later."
+  },
+  "validation": {
+    "required": "This field is required",
+    "tooShort": "Value is too short",
+    "tooLong": "Value is too long",
+    "invalidFormat": "Invalid format"
+  },
+  "booking": {
+    "conflict": "This time slot is already taken",
+    "duplicate": "An appointment with these details already exists",
+    "pastTime": "Cannot book an appointment in the past"
+  },
+  "storage": {
+    "quotaExceeded": "Browser storage is full. Delete old records or clear the cache."
+  },
+  "generic": "Something went wrong. Please refresh the page."
+}

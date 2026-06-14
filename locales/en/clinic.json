@@ -1,0 +1,11 @@
+{
+  "page": {
+    "title": "AcuTwin — Clinic",
+    "doctors": "Clinic Doctors",
+    "empty": "Doctors will be listed here soon"
+  },
+  "notSpecified": "Clinic not specified",
+  "notFound": "Clinic not found",
+  "titleSuffix": " — Book an Appointment",
+  "bookBtn": "Book →"
+}

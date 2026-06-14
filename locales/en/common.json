@@ -1,0 +1,88 @@
+{
+  "nav": {
+    "newVisit": "New Appointment",
+    "schedule": "Schedule",
+    "treatment": "Treatment Protocol",
+    "atlas": "Point Atlas",
+    "history": "Visit History",
+    "video": "Video Training",
+    "profile": "Profile",
+    "admin": "Clients & Billing",
+    "billing": "Billing",
+    "dashboard": "Clinic Dashboard",
+    "logout": "Log Out"
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "print": "Print",
+    "download": "Download",
+    "open": "Open",
+    "create": "Create",
+    "update": "Update",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "saveDone": "Saved",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "scheduled": "Scheduled",
+    "done": "Completed",
+    "cancelled": "Cancelled",
+    "trial": "Trial",
+    "expired": "Expired",
+    "grace": "Grace Period"
+  },
+  "role": {
+    "admin": "Administrator",
+    "boss": "Clinic Manager",
+    "doctor": "Physician"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "min": "min",
+    "hour": "h",
+    "day": "d"
+  },
+  "patient": "Patient",
+  "doctor": "Physician",
+  "clinic": "Clinic",
+  "date": "Date",
+  "noData": "No data",
+  "notFound": "Not found",
+  "brand": {
+    "tagline": "for the practicing acupuncturist",
+    "subtitle": "Digital assistant for acupuncturists"
+  },
+  "wuxing": {
+    "name": "Wu Xing",
+    "metal": "Metal",
+    "earth": "Earth",
+    "fire": "Fire",
+    "water": "Water",
+    "fire2": "Fire²",
+    "wood": "Wood"
+  },
+  "about": {
+    "tabs": {
+      "features": "Features",
+      "literature": "📚 Literature",
+      "disclaimer": "⚠️ Important"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "plan": {
+    "free": "Free",
+    "solo": "Solo",
+    "clinic": "Clinic",
+    "enterprise": "Enterprise",
+    "demo": "Demo",
+    "trial": "Trial"
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "trialDays": "Days remaining: {{n}}",
+    "trialExpired": "Trial period expired",
+    "upgrade": "Upgrade plan",
+    "manage": "Manage subscription",
+    "perMonth": "/mo",
+    "auditLog": "Audit log"
+  },
+  "limit": {
+    "records": "Appointment records",
+    "patients": "Patients",
+    "reached": "Limit reached",
+    "upgrade": "Upgrade to a paid plan",
+    "recordsUsed": "{{used}} of {{max}} records"
+  },
+  "grace": {
+    "banner": "Trial period expired. {{days}} days remaining before access is blocked.",
+    "expired": "Access blocked. Please subscribe to continue."
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "title": "Dashboard",
+  "pageTitle": "AcuTwin — Appointments",
+  "newVisit": "New Appointment",
+  "newVisitTitle": "Book Patient",
+  "newAppointment": "New Appointment",
+  "patient": {
+    "select": "Select patient",
+    "search": "Search patient...",
+    "new": "New patient",
+    "name": "Patient name",
+    "noPatients": "No patients yet"
+  },
+  "visit": {
+    "start": "Start appointment",
+    "save": "Save appointment",
+    "saveConfirm": "Save appointment record?",
+    "saved": "Record saved",
+    "nrsBeforeLabel": "Pain before",
+    "nrsAfterLabel": "Pain after",
+    "deqi": "De-qi",
+    "exposure": "Exposure (min)",
+    "stimulation": "Stimulation",
+    "progress": "Progress",
+    "toTreatment": "Go to Treatment Protocol",
+    "recipe": "Protocol"
+  },
+  "form": {
+    "date": "Date",
+    "time": "Time",
+    "patientName": "Patient full name",
+    "namePlaceholder": "Smith John A.",
+    "age": "Age",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderAny": "— select —",
+    "doctor": "Attending physician",
+    "doctorPlaceholder": "Last name, initials",
+    "reason": "Reason for visit / chief complaint",
+    "reasonPlaceholder": "Describe the patient's main complaints...",
+    "agePlaceholder": "years"
+  },
+  "recent": {
+    "title": "Recent appointments",
+    "allHistory": "Full history →",
+    "search": "Find patient...",
+    "notFound": "Patient not found",
+    "noRecords": "No records yet",
+    "quick": "Quick select:"
+  },
+  "status": {
+    "started": "Started",
+    "active": "In progress",
+    "completed": "Completed"
+  },
+  "alert": {
+    "enterName": "Please enter the patient's full name",
+    "ageRange": "Age must be between 5 and 80"
+  },
+  "tabs": {
+    "diseases": "Diseases",
+    "tcm": "TCM Protocols",
+    "wuxing": "Wu Xing",
+    "points": "Points",
+    "notes": "Notes"
+  }
+}

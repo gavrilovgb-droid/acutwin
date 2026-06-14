@@ -1,0 +1,109 @@
+{
+  "pageTitle": "AcuTwin — Schedule",
+  "header": "Schedule",
+  "nav": {
+    "today": "Today",
+    "back": "Back",
+    "forward": "Forward",
+    "link": "Link",
+    "newAppt": "New Appointment",
+    "copyLink": "Copy patient booking link"
+  },
+  "mode": {
+    "day": "Day",
+    "week": "Week"
+  },
+  "dow": {
+    "0": "Mon",
+    "1": "Tue",
+    "2": "Wed",
+    "3": "Thu",
+    "4": "Fri",
+    "5": "Sat",
+    "6": "Sun"
+  },
+  "card": {
+    "minUnit": "m"
+  },
+  "form": {
+    "titleNew": "New Appointment",
+    "titleEdit": "Appointment",
+    "patientLabel": "Patient *",
+    "patientPh": "Patient name",
+    "dateLabel": "Date *",
+    "timeLabel": "Time *",
+    "durationLabel": "Duration",
+    "serviceLabel": "Service",
+    "servicePh": "Acupuncture",
+    "serviceDefault": "Acupuncture",
+    "doctorLabel": "Physician",
+    "phoneLabel": "Phone",
+    "priceLabel": "Price",
+    "emailLabel": "Patient email (for reminder)",
+    "notesLabel": "Notes",
+    "notesPh": "Complaints, special notes...",
+    "statusLabel": "Status",
+    "allDoctors": "All doctors",
+    "duration": {
+      "15": "15 min",
+      "30": "30 min",
+      "45": "45 min",
+      "60": "60 min",
+      "75": "75 min",
+      "90": "90 min"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "pending": "Pending confirmation",
+      "done": "Completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "pending": {
+    "info": "Patient request — awaiting confirmation",
+    "reject": "Decline",
+    "confirm": "Confirm"
+  },
+  "action": {
+    "delete": "Delete",
+    "openRecord": "Open appointment",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "error": {
+    "required": "Please fill in patient, date and time",
+    "saveFailed": "Save error",
+    "slotBusy": "This time slot is taken. Please choose another",
+    "generic": "Error",
+    "deleteFailed": "Failed to delete",
+    "updateFailed": "Failed to update"
+  },
+  "confirm": {
+    "delete": "Delete appointment?",
+    "soapCount": "⚠️ This appointment has {{count}} SOAP {{word}} in the database.",
+    "deleteSimple": "Delete appointment record? SOAP data will remain in the database.",
+    "soapWord1": "record",
+    "soapWord24": "records",
+    "soapWord5": "records",
+    "doctorPrompt": "Doctor login or slug:"
+  },
+  "share": {
+    "title": "Patient Booking Links",
+    "doctorDirect": "Direct to physician",
+    "clinicAll": "Clinic page (all doctors)",
+    "copy": "Copy",
+    "copiedMark": "✓",
+    "qrPrint": "QR code for printing",
+    "embedCode": "⟨/⟩ Embed code for clinic website",
+    "embedHint": "Paste once on your website — a «Book Online» button will appear that opens the booking form over your page:",
+    "copyCode": "Copy code",
+    "copiedCode": "✓ Copied",
+    "alsoPlace": "Also share the link or QR code:",
+    "ch0": "On social media (Facebook, Instagram, LinkedIn)",
+    "ch1": "On Google Maps / Yelp / Zocdoc",
+    "ch2": "On the doctor's business card, in the clinic lobby",
+    "ch3": "In email signature",
+    "bookOnline": "Book Online",
+    "allDoctors": "All clinic doctors"
+  }
+}

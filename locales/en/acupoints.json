@@ -1,0 +1,45 @@
+{
+  "atlas": {
+    "title": "Point Atlas",
+    "search": "Search point...",
+    "totalPoints": "{{count}} points",
+    "meridian": "Meridian",
+    "element": "Element",
+    "location": "Location",
+    "action": "Action",
+    "indication": "Indications",
+    "technique": "Technique",
+    "depth": "Needling depth"
+  },
+  "meridian": {
+    "title": "Meridians",
+    "excess": "Excess syndrome",
+    "deficiency": "Deficiency syndrome",
+    "element": {
+      "metal": "Metal",
+      "wood": "Wood",
+      "water": "Water",
+      "fire": "Fire",
+      "earth": "Earth"
+    }
+  },
+  "disease": {
+    "search": "Search conditions...",
+    "category": "Category",
+    "mkb10": "ICD-10",
+    "evidence": "Evidence level",
+    "gradeA": "Grade A",
+    "gradeB": "Grade B",
+    "gradeC": "Grade C",
+    "points": "Acupuncture points",
+    "mainPoints": "Primary points",
+    "extraPoints": "Supplementary points",
+    "video": "Related video"
+  },
+  "tcm": {
+    "title": "TCM Protocols",
+    "syndrome": "Syndrome",
+    "recipe": "Protocol",
+    "herbs": "Phytotherapy"
+  }
+}

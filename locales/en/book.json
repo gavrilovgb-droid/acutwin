@@ -1,0 +1,69 @@
+{
+  "page": {
+    "title": "AcuTwin — Online Booking",
+    "brand": "AcuTwin · Online Booking",
+    "staffBadge": "👁 Public page preview",
+    "staffBack": "← Back to AcuTwin"
+  },
+  "step": {
+    "selectDay": "Select day",
+    "selectTime": "Select time",
+    "yourData": "Your details"
+  },
+  "form": {
+    "name": "Full name *",
+    "namePlaceholder": "John Smith",
+    "phone": "Phone *",
+    "email": "Email (for confirmation)",
+    "complaint": "Chief complaint or reason for visit",
+    "complaintPlaceholder": "Briefly describe what you are experiencing...",
+    "submit": "Book Appointment"
+  },
+  "footer": {
+    "prefix": "Powered by ",
+    "suffix": " · Digital platform for acupuncturists"
+  },
+  "success": {
+    "title": "Request Received",
+    "text": "Your doctor will contact you to confirm the appointment time.",
+    "bookAgain": "Book again",
+    "home": "Home"
+  },
+  "doctor": {
+    "notSpecified": "Physician not specified",
+    "prefix": "Booking with: ",
+    "notFound": "Physician not found",
+    "titlePrefix": "Booking · ",
+    "backToClinic": "← All clinic doctors"
+  },
+  "dow": [
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
+  ],
+  "today": "Today",
+  "noSlots": "No available slots",
+  "error": {
+    "selectTime": "Please select a time",
+    "fullName": "Please enter your full name",
+    "phone": "Please enter your phone number",
+    "sending": "Sending...",
+    "failed": "Booking failed. Please try again.",
+    "network": "Network error. Please try again."
+  },
+  "summary": {
+    "doctor": "Physician:",
+    "clinic": "Clinic:",
+    "time": "Time:",
+    "timeAt": " at ",
+    "patient": "Patient:",
+    "contact": "Contact:"
+  },
+  "tg": {
+    "remind": "Get reminders on Telegram"
+  }
+}

@@ -1,0 +1,247 @@
+{
+  "soap": {
+    "title": "SOAP",
+    "s": "S — Subjective",
+    "o": "O — Objective",
+    "a": "A — Assessment",
+    "p": "P — Plan",
+    "sHint": "Patient complaints, medical history",
+    "oHint": "Objective data: tongue, pulse, examination",
+    "aHint": "Diagnosis, TCM syndrome",
+    "pHint": "Treatment plan, prescriptions",
+    "tongue": "Tongue",
+    "pulse": "Pulse",
+    "herbs": "Herbal",
+    "draft": "Draft",
+    "draftSaved": "Draft saved"
+  },
+  "history": {
+    "pageTitle": "AcuTwin — Visit History",
+    "title": "Visit History",
+    "noHistory": "No history yet",
+    "visitDate": "Visit date",
+    "visitNumber": "Visit #{{n}}",
+    "nrsChange": "Pain: {{before}} → {{after}}",
+    "filter": {
+      "all": "All",
+      "withSoap": "With SOAP",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "allDoctors": "All doctors",
+      "allPatients": "All patients",
+      "search": "Search...",
+      "period": "Period",
+      "reset": "reset",
+      "allStatuses": "All statuses"
+    },
+    "status": {
+      "started": "Started",
+      "active": "In progress",
+      "completed": "Completed"
+    },
+    "sort": {
+      "desc": "Date ↓",
+      "asc": "Date ↑",
+      "label": "Date"
+    },
+    "page": {
+      "size50": "50 / page",
+      "size100": "100 / page",
+      "prev": "← Prev",
+      "next": "Next →"
+    },
+    "stats": {
+      "sessions": "Sessions",
+      "patients": "Patients",
+      "points": "Points used",
+      "avgSession": "Avg. session",
+      "minUnit": "m"
+    },
+    "timeline": {
+      "header": "Session Timeline",
+      "empty": "No records match the current filters",
+      "sessCount": "{{n}} sessions",
+      "recCount": "{{n}} records"
+    },
+    "trend": {
+      "positive": "Improvement",
+      "neutral": "Neutral",
+      "negative": "Worsening"
+    },
+    "card": {
+      "minUnit": "m",
+      "ageUnit": "y",
+      "deqi": "De-qi",
+      "toRecipe": "Go to Treatment Protocol",
+      "recipe": "Protocol",
+      "sessionBadge": "session",
+      "statusUnknown": "Status",
+      "soapS": "S — Chief Complaint",
+      "soapO": "O — Objective",
+      "soapA": "A — Assessment",
+      "soapP": "P — Plan",
+      "tongue": "🫦 Tongue",
+      "pulse": "💓 Pulse",
+      "phyto": "🌿 Phytotherapy"
+    }
+  },
+  "nrs": {
+    "label": "Pain Scale (NRS)",
+    "before": "Before",
+    "after": "After",
+    "delta": "Change"
+  },
+  "treatment": {
+    "title": "Treatment Protocol",
+    "print": "Print",
+    "pdf": "PDF",
+    "saveSession": "Record Session",
+    "exposureLabel": "Exposure",
+    "exposureTime": "Exposure time, min",
+    "stimulation": "Stimulation",
+    "deqi": "De-qi",
+    "nrsBefore": "Pain before",
+    "nrsAfter": "Pain after",
+    "select": "— select —",
+    "exposureTypes": {
+      "corporal": "Corporal",
+      "auricular": "Auricular",
+      "scalp": "Scalp Acupuncture",
+      "eap": "EAP"
+    },
+    "stimulationTypes": {
+      "tonify": "Tonification",
+      "sedate": "Sedation",
+      "harmonize": "Harmonization"
+    },
+    "progress": {
+      "label": "Progress",
+      "bad": "Poor",
+      "poor": "Unsatisfactory",
+      "ok": "Fair",
+      "good": "Good",
+      "great": "Excellent"
+    },
+    "tabs": {
+      "recipe": "Points by Indication",
+      "tcm": "TCM Syndrome Protocols",
+      "wuxing": "Wu Xing Protocol Selection",
+      "custom": "Custom Protocol",
+      "diag": "Meridian Diagnostics"
+    },
+    "tabsShort": {
+      "recipe": "Indications",
+      "tcm": "TCM",
+      "wuxing": "Wu Xing",
+      "custom": "Custom",
+      "diag": "Meridians"
+    },
+    "search": {
+      "disease": "Search by disease, symptom...",
+      "tcm": "Search by syndrome, symptom...",
+      "symptom": "Search symptom...",
+      "point": "Search point (code, name, indication)…",
+      "disease2": "Search condition…"
+    },
+    "empty": {
+      "disease": "Select a condition from the list",
+      "tcm": "Select a syndrome from the list",
+      "disease2": "Select a condition from the list",
+      "points": "Select points from the left panel",
+      "symptoms": "Select symptoms on the left\nand click «Analyze Meridians»",
+      "wusinPrompt": "Mark symptoms\nand click «Determine Protocol»",
+      "loading": "Loading…"
+    },
+    "action": {
+      "reset": "Reset",
+      "analyze": "Analyze Meridians",
+      "determine": "Determine Protocol",
+      "addRecipe": "Add protocol to record",
+      "clearPoints": "Clear"
+    },
+    "custom": {
+      "list": "Point List",
+      "selected": "Selected Points",
+      "pointCount": "{{n}} points"
+    },
+    "wuxing": {
+      "bySymptoms": "By Symptoms",
+      "byDisease": "By Condition",
+      "symptomCount": "{{n}} symptoms",
+      "recipeCount": "{{n}} protocols",
+      "selectedCount": "{{n}} selected"
+    },
+    "sound": {
+      "title": "Sound Therapy",
+      "playing": "PLAYING",
+      "stop": "Stop",
+      "selectTrack": "Select track",
+      "duration": "Duration",
+      "min": "min",
+      "noFile": "Video file not found — run MPG → MP4 conversion",
+      "hz": "Hz",
+      "elements": {
+        "wood": "Wood",
+        "fire": "Fire",
+        "earth": "Earth",
+        "metal": "Metal",
+        "water": "Water"
+      }
+    },
+    "video": {
+      "lesson": "▶ Video Lesson"
+    },
+    "downloadPdfTitle": "Download PDF",
+    "source": "Source:",
+    "copyrightFull": "© P.V. Belousov — zhong-yi.narod.ru",
+    "copyrightAuthor": "© P.V. Belousov",
+    "recipeCount": "{{count}} protocols",
+    "hint": {
+      "recipe": "When the diagnosis is already established. Find the disease or symptom in the database — the system will provide a ready-made set of acupuncture points.",
+      "diag": "When you need to identify the root cause. Enter the symptoms — the system will determine the meridian imbalance and compose an individualized energy protocol.",
+      "default": "Hover over an option to learn more"
+    },
+    "nav": {
+      "custom": "Custom Protocol",
+      "recipe": "Points by Indication",
+      "tcm": "TCM Protocols",
+      "usin": "Wu Xing Selection",
+      "diag": "Meridian Diagnostics"
+    },
+    "groups": {
+      "symptomatic": "Symptomatic Treatment",
+      "energy": "Energy Balance"
+    },
+    "alert": {
+      "confirmSessions": "Record {{count}} protocol(s) as separate sessions for:\n{{name}}\n\nConfirm?",
+      "pdfError": "PDF generation error",
+      "formRecipeFirst": "Please create a protocol first",
+      "selectRecipeFirst": "Please select a protocol or add points manually.",
+      "selectSymptom": "Select at least one symptom",
+      "markSymptom": "Mark at least one symptom",
+      "selectPoint": "Select at least one point",
+      "noPoints": "No points to add",
+      "analyzeFirst": "Please run the analysis first.",
+      "noPrintData": "No data to print. Run the analysis first.",
+      "selectDisease": "Select a condition from the list."
+    }
+  },
+  "context": {
+    "time": "Time",
+    "season": "Season",
+    "gender": "Gender",
+    "type": "Type",
+    "genderM": "M",
+    "genderF": "F",
+    "acute": "Acute",
+    "chronic": "Chronic",
+    "reset": "Reset",
+    "seasons": {
+      "spring": "Spring",
+      "summer": "Summer",
+      "latesummer": "Late Summer",
+      "autumn": "Autumn",
+      "winter": "Winter"
+    }
+  }
+}

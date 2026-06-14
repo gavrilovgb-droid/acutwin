@@ -660,87 +660,72 @@
     <h2 class="section-title">Прозрачные цены</h2>
     <p class="section-sub">Начните бесплатно. Платите только когда нужны расширенные возможности.</p>
 
-    <div class="billing-toggle" style="margin-top:32px">
+    <!-- Trial banner -->
+    <div style="margin-top:36px;background:linear-gradient(135deg,rgba(0,242,255,0.08),rgba(0,242,255,0.03));border:1px solid rgba(0,242,255,0.25);border-radius:16px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--accent);margin-bottom:6px;text-transform:uppercase">Бесплатный период</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">14 дней — полный функционал Практика</div>
+        <div style="font-size:13px;color:var(--muted)">Без карты при регистрации · После окончания данные сохраняются, новые приёмы блокируются</div>
+      </div>
+      <button onclick="openTrialModal()" style="flex-shrink:0;background:var(--accent);color:#000;font-size:14px;font-weight:700;padding:13px 28px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap">Попробовать бесплатно</button>
+    </div>
+
+    <div class="billing-toggle" style="margin-top:36px">
       <span class="billing-label active" id="lbl-monthly">Помесячно</span>
       <div class="toggle-track" id="billing-toggle" onclick="toggleBilling()">
         <div class="toggle-thumb"></div>
       </div>
       <span class="billing-label" id="lbl-annual">За год</span>
-      <span class="billing-save">−20%</span>
+      <span class="billing-save">Сэкономить 2 месяца</span>
     </div>
 
-    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
 
-      <div class="price-card">
-        <div class="price-badge" style="background:rgba(255,255,255,0.07);color:var(--muted);border-color:rgba(255,255,255,0.1)">Пробный доступ</div>
-        <div class="price-plan">Старт</div>
-        <div class="price-amount">0 <span>₽</span></div>
-        <div class="price-period">1 месяц без ограничений</div>
-        <ul class="price-features">
-          <li>1 врач</li>
-          <li>Атлас 361 точки</li>
-          <li>Тактика лечения (677 болезней)</li>
-          <li>Карточка пациента + SOAP</li>
-          <li>Расписание и онлайн-запись</li>
-          <li>Видеообучение</li>
-        </ul>
-        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
-      </div>
-
-      <div class="price-card" data-monthly="990" data-annual="790">
+      <div class="price-card" data-monthly="990" data-annual="658">
         <div class="price-plan">Практик</div>
         <div class="price-amount price-val">990 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:16px;margin-top:-12px">Для частной практики и ИП</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:16px;margin-top:-10px">Для частного врача и ИП · 7 900 ₽/год</div>
         <ul class="price-features">
-          <li>1 врач · без лимита по времени</li>
-          <li>Все инструменты тарифа Старт</li>
-          <li class="feat-new">PDF-отчёты пациента</li>
+          <li>1 врач · без лимита пациентов</li>
+          <li>Атлас 361 точки · 677 болезней</li>
+          <li>Карточка пациента + SOAP</li>
+          <li>Расписание и онлайн-запись</li>
+          <li>PDF-отчёты · QR-код · Видеообучение</li>
         </ul>
-        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
+        <button onclick="openTrialModal()" class="price-cta">Начать за 990 ₽</button>
       </div>
 
-      <div class="price-card popular" data-monthly="3 900" data-annual="3 100">
+      <div class="price-card popular" data-monthly="3 900" data-annual="2 600">
         <div class="price-badge">Рекомендуемый</div>
-        <div class="price-plan">Клиника S</div>
+        <div class="price-plan">Клиника</div>
         <div class="price-amount price-val">3 900 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:16px;margin-top:-10px">Для клиники 2–3 врача · 31 200 ₽/год</div>
         <ul class="price-features">
-          <li>До 3 врачей · без лимита записей</li>
-          <li>Все инструменты Практика</li>
-          <li class="feat-new">Онлайн-запись пациентов</li>
-          <li class="feat-new">QR-код для визитки</li>
-          <li class="feat-new">Панель руководителя</li>
-          <li class="feat-new">Статистика по клинике</li>
-        </ul>
-        <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
-      </div>
-
-      <div class="price-card" data-monthly="5 990" data-annual="4 790">
-        <div class="price-plan">Клиника M</div>
-        <div class="price-amount price-val">5 990 <span>₽</span></div>
-        <div class="price-period price-period-val">в месяц</div>
-        <ul class="price-features">
-          <li>До 5 врачей · без лимита записей</li>
-          <li>Все инструменты Клиники S</li>
-          <li class="feat-new">Расширенная аналитика</li>
+          <li>До 3 врачей · без лимита пациентов</li>
+          <li>Всё из Практика</li>
+          <li class="feat-new">Панель руководителя + статистика</li>
           <li class="feat-new">Email-уведомления пациентам</li>
+          <li class="feat-new">Расширенная аналитика</li>
+          <li class="feat-new">Брендинг PDF · Экспорт CSV/Excel</li>
         </ul>
         <button onclick="openTrialModal()" class="price-cta">Хочу попробовать</button>
       </div>
 
-      <div class="price-card" data-monthly="7 900" data-annual="6 300">
-        <div class="price-plan">Клиника Pro</div>
+      <div class="price-card" data-monthly="7 900" data-annual="5 267">
+        <div class="price-plan">Pro</div>
         <div class="price-amount price-val">7 900 <span>₽</span></div>
         <div class="price-period price-period-val">в месяц</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:16px;margin-top:-10px">Для крупных клиник и сетей · 63 200 ₽/год</div>
         <ul class="price-features">
-          <li>Без ограничений врачей</li>
-          <li>Все инструменты Клиники M</li>
+          <li>До 5 врачей и более</li>
+          <li>Всё из Клиники</li>
           <li class="feat-new">СЭМД-экспорт / 152-ФЗ</li>
-          <li class="feat-new">Экспорт данных (CSV/Excel)</li>
-          <li class="feat-new">Кастомный брендинг</li>
+          <li class="feat-new">Кастомный брендинг (интерфейс + QR)</li>
           <li class="feat-new">API-доступ</li>
-          <li class="feat-new">Приоритетная поддержка</li>
+          <li class="feat-new">Приоритетная поддержка SLA 4ч</li>
+          <li class="feat-new">Персональный менеджер</li>
         </ul>
         <a href="mailto:info@acutwin.ru" class="price-cta">Обсудить</a>
       </div>

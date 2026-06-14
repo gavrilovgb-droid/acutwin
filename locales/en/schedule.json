@@ -1,109 +1,109 @@
 {
-  "pageTitle": "[TODO-EN] AcuTwin — Расписание",
-  "header": "[TODO-EN] Расписание",
+  "pageTitle": "AcuTwin — Schedule",
+  "header": "Schedule",
   "nav": {
-    "today": "[TODO-EN] Сегодня",
-    "back": "[TODO-EN] Назад",
-    "forward": "[TODO-EN] Вперёд",
-    "link": "[TODO-EN] Ссылка",
-    "newAppt": "[TODO-EN] Новая запись",
-    "copyLink": "[TODO-EN] Скопировать ссылку для пациентов"
+    "today": "Today",
+    "back": "Back",
+    "forward": "Forward",
+    "link": "Link",
+    "newAppt": "New Appointment",
+    "copyLink": "Copy patient booking link"
   },
   "mode": {
-    "day": "[TODO-EN] День",
-    "week": "[TODO-EN] Неделя"
+    "day": "Day",
+    "week": "Week"
   },
   "dow": {
-    "0": "[TODO-EN] Пн",
-    "1": "[TODO-EN] Вт",
-    "2": "[TODO-EN] Ср",
-    "3": "[TODO-EN] Чт",
-    "4": "[TODO-EN] Пт",
-    "5": "[TODO-EN] Сб",
-    "6": "[TODO-EN] Вс"
+    "0": "Mon",
+    "1": "Tue",
+    "2": "Wed",
+    "3": "Thu",
+    "4": "Fri",
+    "5": "Sat",
+    "6": "Sun"
   },
   "card": {
-    "minUnit": "[TODO-EN] м"
+    "minUnit": "m"
   },
   "form": {
-    "titleNew": "[TODO-EN] Новая запись",
-    "titleEdit": "[TODO-EN] Запись",
-    "patientLabel": "[TODO-EN] Пациент *",
-    "patientPh": "[TODO-EN] Имя пациента",
-    "dateLabel": "[TODO-EN] Дата *",
-    "timeLabel": "[TODO-EN] Время *",
-    "durationLabel": "[TODO-EN] Длительность",
-    "serviceLabel": "[TODO-EN] Услуга",
-    "servicePh": "[TODO-EN] Акупунктура",
-    "serviceDefault": "[TODO-EN] Акупунктура",
-    "doctorLabel": "[TODO-EN] Врач",
-    "phoneLabel": "[TODO-EN] Телефон",
-    "priceLabel": "[TODO-EN] Цена, ₽",
-    "emailLabel": "[TODO-EN] Email пациента (для напоминания)",
-    "notesLabel": "[TODO-EN] Заметки",
-    "notesPh": "[TODO-EN] Жалобы, особенности...",
-    "statusLabel": "[TODO-EN] Статус",
-    "allDoctors": "[TODO-EN] Все врачи",
+    "titleNew": "New Appointment",
+    "titleEdit": "Appointment",
+    "patientLabel": "Patient *",
+    "patientPh": "Patient name",
+    "dateLabel": "Date *",
+    "timeLabel": "Time *",
+    "durationLabel": "Duration",
+    "serviceLabel": "Service",
+    "servicePh": "Acupuncture",
+    "serviceDefault": "Acupuncture",
+    "doctorLabel": "Physician",
+    "phoneLabel": "Phone",
+    "priceLabel": "Price",
+    "emailLabel": "Patient email (for reminder)",
+    "notesLabel": "Notes",
+    "notesPh": "Complaints, special notes...",
+    "statusLabel": "Status",
+    "allDoctors": "All doctors",
     "duration": {
-      "15": "[TODO-EN] 15 мин",
-      "30": "[TODO-EN] 30 мин",
-      "45": "[TODO-EN] 45 мин",
-      "60": "[TODO-EN] 60 мин",
-      "75": "[TODO-EN] 75 мин",
-      "90": "[TODO-EN] 90 мин"
+      "15": "15 min",
+      "30": "30 min",
+      "45": "45 min",
+      "60": "60 min",
+      "75": "75 min",
+      "90": "90 min"
     },
     "status": {
-      "scheduled": "[TODO-EN] Запланирована",
-      "pending": "[TODO-EN] Ожидает подтверждения",
-      "done": "[TODO-EN] Завершена",
-      "cancelled": "[TODO-EN] Отменена"
+      "scheduled": "Scheduled",
+      "pending": "Pending confirmation",
+      "done": "Completed",
+      "cancelled": "Cancelled"
     }
   },
   "pending": {
-    "info": "[TODO-EN] Заявка от пациента — требует подтверждения",
-    "reject": "[TODO-EN] Отклонить",
-    "confirm": "[TODO-EN] Подтвердить"
+    "info": "Patient request — awaiting confirmation",
+    "reject": "Decline",
+    "confirm": "Confirm"
   },
   "action": {
-    "delete": "[TODO-EN] Удалить",
-    "openRecord": "[TODO-EN] Открыть приём",
-    "cancel": "[TODO-EN] Отмена",
-    "save": "[TODO-EN] Сохранить"
+    "delete": "Delete",
+    "openRecord": "Open appointment",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "error": {
-    "required": "[TODO-EN] Заполните пациента, дату и время",
-    "saveFailed": "[TODO-EN] Ошибка сохранения",
-    "slotBusy": "[TODO-EN] Это время занято. Выберите другой слот",
-    "generic": "[TODO-EN] Ошибка",
-    "deleteFailed": "[TODO-EN] Не удалось удалить",
-    "updateFailed": "[TODO-EN] Не удалось обновить"
+    "required": "Please fill in patient, date and time",
+    "saveFailed": "Save error",
+    "slotBusy": "This time slot is taken. Please choose another",
+    "generic": "Error",
+    "deleteFailed": "Failed to delete",
+    "updateFailed": "Failed to update"
   },
   "confirm": {
-    "delete": "[TODO-EN] Удалить запись?",
-    "soapCount": "[TODO-EN] ⚠️ У этого приёма есть {{count}} SOAP-{{word}} в базе.",
-    "deleteSimple": "[TODO-EN] Удалить запись о приёме? SOAP-данные останутся в базе.",
-    "soapWord1": "[TODO-EN] запись",
-    "soapWord24": "[TODO-EN] записи",
-    "soapWord5": "[TODO-EN] записей",
-    "doctorPrompt": "[TODO-EN] Логин или slug врача:"
+    "delete": "Delete appointment?",
+    "soapCount": "⚠️ This appointment has {{count}} SOAP {{word}} in the database.",
+    "deleteSimple": "Delete appointment record? SOAP data will remain in the database.",
+    "soapWord1": "record",
+    "soapWord24": "records",
+    "soapWord5": "records",
+    "doctorPrompt": "Doctor login or slug:"
   },
   "share": {
-    "title": "[TODO-EN] Ссылки для пациентов",
-    "doctorDirect": "[TODO-EN] К врачу напрямую",
-    "clinicAll": "[TODO-EN] Страница клиники (все врачи)",
-    "copy": "[TODO-EN] Копировать",
-    "copiedMark": "[TODO-EN] ✓",
-    "qrPrint": "[TODO-EN] QR-код для печати",
-    "embedCode": "[TODO-EN] ⟨/⟩ Код для встраивания на сайт клиники",
-    "embedHint": "[TODO-EN] Один раз вставьте на свой сайт — появится кнопка «Записаться онлайн», которая открывает запись поверх вашей страницы:",
-    "copyCode": "[TODO-EN] Копировать код",
-    "copiedCode": "[TODO-EN] ✓ Скопировано",
-    "alsoPlace": "[TODO-EN] Также разместите ссылку или QR-код:",
-    "ch0": "[TODO-EN] В соцсетях (VK, Telegram, Instagram)",
-    "ch1": "[TODO-EN] В Яндекс.Картах / 2ГИС / Google Maps",
-    "ch2": "[TODO-EN] На визитке врача, в холле клиники",
-    "ch3": "[TODO-EN] В email-подписи",
-    "bookOnline": "[TODO-EN] Записаться онлайн",
-    "allDoctors": "[TODO-EN] Все врачи клиники"
+    "title": "Patient Booking Links",
+    "doctorDirect": "Direct to physician",
+    "clinicAll": "Clinic page (all doctors)",
+    "copy": "Copy",
+    "copiedMark": "✓",
+    "qrPrint": "QR code for printing",
+    "embedCode": "⟨/⟩ Embed code for clinic website",
+    "embedHint": "Paste once on your website — a «Book Online» button will appear that opens the booking form over your page:",
+    "copyCode": "Copy code",
+    "copiedCode": "✓ Copied",
+    "alsoPlace": "Also share the link or QR code:",
+    "ch0": "On social media (Facebook, Instagram, LinkedIn)",
+    "ch1": "On Google Maps / Yelp / Zocdoc",
+    "ch2": "On the doctor's business card, in the clinic lobby",
+    "ch3": "In email signature",
+    "bookOnline": "Book Online",
+    "allDoctors": "All clinic doctors"
   }
 }

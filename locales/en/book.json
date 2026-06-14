@@ -1,69 +1,69 @@
 {
   "page": {
-    "title": "[TODO-EN] AcuTwin — Онлайн-запись",
-    "brand": "[TODO-EN] AcuTwin · Онлайн-запись",
-    "staffBadge": "[TODO-EN] 👁 Превью публичной страницы",
-    "staffBack": "[TODO-EN] ← Назад в АкуТвин"
+    "title": "AcuTwin — Online Booking",
+    "brand": "AcuTwin · Online Booking",
+    "staffBadge": "👁 Public page preview",
+    "staffBack": "← Back to AcuTwin"
   },
   "step": {
-    "selectDay": "[TODO-EN] Выберите день",
-    "selectTime": "[TODO-EN] Выберите время",
-    "yourData": "[TODO-EN] Ваши данные"
+    "selectDay": "Select day",
+    "selectTime": "Select time",
+    "yourData": "Your details"
   },
   "form": {
-    "name": "[TODO-EN] ФИО *",
-    "namePlaceholder": "[TODO-EN] Иванов Иван Иванович",
-    "phone": "[TODO-EN] Телефон *",
-    "email": "[TODO-EN] Email (для подтверждения)",
-    "complaint": "[TODO-EN] Жалобы или причина обращения",
-    "complaintPlaceholder": "[TODO-EN] Кратко опишите, что беспокоит...",
-    "submit": "[TODO-EN] Записаться"
+    "name": "Full name *",
+    "namePlaceholder": "John Smith",
+    "phone": "Phone *",
+    "email": "Email (for confirmation)",
+    "complaint": "Chief complaint or reason for visit",
+    "complaintPlaceholder": "Briefly describe what you are experiencing...",
+    "submit": "Book Appointment"
   },
   "footer": {
-    "prefix": "[TODO-EN] Работает на ",
-    "suffix": "[TODO-EN]  · Цифровая платформа для рефлексотерапевтов"
+    "prefix": "Powered by ",
+    "suffix": " · Digital platform for acupuncturists"
   },
   "success": {
-    "title": "[TODO-EN] Заявка принята",
-    "text": "[TODO-EN] Врач свяжется с вами в течение дня для подтверждения времени.",
-    "bookAgain": "[TODO-EN] Записаться ещё",
-    "home": "[TODO-EN] На главную"
+    "title": "Request Received",
+    "text": "Your doctor will contact you to confirm the appointment time.",
+    "bookAgain": "Book again",
+    "home": "Home"
   },
   "doctor": {
-    "notSpecified": "[TODO-EN] Врач не указан",
-    "prefix": "[TODO-EN] Запись к врачу: ",
-    "notFound": "[TODO-EN] Врач не найден",
-    "titlePrefix": "[TODO-EN] Запись · ",
-    "backToClinic": "[TODO-EN] ← Все врачи клиники"
+    "notSpecified": "Physician not specified",
+    "prefix": "Booking with: ",
+    "notFound": "Physician not found",
+    "titlePrefix": "Booking · ",
+    "backToClinic": "← All clinic doctors"
   },
   "dow": [
-    "[TODO-EN] Вс",
-    "[TODO-EN] Пн",
-    "[TODO-EN] Вт",
-    "[TODO-EN] Ср",
-    "[TODO-EN] Чт",
-    "[TODO-EN] Пт",
-    "[TODO-EN] Сб"
+    "Sun",
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat"
   ],
-  "today": "[TODO-EN] Сегодня",
-  "noSlots": "[TODO-EN] Нет доступных слотов",
+  "today": "Today",
+  "noSlots": "No available slots",
   "error": {
-    "selectTime": "[TODO-EN] Выберите время",
-    "fullName": "[TODO-EN] Введите ФИО полностью",
-    "phone": "[TODO-EN] Введите телефон",
-    "sending": "[TODO-EN] Отправляем...",
-    "failed": "[TODO-EN] Не удалось записаться",
-    "network": "[TODO-EN] Ошибка сети. Попробуйте ещё раз."
+    "selectTime": "Please select a time",
+    "fullName": "Please enter your full name",
+    "phone": "Please enter your phone number",
+    "sending": "Sending...",
+    "failed": "Booking failed. Please try again.",
+    "network": "Network error. Please try again."
   },
   "summary": {
-    "doctor": "[TODO-EN] Врач:",
-    "clinic": "[TODO-EN] Клиника:",
-    "time": "[TODO-EN] Время:",
-    "timeAt": "[TODO-EN]  в ",
-    "patient": "[TODO-EN] Пациент:",
-    "contact": "[TODO-EN] Контакт:"
+    "doctor": "Physician:",
+    "clinic": "Clinic:",
+    "time": "Time:",
+    "timeAt": " at ",
+    "patient": "Patient:",
+    "contact": "Contact:"
   },
   "tg": {
-    "remind": "[TODO-EN] Получать напоминания в Telegram"
+    "remind": "Get reminders on Telegram"
   }
 }

@@ -1,27 +1,27 @@
 {
   "auth": {
-    "unauthorized": "[TODO-EN] Необходима авторизация",
-    "forbidden": "[TODO-EN] Доступ запрещён",
-    "sessionExpired": "[TODO-EN] Сессия истекла. Войдите снова."
+    "unauthorized": "Authorization required",
+    "forbidden": "Access denied",
+    "sessionExpired": "Session expired. Please sign in again."
   },
   "network": {
-    "offline": "[TODO-EN] Нет подключения к интернету",
-    "timeout": "[TODO-EN] Превышено время ожидания",
-    "serverError": "[TODO-EN] Ошибка сервера. Попробуйте позже."
+    "offline": "No internet connection",
+    "timeout": "Request timed out",
+    "serverError": "Server error. Please try again later."
   },
   "validation": {
-    "required": "[TODO-EN] Поле обязательно для заполнения",
-    "tooShort": "[TODO-EN] Слишком короткое значение",
-    "tooLong": "[TODO-EN] Слишком длинное значение",
-    "invalidFormat": "[TODO-EN] Неверный формат"
+    "required": "This field is required",
+    "tooShort": "Value is too short",
+    "tooLong": "Value is too long",
+    "invalidFormat": "Invalid format"
   },
   "booking": {
-    "conflict": "[TODO-EN] Это время уже занято",
-    "duplicate": "[TODO-EN] Запись с такими данными уже существует",
-    "pastTime": "[TODO-EN] Нельзя записаться на прошедшее время"
+    "conflict": "This time slot is already taken",
+    "duplicate": "An appointment with these details already exists",
+    "pastTime": "Cannot book an appointment in the past"
   },
   "storage": {
-    "quotaExceeded": "[TODO-EN] Хранилище браузера переполнено. Удалите старые записи или очистите кэш."
+    "quotaExceeded": "Browser storage is full. Delete old records or clear the cache."
   },
-  "generic": "[TODO-EN] Что-то пошло не так. Обновите страницу."
+  "generic": "Something went wrong. Please refresh the page."
 }

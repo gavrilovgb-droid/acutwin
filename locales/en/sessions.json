@@ -1,247 +1,247 @@
 {
   "soap": {
-    "title": "[TODO-EN] SOAP",
-    "s": "[TODO-EN] S — Субъективно",
-    "o": "[TODO-EN] O — Объективно",
-    "a": "[TODO-EN] A — Оценка",
-    "p": "[TODO-EN] P — План",
-    "sHint": "[TODO-EN] Жалобы пациента, анамнез",
-    "oHint": "[TODO-EN] Объективные данные: язык, пульс, осмотр",
-    "aHint": "[TODO-EN] Диагноз, синдром по ТКМ",
-    "pHint": "[TODO-EN] План лечения, назначения",
-    "tongue": "[TODO-EN] Язык",
-    "pulse": "[TODO-EN] Пульс",
-    "herbs": "[TODO-EN] Фито",
-    "draft": "[TODO-EN] Черновик",
-    "draftSaved": "[TODO-EN] Черновик сохранён"
+    "title": "SOAP",
+    "s": "S — Subjective",
+    "o": "O — Objective",
+    "a": "A — Assessment",
+    "p": "P — Plan",
+    "sHint": "Patient complaints, medical history",
+    "oHint": "Objective data: tongue, pulse, examination",
+    "aHint": "Diagnosis, TCM syndrome",
+    "pHint": "Treatment plan, prescriptions",
+    "tongue": "Tongue",
+    "pulse": "Pulse",
+    "herbs": "Herbal",
+    "draft": "Draft",
+    "draftSaved": "Draft saved"
   },
   "history": {
-    "pageTitle": "[TODO-EN] AcuTwin — История",
-    "title": "[TODO-EN] История приёмов",
-    "noHistory": "[TODO-EN] История пустая",
-    "visitDate": "[TODO-EN] Дата приёма",
-    "visitNumber": "[TODO-EN] Приём №{{n}}",
-    "nrsChange": "[TODO-EN] Боль: {{before}} → {{after}}",
+    "pageTitle": "AcuTwin — Visit History",
+    "title": "Visit History",
+    "noHistory": "No history yet",
+    "visitDate": "Visit date",
+    "visitNumber": "Visit #{{n}}",
+    "nrsChange": "Pain: {{before}} → {{after}}",
     "filter": {
-      "all": "[TODO-EN] Все",
-      "withSoap": "[TODO-EN] С SOAP",
-      "thisMonth": "[TODO-EN] Этот месяц",
-      "lastMonth": "[TODO-EN] Прошлый месяц",
-      "allDoctors": "[TODO-EN] Все врачи",
-      "allPatients": "[TODO-EN] Все пациенты",
-      "search": "[TODO-EN] Поиск...",
-      "period": "[TODO-EN] Период",
-      "reset": "[TODO-EN] сбросить",
-      "allStatuses": "[TODO-EN] Все статусы"
+      "all": "All",
+      "withSoap": "With SOAP",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "allDoctors": "All doctors",
+      "allPatients": "All patients",
+      "search": "Search...",
+      "period": "Period",
+      "reset": "reset",
+      "allStatuses": "All statuses"
     },
     "status": {
-      "started": "[TODO-EN] Начат",
-      "active": "[TODO-EN] В процессе",
-      "completed": "[TODO-EN] Завершён"
+      "started": "Started",
+      "active": "In progress",
+      "completed": "Completed"
     },
     "sort": {
-      "desc": "[TODO-EN] Дата ↓",
-      "asc": "[TODO-EN] Дата ↑",
-      "label": "[TODO-EN] Дата"
+      "desc": "Date ↓",
+      "asc": "Date ↑",
+      "label": "Date"
     },
     "page": {
-      "size50": "[TODO-EN] 50 / стр.",
-      "size100": "[TODO-EN] 100 / стр.",
-      "prev": "[TODO-EN] ← Пред.",
-      "next": "[TODO-EN] След. →"
+      "size50": "50 / page",
+      "size100": "100 / page",
+      "prev": "← Prev",
+      "next": "Next →"
     },
     "stats": {
-      "sessions": "[TODO-EN] Сессий",
-      "patients": "[TODO-EN] Пациентов",
-      "points": "[TODO-EN] Точек исп.",
-      "avgSession": "[TODO-EN] Ср. сессия",
-      "minUnit": "[TODO-EN] м"
+      "sessions": "Sessions",
+      "patients": "Patients",
+      "points": "Points used",
+      "avgSession": "Avg. session",
+      "minUnit": "m"
     },
     "timeline": {
-      "header": "[TODO-EN] Хронология сессий",
-      "empty": "[TODO-EN] Записей по заданным фильтрам нет",
-      "sessCount": "[TODO-EN] {{n}} сессий",
-      "recCount": "[TODO-EN] {{n}} записей"
+      "header": "Session Timeline",
+      "empty": "No records match the current filters",
+      "sessCount": "{{n}} sessions",
+      "recCount": "{{n}} records"
     },
     "trend": {
-      "positive": "[TODO-EN] Улучшение",
-      "neutral": "[TODO-EN] Нейтрально",
-      "negative": "[TODO-EN] Ухудшение"
+      "positive": "Improvement",
+      "neutral": "Neutral",
+      "negative": "Worsening"
     },
     "card": {
-      "minUnit": "[TODO-EN] м",
-      "ageUnit": "[TODO-EN] л",
-      "deqi": "[TODO-EN] Де-ци",
-      "toRecipe": "[TODO-EN] К тактике лечения",
-      "recipe": "[TODO-EN] Рецепт",
-      "sessionBadge": "[TODO-EN] сессия",
-      "statusUnknown": "[TODO-EN] Статус",
-      "soapS": "[TODO-EN] S — Жалобы",
-      "soapO": "[TODO-EN] O — Объективно",
-      "soapA": "[TODO-EN] A — Оценка",
-      "soapP": "[TODO-EN] P — План",
-      "tongue": "[TODO-EN] 🫦 Язык",
-      "pulse": "[TODO-EN] 💓 Пульс",
-      "phyto": "[TODO-EN] 🌿 Фитотерапия"
+      "minUnit": "m",
+      "ageUnit": "y",
+      "deqi": "De-qi",
+      "toRecipe": "Go to Treatment Protocol",
+      "recipe": "Protocol",
+      "sessionBadge": "session",
+      "statusUnknown": "Status",
+      "soapS": "S — Chief Complaint",
+      "soapO": "O — Objective",
+      "soapA": "A — Assessment",
+      "soapP": "P — Plan",
+      "tongue": "🫦 Tongue",
+      "pulse": "💓 Pulse",
+      "phyto": "🌿 Phytotherapy"
     }
   },
   "nrs": {
-    "label": "[TODO-EN] Шкала боли (NRS)",
-    "before": "[TODO-EN] До",
-    "after": "[TODO-EN] После",
-    "delta": "[TODO-EN] Изменение"
+    "label": "Pain Scale (NRS)",
+    "before": "Before",
+    "after": "After",
+    "delta": "Change"
   },
   "treatment": {
-    "title": "[TODO-EN] Тактика лечения",
-    "print": "[TODO-EN] Печать",
-    "pdf": "[TODO-EN] PDF",
-    "saveSession": "[TODO-EN] Записать сессию",
-    "exposureLabel": "[TODO-EN] Воздействие",
-    "exposureTime": "[TODO-EN] Экспозиция, мин",
-    "stimulation": "[TODO-EN] Стимуляция",
-    "deqi": "[TODO-EN] Де-ци",
-    "nrsBefore": "[TODO-EN] Боль до",
-    "nrsAfter": "[TODO-EN] Боль после",
-    "select": "[TODO-EN] — выбрать —",
+    "title": "Treatment Protocol",
+    "print": "Print",
+    "pdf": "PDF",
+    "saveSession": "Record Session",
+    "exposureLabel": "Exposure",
+    "exposureTime": "Exposure time, min",
+    "stimulation": "Stimulation",
+    "deqi": "De-qi",
+    "nrsBefore": "Pain before",
+    "nrsAfter": "Pain after",
+    "select": "— select —",
     "exposureTypes": {
-      "corporal": "[TODO-EN] Корпоральная",
-      "auricular": "[TODO-EN] Аурикулярная",
-      "scalp": "[TODO-EN] Скальпотерапия",
-      "eap": "[TODO-EN] ЭАП"
+      "corporal": "Corporal",
+      "auricular": "Auricular",
+      "scalp": "Scalp Acupuncture",
+      "eap": "EAP"
     },
     "stimulationTypes": {
-      "tonify": "[TODO-EN] Тонизирование",
-      "sedate": "[TODO-EN] Седатирование",
-      "harmonize": "[TODO-EN] Гармонизация"
+      "tonify": "Tonification",
+      "sedate": "Sedation",
+      "harmonize": "Harmonization"
     },
     "progress": {
-      "label": "[TODO-EN] Прогресс",
-      "bad": "[TODO-EN] Плохо",
-      "poor": "[TODO-EN] Неудовл.",
-      "ok": "[TODO-EN] Средне",
-      "good": "[TODO-EN] Хорошо",
-      "great": "[TODO-EN] Отлично"
+      "label": "Progress",
+      "bad": "Poor",
+      "poor": "Unsatisfactory",
+      "ok": "Fair",
+      "good": "Good",
+      "great": "Excellent"
     },
     "tabs": {
-      "recipe": "[TODO-EN] Выбор точек по показаниям",
-      "tcm": "[TODO-EN] Рецепты по синдромам ТКМ",
-      "wuxing": "[TODO-EN] Подбор рецептов по У-Син",
-      "custom": "[TODO-EN] Свой рецепт",
-      "diag": "[TODO-EN] Меридиональная диагностика"
+      "recipe": "Points by Indication",
+      "tcm": "TCM Syndrome Protocols",
+      "wuxing": "Wu Xing Protocol Selection",
+      "custom": "Custom Protocol",
+      "diag": "Meridian Diagnostics"
     },
     "tabsShort": {
-      "recipe": "[TODO-EN] Показания",
-      "tcm": "[TODO-EN] ТКМ",
-      "wuxing": "[TODO-EN] У-Син",
-      "custom": "[TODO-EN] Свой рецепт",
-      "diag": "[TODO-EN] Меридианы"
+      "recipe": "Indications",
+      "tcm": "TCM",
+      "wuxing": "Wu Xing",
+      "custom": "Custom",
+      "diag": "Meridians"
     },
     "search": {
-      "disease": "[TODO-EN] Поиск по болезни, симптому...",
-      "tcm": "[TODO-EN] Поиск по синдрому, симптому...",
-      "symptom": "[TODO-EN] Поиск симптома...",
-      "point": "[TODO-EN] Поиск точки (код, название, показание)…",
-      "disease2": "[TODO-EN] Поиск заболевания…"
+      "disease": "Search by disease, symptom...",
+      "tcm": "Search by syndrome, symptom...",
+      "symptom": "Search symptom...",
+      "point": "Search point (code, name, indication)…",
+      "disease2": "Search condition…"
     },
     "empty": {
-      "disease": "[TODO-EN] Выберите болезнь из списка",
-      "tcm": "[TODO-EN] Выберите синдром из списка",
-      "disease2": "[TODO-EN] Выберите заболевание из списка",
-      "points": "[TODO-EN] Выберите точки из списка слева",
-      "symptoms": "[TODO-EN] Выберите симптомы слева\nи нажмите «Анализ меридианов»",
-      "wusinPrompt": "[TODO-EN] Отметьте симптомы\nи нажмите «Определить рецепт»",
-      "loading": "[TODO-EN] Загрузка…"
+      "disease": "Select a condition from the list",
+      "tcm": "Select a syndrome from the list",
+      "disease2": "Select a condition from the list",
+      "points": "Select points from the left panel",
+      "symptoms": "Select symptoms on the left\nand click «Analyze Meridians»",
+      "wusinPrompt": "Mark symptoms\nand click «Determine Protocol»",
+      "loading": "Loading…"
     },
     "action": {
-      "reset": "[TODO-EN] Сброс",
-      "analyze": "[TODO-EN] Анализ меридианов",
-      "determine": "[TODO-EN] Определить рецепт",
-      "addRecipe": "[TODO-EN] Добавить рецепт в карточку",
-      "clearPoints": "[TODO-EN] Очистить"
+      "reset": "Reset",
+      "analyze": "Analyze Meridians",
+      "determine": "Determine Protocol",
+      "addRecipe": "Add protocol to record",
+      "clearPoints": "Clear"
     },
     "custom": {
-      "list": "[TODO-EN] Список точек",
-      "selected": "[TODO-EN] Выбранные точки",
-      "pointCount": "[TODO-EN] {{n}} точек"
+      "list": "Point List",
+      "selected": "Selected Points",
+      "pointCount": "{{n}} points"
     },
     "wuxing": {
-      "bySymptoms": "[TODO-EN] По симптомам",
-      "byDisease": "[TODO-EN] По заболеванию",
-      "symptomCount": "[TODO-EN] {{n}} симптомов",
-      "recipeCount": "[TODO-EN] {{n}} рецептов",
-      "selectedCount": "[TODO-EN] {{n}} выбрано"
+      "bySymptoms": "By Symptoms",
+      "byDisease": "By Condition",
+      "symptomCount": "{{n}} symptoms",
+      "recipeCount": "{{n}} protocols",
+      "selectedCount": "{{n}} selected"
     },
     "sound": {
-      "title": "[TODO-EN] Звукотерапия",
-      "playing": "[TODO-EN] ИГРАЕТ",
-      "stop": "[TODO-EN] Стоп",
-      "selectTrack": "[TODO-EN] Выберите трек",
-      "duration": "[TODO-EN] Длит.",
-      "min": "[TODO-EN] мин",
-      "noFile": "[TODO-EN] Видеофайл не найден — запустите конвертацию MPG → MP4",
-      "hz": "[TODO-EN] Гц",
+      "title": "Sound Therapy",
+      "playing": "PLAYING",
+      "stop": "Stop",
+      "selectTrack": "Select track",
+      "duration": "Duration",
+      "min": "min",
+      "noFile": "Video file not found — run MPG → MP4 conversion",
+      "hz": "Hz",
       "elements": {
-        "wood": "[TODO-EN] Дерево",
-        "fire": "[TODO-EN] Огонь",
-        "earth": "[TODO-EN] Земля",
-        "metal": "[TODO-EN] Металл",
-        "water": "[TODO-EN] Вода"
+        "wood": "Wood",
+        "fire": "Fire",
+        "earth": "Earth",
+        "metal": "Metal",
+        "water": "Water"
       }
     },
     "video": {
-      "lesson": "[TODO-EN] ▶ Видеоурок"
+      "lesson": "▶ Video Lesson"
     },
-    "downloadPdfTitle": "[TODO-EN] Скачать PDF",
-    "source": "[TODO-EN] Источник:",
-    "copyrightFull": "[TODO-EN] © П. В. Белоусов — zhong-yi.narod.ru",
-    "copyrightAuthor": "[TODO-EN] © П. В. Белоусов",
-    "recipeCount": "[TODO-EN] {{count}} рецептов",
+    "downloadPdfTitle": "Download PDF",
+    "source": "Source:",
+    "copyrightFull": "© P.V. Belousov — zhong-yi.narod.ru",
+    "copyrightAuthor": "© P.V. Belousov",
+    "recipeCount": "{{count}} protocols",
     "hint": {
-      "recipe": "[TODO-EN] Когда диагноз уже поставлен. Найдите болезнь или симптом в базе — система выдаст готовый набор точек для иглоукалывания.",
-      "diag": "[TODO-EN] Когда нужно разобраться в причине. Укажите симптомы — система определит дисбаланс меридианов и составит индивидуальный энергетический рецепт.",
-      "default": "[TODO-EN] Наведите на вариант, чтобы узнать подробнее"
+      "recipe": "When the diagnosis is already established. Find the disease or symptom in the database — the system will provide a ready-made set of acupuncture points.",
+      "diag": "When you need to identify the root cause. Enter the symptoms — the system will determine the meridian imbalance and compose an individualized energy protocol.",
+      "default": "Hover over an option to learn more"
     },
     "nav": {
-      "custom": "[TODO-EN] Свой рецепт",
-      "recipe": "[TODO-EN] Выбор точек по показаниям",
-      "tcm": "[TODO-EN] Рецепты ТКМ",
-      "usin": "[TODO-EN] Подбор по У-Син",
-      "diag": "[TODO-EN] Мерид. диагностика"
+      "custom": "Custom Protocol",
+      "recipe": "Points by Indication",
+      "tcm": "TCM Protocols",
+      "usin": "Wu Xing Selection",
+      "diag": "Meridian Diagnostics"
     },
     "groups": {
-      "symptomatic": "[TODO-EN] Симптоматическое лечение",
-      "energy": "[TODO-EN] Энергобаланс"
+      "symptomatic": "Symptomatic Treatment",
+      "energy": "Energy Balance"
     },
     "alert": {
-      "confirmSessions": "[TODO-EN] Записать {{count}} рецепт(ов) отдельными сессиями для:\n{{name}}\n\nПодтвердить?",
-      "pdfError": "[TODO-EN] Ошибка генерации PDF",
-      "formRecipeFirst": "[TODO-EN] Сначала сформируйте рецепт",
-      "selectRecipeFirst": "[TODO-EN] Сначала выберите рецепт или добавьте точки вручную.",
-      "selectSymptom": "[TODO-EN] Выберите хотя бы один симптом",
-      "markSymptom": "[TODO-EN] Отметьте хотя бы один симптом",
-      "selectPoint": "[TODO-EN] Выберите хотя бы одну точку",
-      "noPoints": "[TODO-EN] Нет точек для добавления",
-      "analyzeFirst": "[TODO-EN] Сначала выполните анализ.",
-      "noPrintData": "[TODO-EN] Нет данных для печати. Выполните анализ.",
-      "selectDisease": "[TODO-EN] Выберите заболевание из списка."
+      "confirmSessions": "Record {{count}} protocol(s) as separate sessions for:\n{{name}}\n\nConfirm?",
+      "pdfError": "PDF generation error",
+      "formRecipeFirst": "Please create a protocol first",
+      "selectRecipeFirst": "Please select a protocol or add points manually.",
+      "selectSymptom": "Select at least one symptom",
+      "markSymptom": "Mark at least one symptom",
+      "selectPoint": "Select at least one point",
+      "noPoints": "No points to add",
+      "analyzeFirst": "Please run the analysis first.",
+      "noPrintData": "No data to print. Run the analysis first.",
+      "selectDisease": "Select a condition from the list."
     }
   },
   "context": {
-    "time": "[TODO-EN] Время",
-    "season": "[TODO-EN] Сезон",
-    "gender": "[TODO-EN] Пол",
-    "type": "[TODO-EN] Тип",
-    "genderM": "[TODO-EN] М",
-    "genderF": "[TODO-EN] Ж",
-    "acute": "[TODO-EN] Острое",
-    "chronic": "[TODO-EN] Хроническое",
-    "reset": "[TODO-EN] Сброс",
+    "time": "Time",
+    "season": "Season",
+    "gender": "Gender",
+    "type": "Type",
+    "genderM": "M",
+    "genderF": "F",
+    "acute": "Acute",
+    "chronic": "Chronic",
+    "reset": "Reset",
     "seasons": {
-      "spring": "[TODO-EN] Весна",
-      "summer": "[TODO-EN] Лето",
-      "latesummer": "[TODO-EN] Поздн. лето",
-      "autumn": "[TODO-EN] Осень",
-      "winter": "[TODO-EN] Зима"
+      "spring": "Spring",
+      "summer": "Summer",
+      "latesummer": "Late Summer",
+      "autumn": "Autumn",
+      "winter": "Winter"
     }
   }
 }

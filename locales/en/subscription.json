@@ -1,31 +1,31 @@
 {
   "plan": {
-    "free": "[TODO-EN] Free",
-    "solo": "[TODO-EN] Solo",
-    "clinic": "[TODO-EN] Clinic",
-    "enterprise": "[TODO-EN] Enterprise",
-    "demo": "[TODO-EN] Demo",
-    "trial": "[TODO-EN] Пробный"
+    "free": "Free",
+    "solo": "Solo",
+    "clinic": "Clinic",
+    "enterprise": "Enterprise",
+    "demo": "Demo",
+    "trial": "Trial"
   },
   "billing": {
-    "title": "[TODO-EN] Биллинг",
-    "currentPlan": "[TODO-EN] Текущий тариф",
-    "trialDays": "[TODO-EN] Осталось дней: {{n}}",
-    "trialExpired": "[TODO-EN] Пробный период истёк",
-    "upgrade": "[TODO-EN] Улучшить тариф",
-    "manage": "[TODO-EN] Управление подпиской",
-    "perMonth": "[TODO-EN] ₽/мес",
-    "auditLog": "[TODO-EN] Журнал аудита"
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "trialDays": "Days remaining: {{n}}",
+    "trialExpired": "Trial period expired",
+    "upgrade": "Upgrade plan",
+    "manage": "Manage subscription",
+    "perMonth": "/mo",
+    "auditLog": "Audit log"
   },
   "limit": {
-    "records": "[TODO-EN] Записи приёмов",
-    "patients": "[TODO-EN] Пациенты",
-    "reached": "[TODO-EN] Лимит исчерпан",
-    "upgrade": "[TODO-EN] Перейдите на платный тариф",
-    "recordsUsed": "[TODO-EN] {{used}} из {{max}} записей"
+    "records": "Appointment records",
+    "patients": "Patients",
+    "reached": "Limit reached",
+    "upgrade": "Upgrade to a paid plan",
+    "recordsUsed": "{{used}} of {{max}} records"
   },
   "grace": {
-    "banner": "[TODO-EN] Пробный период истёк. Осталось {{days}} дн. до блокировки.",
-    "expired": "[TODO-EN] Доступ заблокирован. Оплатите подписку для продолжения."
+    "banner": "Trial period expired. {{days}} days remaining before access is blocked.",
+    "expired": "Access blocked. Please subscribe to continue."
   }
 }

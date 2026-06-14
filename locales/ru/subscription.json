@@ -1,11 +1,11 @@
 {
   "plan": {
-    "free":          "Free",
-    "solo":          "Solo",
-    "clinic":        "Clinic",
-    "enterprise":    "Enterprise",
-    "demo":          "Demo",
-    "trial":         "Пробный"
+    "demo":          "Демо",
+    "trial":         "Пробный",
+    "practik":       "Практик",
+    "clinic_s":      "Клиника S",
+    "clinic_m":      "Клиника M",
+    "clinic_pro":    "Клиника Pro"
   },
   "billing": {
     "title":         "Биллинг",

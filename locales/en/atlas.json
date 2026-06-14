@@ -40,7 +40,7 @@
     "colShuSub": "(back-shu)",
     "colMu": "Mu",
     "colMuSub": "(alarm)",
-    "colXi": "Xi",
+    "colXi": "Xi-cleft",
     "colXiSub": "(cleft/analgesic)"
   },
   "pain": {
@@ -60,7 +60,7 @@
   "dangerous": {
     "title": "Contraindicated Points",
     "hint": "Points not recommended for needling and moxibustion",
-    "noNeedle": "🚫 No needling",
-    "noMoxa": "🔥 No moxibustion"
+    "noNeedle": "Needling contraindicated",
+    "noMoxa": "Moxibustion contraindicated"
   }
 }

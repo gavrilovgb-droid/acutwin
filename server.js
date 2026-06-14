@@ -537,7 +537,19 @@ async function handleAPI(method, endpoint, req, res) {
   // GET /api/me
   if (method === 'GET' && endpoint === '/api/me') {
     const user = requireAuth(req, res); if (!user) return;
-    return json(res, 200, { username: user.username, name: user.name, role: user.role });
+    return json(res, 200, { username: user.username, name: user.name, role: user.role, preferred_locale: user.preferred_locale || 'ru' });
+  }
+
+  // PUT /api/me/locale
+  if (method === 'PUT' && endpoint === '/api/me/locale') {
+    const user = requireAuth(req, res); if (!user) return;
+    const { locale } = await readBody(req);
+    const { SUPPORTED_LOCALES } = require('./config/locales.js');
+    if (!locale || !SUPPORTED_LOCALES[locale] || SUPPORTED_LOCALES[locale].status === 'disabled') {
+      return json(res, 400, { error: 'invalid locale' });
+    }
+    db.setUserLocale(user.username, locale);
+    return json(res, 200, { ok: true, locale });
   }
 
   // GET /api/trial-status — статус trial для текущего пользователя

@@ -248,6 +248,8 @@ module.exports.getUser      = u => _getUser.get(u) || null;
 module.exports.updateUserHash  = (username, hash)  => _updHash.run(hash, username);
 module.exports.getUserByEmail  = email             => _getUserByEmail.get(email) || null;
 module.exports.setUserEmail    = (username, email) => _setUserEmail.run(email, username);
+const _setUserLocale = db.prepare("UPDATE users SET preferred_locale=? WHERE username=? COLLATE NOCASE");
+module.exports.setUserLocale = (username, locale) => _setUserLocale.run(locale, username);
 module.exports.getUsers   = () => _getUsers.all();
 module.exports.addUser    = (username, name, hash, role='doctor') => {
   try { _addUser.run(username.trim(), name.trim(), hash, role); return { ok: true }; }

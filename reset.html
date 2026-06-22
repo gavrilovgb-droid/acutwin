@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Сброс пароля — AcuTwin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+</head>
+<body class="min-h-screen flex items-center justify-center" style="background:#0a0a14">
+
+<div class="w-full max-w-sm mx-auto px-6 py-12">
+  <!-- Logo -->
+  <div class="text-center mb-8">
+    <div class="text-2xl font-black tracking-tight" style="color:#00F2FF">Acu<span style="color:#e2e2e2">Twin</span></div>
+    <div class="text-xs mt-1" style="color:#8b90a0">Система управления клиникой</div>
+  </div>
+
+  <div id="card" class="rounded-2xl p-8" style="background:#13131f;border:1px solid #414755">
+    <h1 class="text-lg font-bold mb-1" style="color:#e2e2e2">Новый пароль</h1>
+    <p class="text-xs mb-6" style="color:#8b90a0">Введите новый пароль для вашего аккаунта</p>
+
+    <!-- Form -->
+    <form id="form-reset" onsubmit="submitReset(event)" class="space-y-4" autocomplete="off">
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest mb-1.5" style="color:#8b90a0">Новый пароль</label>
+        <input id="r-pass" type="password" required minlength="6" placeholder="Минимум 6 символов"
+               class="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
+               style="background:#1f1f1f;border:1px solid #414755;color:#e2e2e2"
+               onfocus="this.style.borderColor='#00F2FF'" onblur="this.style.borderColor='#414755'"/>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase tracking-widest mb-1.5" style="color:#8b90a0">Повторите пароль</label>
+        <input id="r-pass2" type="password" required minlength="6" placeholder="Повторите пароль"
+               class="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-all"
+               style="background:#1f1f1f;border:1px solid #414755;color:#e2e2e2"
+               onfocus="this.style.borderColor='#00F2FF'" onblur="this.style.borderColor='#414755'"/>
+      </div>
+      <div id="err" class="hidden text-xs px-3 py-2 rounded-lg" style="background:rgba(255,69,58,0.12);color:#FF453A"></div>
+      <button type="submit" id="btn-submit"
+        class="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+        style="background:rgba(0,242,255,0.15);border:1px solid rgba(0,242,255,0.4);color:#00F2FF">
+        <span class="material-symbols-outlined text-base">lock_reset</span>
+        Сохранить пароль
+      </button>
+    </form>
+
+    <!-- Success state (hidden initially) -->
+    <div id="success" class="hidden text-center">
+      <div class="text-5xl mb-4">✅</div>
+      <div class="font-bold mb-2" style="color:#30D158">Пароль изменён!</div>
+      <div class="text-sm mb-6" style="color:#8b90a0">Войдите с новым паролем</div>
+      <a href="login.html"
+         class="inline-block px-6 py-2.5 rounded-xl font-bold text-sm"
+         style="background:rgba(0,242,255,0.15);border:1px solid rgba(0,242,255,0.4);color:#00F2FF;text-decoration:none">
+        Войти
+      </a>
+    </div>
+
+    <!-- Invalid token state (hidden initially) -->
+    <div id="invalid" class="hidden text-center">
+      <div class="text-5xl mb-4">⚠️</div>
+      <div class="font-bold mb-2" style="color:#FF9F0A">Ссылка недействительна</div>
+      <div class="text-sm mb-6" style="color:#8b90a0">Ссылка истекла или уже использована.<br>Запросите новую.</div>
+      <a href="login.html"
+         class="inline-block px-6 py-2.5 rounded-xl font-bold text-sm"
+         style="background:rgba(0,242,255,0.15);border:1px solid rgba(0,242,255,0.4);color:#00F2FF;text-decoration:none">
+        На страницу входа
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get('token');
+
+if (!token) {
+  document.getElementById('form-reset').classList.add('hidden');
+  document.getElementById('invalid').classList.remove('hidden');
+}
+
+async function submitReset(e) {
+  e.preventDefault();
+  const pass  = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+  const err   = document.getElementById('err');
+  const btn   = document.getElementById('btn-submit');
+
+  if (pass !== pass2) {
+    err.textContent = 'Пароли не совпадают';
+    err.classList.remove('hidden');
+    return;
+  }
+  err.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-base">hourglass_top</span>Сохраняем…';
+
+  try {
+    const r = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword: pass })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) {
+      document.getElementById('form-reset').classList.add('hidden');
+      document.getElementById('success').classList.remove('hidden');
+    } else if (r.status === 400) {
+      err.textContent = d.error || 'Ссылка недействительна';
+      err.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-base">lock_reset</span>Сохранить пароль';
+      if ((d.error || '').includes('истек') || (d.error || '').includes('недействительна')) {
+        document.getElementById('form-reset').classList.add('hidden');
+        document.getElementById('invalid').classList.remove('hidden');
+      }
+    } else {
+      err.textContent = 'Ошибка сервера. Попробуйте позже.';
+      err.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined text-base">lock_reset</span>Сохранить пароль';
+    }
+  } catch (ex) {
+    err.textContent = 'Сетевая ошибка. Проверьте подключение.';
+    err.classList.remove('hidden');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-base">lock_reset</span>Сохранить пароль';
+  }
+}
+</script>
+</body>
+</html>

@@ -96,6 +96,22 @@
             </div>
           </div>
 
+          <!-- Phone + Email -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Телефон</label>
+              <input id="f-phone" type="tel" placeholder="+7 999 000-00-00"
+                     class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                            placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            </div>
+            <div>
+              <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5">Email</label>
+              <input id="f-email" type="email" placeholder="example@mail.ru"
+                     class="w-full px-3 py-2.5 bg-[#1f1f1f] border border-[#414755] rounded-lg text-sm text-[#e2e2e2]
+                            placeholder-[#414755] focus:outline-none focus:border-[#00F2FF] focus:ring-1 focus:ring-[#00F2FF]/30 transition-all"/>
+            </div>
+          </div>
+
           <!-- Doctor -->
           <div>
             <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1.5" data-i18n="dashboard:form.doctor">Лечащий врач</label>
@@ -124,6 +140,21 @@
             </button>
           </div>
         </form>
+      </div>
+
+      <!-- Duplicate modal -->
+      <div id="dup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
+        <div class="w-full max-w-md rounded-2xl border border-[#414755] bg-[#141414] shadow-2xl overflow-hidden">
+          <div class="flex items-center gap-3 px-5 py-4 border-b border-[#2a2a2a]">
+            <span class="material-symbols-outlined text-[#FF9F0A]" style="font-size:22px;zoom:1">warning</span>
+            <span class="font-bold text-[#e2e2e2] text-base">Найдены возможные совпадения</span>
+          </div>
+          <div id="dup-list" class="px-5 py-4 space-y-3 max-h-64 overflow-y-auto"></div>
+          <div class="flex gap-3 px-5 py-4 border-t border-[#2a2a2a]">
+            <button id="dup-cancel" class="flex-1 py-2.5 rounded-xl border border-[#414755] text-sm text-[#8b90a0] hover:text-[#e2e2e2] hover:border-[#8b90a0] transition-colors font-medium">Отмена</button>
+            <button id="dup-create" class="flex-1 py-2.5 rounded-xl bg-[#0A84FF]/15 border border-[#0A84FF]/40 text-sm text-[#0A84FF] hover:bg-[#0A84FF]/25 transition-colors font-bold">Создать нового всё равно</button>
+          </div>
+        </div>
       </div>
 
       <!-- Success toast (hidden) -->
@@ -171,6 +202,12 @@ const now = new Date();
 document.getElementById('f-date').value = now.toISOString().slice(0,10);
 document.getElementById('f-time').value = now.toTimeString().slice(0,5);
 document.getElementById('f-doctor').value = session.name;
+
+// Сброс формы к дефолтам (перекрываем browser autocomplete)
+document.getElementById('f-age').value = '35';
+['f-fio','f-sex','f-phone','f-email','f-reason'].forEach(id => {
+  const el = document.getElementById(id); if (el) el.value = '';
+});
 
 // ── Подстановка пациента из расписания ───────────────────
 {
@@ -249,7 +286,25 @@ function renderComplaintChips() {
 
 // ── Переход к тактике лечения с данными пациента ─────────
 let _navigating = false;
-window.goToTreatment = () => {
+
+function _doNavigate() {
+  const patient = document.getElementById('f-fio').value.trim();
+  const data = {
+    patient,
+    age:    document.getElementById('f-age').value || '',
+    gender: document.getElementById('f-sex').value || '',
+    reason: document.getElementById('f-reason').value.trim() || '',
+    phone:  document.getElementById('f-phone').value.trim() || '',
+    email:  document.getElementById('f-email').value.trim() || '',
+  };
+  sessionStorage.setItem('acutwin_new_appointment', '1');
+  sessionStorage.setItem('acutwin_diag_patient', JSON.stringify(data));
+  const apptId = sessionStorage.getItem('acutwin_appointment_id');
+  if (apptId) sessionStorage.removeItem('acutwin_appointment_id');
+  location.href = 'treatment.html' + (apptId ? '?appointmentId=' + encodeURIComponent(apptId) : '');
+}
+
+window.goToTreatment = async () => {
   if (_navigating) return;
   const patient = document.getElementById('f-fio').value.trim();
   if (!patient) { alert(t('dashboard:alert.enterName')); return; }
@@ -257,18 +312,58 @@ window.goToTreatment = () => {
   if (document.getElementById('f-age').value !== '' && (ageVal < 5 || ageVal > 80 || !Number.isInteger(ageVal))) {
     alert(t('dashboard:alert.ageRange')); return;
   }
-  _navigating = true;
-  const data = {
-    patient,
-    age:    document.getElementById('f-age').value || '',
-    gender: document.getElementById('f-sex').value || '',
-    reason: document.getElementById('f-reason').value.trim() || '',
-  };
-  sessionStorage.setItem('acutwin_diag_patient', JSON.stringify(data));
-  const apptId = sessionStorage.getItem('acutwin_appointment_id');
-  if (apptId) sessionStorage.removeItem('acutwin_appointment_id');
-  location.href = 'treatment.html' + (apptId ? '?appointmentId=' + encodeURIComponent(apptId) : '');
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  let candidates = [];
+  try {
+    const r = await fetch('/api/patients/check-duplicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') },
+      body: JSON.stringify({ fullName: patient, phone, email }),
+    });
+    if (r.ok) { const d = await r.json(); candidates = d.candidates || []; }
+  } catch (e) { console.warn('check-duplicate failed, proceeding', e); }
+
+  if (!candidates.length) { _navigating = true; _doNavigate(); return; }
+
+  const matchLabel = { phone: 'телефон', email: 'email', name: 'имя' };
+  const list = document.getElementById('dup-list');
+  list.innerHTML = candidates.map(c => {
+    const tags = c.matchBy.map(m => `<span style="background:rgba(255,159,10,0.15);color:#FF9F0A;border:1px solid rgba(255,159,10,0.3);border-radius:6px;padding:1px 6px;font-size:10px">${matchLabel[m] || m}</span>`).join(' ');
+    const lastVisit = c.lastVisitAt ? new Date(c.lastVisitAt).toLocaleDateString('ru-RU') : '—';
+    const safePatient = JSON.stringify(c.fullName).replace(/'/g,"&#39;");
+    return `<div style="background:#1f1f1f;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <div class="font-semibold text-sm text-[#e2e2e2] mb-1">${esc(c.fullName)}</div>
+          <div class="text-xs text-[#8b90a0]">${c.phone ? esc(c.phone) + ' · ' : ''}${c.email ? esc(c.email) + ' · ' : ''}последний приём: ${lastVisit}</div>
+          <div class="mt-1.5 flex gap-1">${tags}</div>
+        </div>
+        <button onclick='openExistingPatient(${safePatient})'
+          class="flex-shrink-0 text-xs font-bold text-[#0A84FF] border border-[#0A84FF]/40 rounded-lg px-3 py-1.5 hover:bg-[#0A84FF]/15 transition-colors whitespace-nowrap">
+          Открыть
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('dup-modal').classList.remove('hidden');
 };
+
+window.openExistingPatient = (patientName) => {
+  document.getElementById('dup-modal').classList.add('hidden');
+  sessionStorage.setItem('acutwin_patient_view', patientName);
+  location.href = 'patient.html';
+};
+
+document.getElementById('dup-cancel').addEventListener('click', () => {
+  document.getElementById('dup-modal').classList.add('hidden');
+  _navigating = false;
+});
+document.getElementById('dup-create').addEventListener('click', () => {
+  document.getElementById('dup-modal').classList.add('hidden');
+  _navigating = true;
+  _doNavigate();
+});
 
 // ── Автозаполнение ФИО ───────────────────────────────────
 window.fioSuggest = (q) => {
@@ -298,8 +393,10 @@ window.fioSuggest = (q) => {
 
 window.fillPatient = (r) => {
   document.getElementById('f-fio').value   = r.patient;
-  document.getElementById('f-age').value   = r.age   || '';
+  document.getElementById('f-age').value   = r.age    || '35';
   document.getElementById('f-sex').value   = r.gender || '';
+  document.getElementById('f-phone').value = r.phone  || '';
+  document.getElementById('f-email').value = r.email  || '';
   document.getElementById('fio-drop').classList.add('hidden');
 };
 
@@ -341,7 +438,6 @@ function renderRecent(query = '') {
         <div class="flex items-center gap-2 mb-0.5">
           <button onclick='sessionStorage.setItem("acutwin_patient_view",${JSON.stringify(r.patient)});location.href="patient.html"'
                   class="text-sm font-semibold text-[#e2e2e2] hover:text-[#00F2FF] transition-colors text-left truncate max-w-[200px]">${esc(r.patient)}</button>
-          ${statusBadge(r.status)}
         </div>
         <div class="text-[10px] text-[#8b90a0]">${r.date} · ${esc(r.reason || '—')}</div>
       </div>

@@ -95,7 +95,32 @@
     "title": "Treatment Protocol",
     "print": "Print",
     "pdf": "PDF",
-    "saveSession": "Record Session",
+    "saveSession":   "Complete Appointment",
+    "confirmPoints": "Points selected: {{count}}\n\nConfirm?",
+    "history": {
+      "btn":      "History",
+      "title":    "Patient History",
+      "empty":    "No visit history found",
+      "open":     "Open",
+      "nrs":      "NRS before → after",
+      "points":   "points"
+    },
+    "unsaved":       "Unsaved changes",
+    "autoSaved":     "Auto-saved",
+    "unsavedConfirm": {
+      "title":   "Unsaved appointment",
+      "message": "You have unsaved changes. What would you like to do?",
+      "save":    "Save and leave",
+      "leave":   "Leave without saving",
+      "cancel":  "Stay"
+    },
+    "summary": {
+      "title":          "Appointment Complete",
+      "patient":        "Patient",
+      "points":         "Points selected",
+      "pdf":            "Download PDF",
+      "newAppointment": "New Appointment"
+    },
     "exposureLabel": "Exposure",
     "exposureTime": "Exposure time, min",
     "stimulation": "Stimulation",

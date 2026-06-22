@@ -103,7 +103,7 @@ body.acutwin-embed .wrap { padding-top:16px; }
         </div>
         <div>
           <label class="fld-label" data-i18n="book:form.phone">Телефон *</label>
-          <input id="f-phone" type="tel" class="fld" placeholder="+7 (___) ___-__-__" autocomplete="tel">
+          <input id="f-phone" type="tel" class="fld" placeholder="+7 (___) ___-__-__" autocomplete="tel" value="+7 ">
         </div>
         <div>
           <label class="fld-label" data-i18n="book:form.email">Email (для подтверждения)</label>
@@ -342,27 +342,6 @@ async function showSuccess(patient, phone, apptId) {
     <div class="summary-row"><span class="lbl">${t('book:summary.contact')}</span><span>${escHtml(phone)}</span></div>
   `;
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Кнопка Telegram напоминаний
-  if (!apptId) return;
-  try {
-    const [botRes, tokenRes] = await Promise.all([
-      fetch('/api/public/tg-bot-name').then(r => r.json()).catch(() => ({})),
-      fetch('/api/public/appt-tg-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appt_id: apptId })
-      }).then(r => r.json()).catch(() => ({}))
-    ]);
-    if (!botRes.bot_name || !tokenRes.token) return;
-    const tgUrl = `https://t.me/${botRes.bot_name}?start=${tokenRes.token}`;
-    const tgBtn = document.createElement('a');
-    tgBtn.href = tgUrl;
-    tgBtn.target = '_blank';
-    tgBtn.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:12px 20px;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.4);border-radius:12px;color:#29b6f6;font-size:14px;font-weight:600;text-decoration:none;';
-    tgBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.01 9.471c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.873.75z"/></svg>${t('book:tg.remind')}`;
-    document.getElementById('summary').after(tgBtn);
-  } catch { /* silent — tg reminder non-critical */ }
 }
 
 function escHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }

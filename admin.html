@@ -230,6 +230,34 @@ select.glass-input option { background:#1f1f1f; }
   </div>
 </div>
 
+<!-- ── МОДАЛ: Сбросить пароль ── -->
+<div id="reset-pwd-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+     onclick="if(event.target===this)closeResetPwdModal()">
+  <div class="glass-panel rounded-2xl w-full max-w-sm mx-4 flex flex-col">
+    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10">
+      <span class="font-bold text-[#0A84FF]">Сбросить пароль</span>
+      <button onclick="closeResetPwdModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:18px;zoom:1">close</span>
+      </button>
+    </div>
+    <div class="overflow-y-auto p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Пользователь</label>
+        <input id="rp-username" type="text" readonly class="glass-input w-full opacity-60"/>
+      </div>
+      <div>
+        <label class="block text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Новый пароль</label>
+        <input id="rp-password" type="text" placeholder="минимум 6 символов" class="glass-input w-full" autocomplete="off"/>
+      </div>
+      <div id="rp-error" class="hidden text-xs text-[#ff6b6b] bg-[#ff6b6b]/10 border border-[#ff6b6b]/30 rounded-lg px-3 py-2"></div>
+    </div>
+    <div class="flex gap-3 px-5 pb-5">
+      <button onclick="closeResetPwdModal()" class="flex-1 py-2.5 rounded-xl border border-white/10 text-[#8b90a0] hover:text-white text-xs font-bold transition-colors">Отмена</button>
+      <button onclick="saveResetPwd()" class="flex-1 py-2.5 rounded-xl bg-[#0A84FF]/15 hover:bg-[#0A84FF]/25 border border-[#0A84FF]/40 text-[#0A84FF] text-xs font-bold transition-colors">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── МОДАЛ: Учётные данные выданы ── -->
 <div id="creds-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
   <div class="bg-[#181818] border border-white/10 rounded-2xl w-80 p-6 shadow-2xl">
@@ -398,7 +426,7 @@ select.glass-input option { background:#1f1f1f; }
 <script type="module">
 import { buildSidebar, initElementClock, esc } from './shared.js';
 import { requireAdmin } from './auth.js';
-import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiGetTrialRequests, apiUpdateTrialStatus, apiSendCredentials } from './api.js?v=4';
+import { apiGetTenants, apiAddTenant, apiUpdateTenant, apiDeleteTenant, apiGetRecords, apiGetUsers, apiAddUser, apiDeleteUser, apiResetUserPassword, apiGetTrialRequests, apiUpdateTrialStatus, apiSendCredentials } from './api.js?v=5';
 
 const session = await requireAdmin();
 if (!session) throw new Error('redirect');
@@ -615,6 +643,11 @@ window.selectTenant = function(id) {
       ${paymentsHtml}
     </div>
 
+    <div class="p-4 border-b border-white/10" id="yk-payments-section">
+      <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-2">Платежи ЮKassa</div>
+      <div id="yk-payments-list"><div class="text-[10px] text-[#8b90a0]">Загрузка…</div></div>
+    </div>
+
     ${t.notes ? `<div class="p-4 border-b border-white/10"><div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-1">Заметки</div><div class="text-xs text-[#c1c6d7]">${t.notes}</div></div>` : ''}
 
     <div class="p-4 flex flex-col gap-2">
@@ -636,6 +669,37 @@ window.selectTenant = function(id) {
   `;
 
   panel.classList.remove('hidden');
+
+  // Load YooKassa payments
+  fetch(`/api/billing/payments/${t.id}`, { headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } })
+    .then(r => r.json())
+    .then(rows => {
+      const el = document.getElementById('yk-payments-list');
+      if (!el) return;
+      if (!rows.length) { el.innerHTML = '<div class="text-[10px] text-[#8b90a0] py-1">Платежей нет</div>'; return; }
+      const PLANS = { practik: 'Практик', clinic: 'Клиника', pro: 'Pro' };
+      const PERIODS = { monthly: 'мес', annual: 'год' };
+      el.innerHTML = rows.map(p => {
+        const ok = p.status === 'succeeded';
+        const clr = ok ? '#34C759' : p.status === 'pending' ? '#FFD60A' : '#ff6b6b';
+        const lbl = ok ? 'Оплачен' : p.status === 'pending' ? 'Ожидание' : 'Отменён';
+        const plan = PLANS[p.plan_code] || p.plan_code;
+        const period = PERIODS[p.billing_period] || p.billing_period;
+        const date = p.created_at ? p.created_at.slice(0, 10) : '—';
+        return `<div class="flex items-center gap-2 py-2 border-b border-white/5">
+          <span class="material-symbols-outlined" style="font-size:12px;zoom:1;color:${clr}">payments</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-semibold">${parseFloat(p.amount).toLocaleString('ru-RU')} ₽ · ${plan} / ${period}</div>
+            <div class="text-[10px] text-[#8b90a0]">${date} · ЮKassa</div>
+          </div>
+          <span class="text-[10px] font-bold" style="color:${clr}">${lbl}</span>
+        </div>`;
+      }).join('');
+    })
+    .catch(() => {
+      const el = document.getElementById('yk-payments-list');
+      if (el) el.innerHTML = '<div class="text-[10px] text-[#8b90a0]">Ошибка загрузки</div>';
+    });
 };
 
 window.toggleSuspend = async function(id) {
@@ -884,6 +948,10 @@ async function renderUsers() {
       }">${ROLE_NAMES[u.role] || u.role}</span></td>
       <td class="px-4 py-3 text-[#8b90a0]">${(u.created_at||'').slice(0,10)}</td>
       <td class="px-4 py-3 text-right">
+        <button onclick="openResetPwdModal('${esc(u.username)}')"
+                class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#0A84FF] border border-[#0A84FF]/30 hover:bg-[#0A84FF]/10 transition-colors mr-1">
+          Пароль
+        </button>
         ${u.username !== session.username ? `
         <button onclick="deleteUser('${esc(u.username)}')"
                 class="px-2 py-1 rounded-lg text-[10px] font-bold text-[#ff6b6b] border border-[#ff6b6b]/30 hover:bg-[#ff6b6b]/10 transition-colors">
@@ -930,6 +998,31 @@ window.deleteUser = async function(username) {
   if (!confirm(`Удалить пользователя «${username}»?\nВсе его записи останутся в базе.`)) return;
   await apiDeleteUser(username);
   renderUsers();
+};
+
+window.openResetPwdModal = function(username) {
+  document.getElementById('rp-username').value = username;
+  document.getElementById('rp-password').value = '';
+  document.getElementById('rp-error').classList.add('hidden');
+  document.getElementById('reset-pwd-modal').classList.remove('hidden');
+};
+window.closeResetPwdModal = function() {
+  document.getElementById('reset-pwd-modal').classList.add('hidden');
+};
+window.saveResetPwd = async function() {
+  const username = document.getElementById('rp-username').value;
+  const password = document.getElementById('rp-password').value.trim();
+  const errEl = document.getElementById('rp-error');
+  errEl.classList.add('hidden');
+  if (password.length < 6) { errEl.textContent = 'Пароль минимум 6 символов'; errEl.classList.remove('hidden'); return; }
+  const result = await apiResetUserPassword(username, password).catch(e => ({ ok: false, error: e.message }));
+  if (result && result.ok) {
+    closeResetPwdModal();
+    alert(`Пароль для «${username}» изменён`);
+  } else {
+    errEl.textContent = result?.error || 'Ошибка смены пароля';
+    errEl.classList.remove('hidden');
+  }
 };
 
 // ─── Заявки на триал ─────────────────────────────────────
@@ -1060,7 +1153,7 @@ window.grantAccess = async function(id, contact, method, email) {
   await apiAddTenant({
     id: crypto.randomUUID(),
     clinic: contact,
-    plan: 'trial',
+    plan: 'practik',
     status: 'trial',
     doctorLogins: [login],
     paidUntil,

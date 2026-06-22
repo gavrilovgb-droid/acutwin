@@ -14,6 +14,32 @@ const PATIENT_TG_BOT_NAME = process.env.PATIENT_TG_BOT_NAME || '';
 
 const TG_METHOD_LABEL = { telegram: 'Telegram', max: 'MAX', phone: 'Телефон', card: 'Карта' }; /* i18n-ok */
 
+// ── Email-фолбэк через Resend (api.telegram.org недоступен с VPS) ──
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const MAIL_FROM      = process.env.MAIL_FROM   || 'AcuTwin <info@acutwin.ru>';
+const ADMIN_EMAIL    = process.env.ADMIN_EMAIL || 'gavrilovgb@gmail.com';
+
+function sendMail(to, subject, text) {
+  return new Promise(resolve => {
+    if (!RESEND_API_KEY || !to || (Array.isArray(to) && to.length === 0)) return resolve();
+    const body = JSON.stringify({ from: MAIL_FROM, to: Array.isArray(to) ? to : [to], subject, text });
+    const req = https.request({
+      hostname: 'api.resend.com', path: '/emails', method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { if (res.statusCode >= 300) console.error(`[Mail] error ${res.statusCode}: ${d.slice(0,200)}`); resolve(); });
+    });
+    req.on('error', e => { console.error('[Mail] network error:', e.message); resolve(); });
+    req.setTimeout(15000, () => req.destroy(new Error('timeout')));
+    req.write(body); req.end();
+  });
+}
+
 // ── Низкоуровневый HTTP POST к Telegram Bot API ────────────
 function tgApiPost(token, path, payload) {
   return new Promise(resolve => {
@@ -40,6 +66,7 @@ function tgApiPost(token, path, payload) {
       console.error(`[TG] Network error on ${path}: code=${e.code || '?'} msg=${e.message || '(empty)'}`);
       resolve();
     });
+    req.setTimeout(6000, () => req.destroy(new Error('timeout')));
     req.write(body);
     req.end();
   });
@@ -88,18 +115,17 @@ function registerPatientTgWebhook(baseUrl) {
  * Уведомление владельцу о новой заявке на пробный доступ.
  */
 function sendTgNotify(contactMethod, contact, ip, email) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
   const label = TG_METHOD_LABEL[contactMethod] || contactMethod;
   const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
   const text = `🔔 Новая заявка на триал АкуПро\nEmail: ${email || '—'}\nМетод: ${label}\nКонтакт: ${contact}\nIP: ${ip || '—'}\nВремя: ${now}`; /* i18n-ok */
-  tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
+  if (TG_TOKEN && TG_CHAT_ID) tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
+  sendMail(ADMIN_EMAIL, '🔔 Новая заявка на триал АкуПро', text);
 }
 
 /**
  * Уведомление врачу о новой онлайн-записи пациента.
  */
-function sendTgBookingNotify(appt, doctorName, clinicName) {
-  if (!TG_TOKEN || !TG_CHAT_ID) return;
+function sendTgBookingNotify(appt, doctorName, clinicName, doctorEmail) {
   const when = new Date(appt.start_at.replace(' ', 'T')).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
   const text =
     `🩺 Новая заявка на приём\n` + /* i18n-ok */
@@ -109,7 +135,15 @@ function sendTgBookingNotify(appt, doctorName, clinicName) {
     `Телефон: ${appt.patient_phone || '—'}\n` + /* i18n-ok */
     `Email: ${appt.patient_email || '—'}\n` +
     `Жалобы: ${appt.notes || '—'}`; /* i18n-ok */
-  tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text });
+  if (TG_TOKEN && TG_CHAT_ID) tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text });
+  const to = [ADMIN_EMAIL];
+  if (doctorEmail && doctorEmail !== ADMIN_EMAIL) to.push(doctorEmail);
+  sendMail(to, '🩺 AcuTwin: новая запись пациента', text);
+}
+
+function sendAdminTg(text) {
+  if (TG_TOKEN && TG_CHAT_ID) tgApiPost(TG_TOKEN, 'sendMessage', { chat_id: TG_CHAT_ID, text, parse_mode: 'HTML' });
+  sendMail(ADMIN_EMAIL, '🔔 AcuTwin (уведомление)', String(text).replace(/<[^>]+>/g, ''));
 }
 
 module.exports = {
@@ -117,6 +151,7 @@ module.exports = {
   registerPatientTgWebhook,
   sendTgNotify,
   sendTgBookingNotify,
+  sendAdminTg,
   PATIENT_TG_TOKEN,
   PATIENT_TG_BOT_NAME,
 };

@@ -8,3 +8,26 @@ server.log
 server.err
 .jwt_secret
 vidtest.html
+
+# backups & local junk
+*.bak
+*.bak.*
+.env.bak*
+*.tgz
+sessions.json
+.acutwin.db-litestream/
+
+# large media (хранится на сервере, не в git)
+*.mp4
+
+# dev / seed / ops скрипты (не часть рантайма приложения)
+seed_demo.js
+setup_demo.js
+setup_test_data.js
+add_boss_all.js
+add_boss_to_tenant.js
+link_user.js
+get_users.js
+get_tenants.js
+wave2_test.js
+widget-demo.html

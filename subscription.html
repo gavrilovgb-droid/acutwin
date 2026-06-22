@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html class="dark" lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
+<title>AcuTwin — Подписка</title>
+<link rel="stylesheet" href="tailwind.css?v=2">
+<link href="fonts.css?v=2" rel="stylesheet"/>
+<link href="design.css?v=3" rel="stylesheet"/>
+<meta name="theme-color" content="#131313">
+<style>
+.section  { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px; margin-bottom:18px; }
+.plan-card {
+  background:rgba(255,255,255,0.04); border:2px solid rgba(255,255,255,0.1);
+  border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:12px;
+  transition:border-color .2s;
+}
+.plan-card.current   { border-color:#34C759; }
+.plan-card.practik   { --accent:#00F2FF; }
+.plan-card.clinic    { --accent:#0A84FF; }
+.plan-card.pro       { --accent:#BF5AF2; }
+.plan-card:hover     { border-color:var(--accent,rgba(255,255,255,.25)); }
+.badge-plan { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:.04em; }
+.badge-demo    { background:rgba(10,132,255,.15);  color:#0A84FF;  border:1px solid rgba(10,132,255,.3); }
+.badge-trial   { background:rgba(255,214,10,.15);  color:#FFD60A;  border:1px solid rgba(255,214,10,.3); }
+.badge-paid    { background:rgba(52,199,89,.15);   color:#34C759;  border:1px solid rgba(52,199,89,.3); }
+.badge-expired { background:rgba(255,69,58,.15);   color:#FF453A;  border:1px solid rgba(255,69,58,.3); }
+.badge-grace   { background:rgba(255,159,10,.15);  color:#FF9F0A;  border:1px solid rgba(255,159,10,.3); }
+.badge-pending { background:rgba(255,214,10,.15);  color:#FFD60A;  border:1px solid rgba(255,214,10,.3); }
+.btn-pay { width:100%; padding:10px 0; border-radius:10px; font-size:13px; font-weight:700; border:none; cursor:pointer; transition:opacity .15s; }
+.btn-pay:hover { opacity:.85; }
+.btn-pay:disabled { opacity:.4; cursor:not-allowed; }
+.period-btn { padding:7px 16px; border-radius:8px; font-size:12px; font-weight:700; border:1px solid #414755; cursor:pointer; transition:all .15s; }
+.period-btn.active { background:rgba(0,242,255,.2); color:#00F2FF; border-color:rgba(0,242,255,.4); }
+.period-btn.inactive { background:none; color:#8b90a0; }
+.feat-row { display:flex; align-items:center; gap:8px; font-size:12px; color:#8b90a0; }
+.feat-row .check { color:#34C759; font-size:14px; }
+.status-bar { border-radius:12px; padding:14px 18px; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; }
+.status-bar.ok      { background:rgba(52,199,89,.12);  color:#34C759; border:1px solid rgba(52,199,89,.3); }
+.status-bar.warn    { background:rgba(255,214,10,.10); color:#FFD60A; border:1px solid rgba(255,214,10,.3); }
+.status-bar.err     { background:rgba(255,69,58,.10);  color:#FF453A; border:1px solid rgba(255,69,58,.3); }
+.status-bar.info    { background:rgba(10,132,255,.10); color:#0A84FF; border:1px solid rgba(10,132,255,.3); }
+</style>
+</head>
+<body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
+
+<div id="nav-mount"></div>
+
+<div class="md:ml-64 h-screen flex flex-col">
+  <header class="sticky top-0 z-40 bg-[rgba(255,255,255,0.06)] backdrop-blur-xl border-b border-white/10 h-16 flex items-center gap-4 px-6 flex-shrink-0">
+    <h2 class="text-lg font-bold" style="font-family:'Hanken Grotesk',sans-serif">Подписка</h2>
+    <span class="text-xs text-[#8b90a0]">Управление тарифным планом</span>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-6" style="max-width:820px;width:100%;margin:0 auto">
+
+    <!-- ── Статус возврата из ЮKassa ── -->
+    <div id="return-bar" class="hidden mb-4"></div>
+
+    <!-- ── Текущий статус ── -->
+    <div class="section mb-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:20px;zoom:1">workspace_premium</span>
+        <div class="text-[13px] font-bold text-[#8b90a0] uppercase tracking-wider">Текущий тариф</div>
+      </div>
+      <div id="current-plan-area">
+        <div class="h-12 bg-white/5 rounded-xl animate-pulse"></div>
+      </div>
+    </div>
+
+    <!-- ── Выбор периода ── -->
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+      <div class="text-sm font-bold text-[#e2e2e2]">Выберите тариф</div>
+      <div class="flex items-center gap-2">
+        <button id="btn-monthly" class="period-btn active" onclick="setPeriod('monthly')">Помесячно</button>
+        <button id="btn-annual"  class="period-btn inactive" onclick="setPeriod('annual')">
+          За год <span class="ml-1 text-[#34C759] text-[10px]">−2 мес</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Карточки тарифов ── -->
+    <div class="grid gap-4 mb-8" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+
+      <!-- Практик -->
+      <div class="plan-card practik" id="card-practik">
+        <div>
+          <div class="text-[10px] font-bold text-[#00F2FF] uppercase tracking-widest mb-1">Практик</div>
+          <div class="flex items-baseline gap-1">
+            <span id="price-practik" class="text-2xl font-bold text-[#e2e2e2]">990 ₽</span>
+            <span id="period-practik" class="text-xs text-[#8b90a0]">/мес</span>
+          </div>
+          <div id="annual-note-practik" class="hidden text-[10px] text-[#8b90a0] mt-0.5">≈ 658 ₽/мес · экономия 2 мес</div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Атлас точек и меридианов</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>SOAP-протоколы приёма</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Онлайн-запись пациентов</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>PDF-выгрузка и QR-код</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Видеообучение</div>
+        </div>
+        <button class="btn-pay" id="pay-practik"
+          style="background:#00F2FF;color:#000"
+          onclick="startPayment('practik')">
+          Оплатить
+        </button>
+      </div>
+
+      <!-- Клиника -->
+      <div class="plan-card clinic" id="card-clinic">
+        <div>
+          <div class="text-[10px] font-bold text-[#0A84FF] uppercase tracking-widest mb-1">Клиника</div>
+          <div class="flex items-baseline gap-1">
+            <span id="price-clinic" class="text-2xl font-bold text-[#e2e2e2]">3 900 ₽</span>
+            <span id="period-clinic" class="text-xs text-[#8b90a0]">/мес</span>
+          </div>
+          <div id="annual-note-clinic" class="hidden text-[10px] text-[#8b90a0] mt-0.5">≈ 2 600 ₽/мес · экономия 2 мес</div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Всё из Практик</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Панель руководителя</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Аналитика клиники</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>CSV-экспорт</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Email-уведомления</div>
+        </div>
+        <button class="btn-pay" id="pay-clinic"
+          style="background:#0A84FF;color:#fff"
+          onclick="startPayment('clinic')">
+          Оплатить
+        </button>
+      </div>
+
+      <!-- Pro -->
+      <div class="plan-card pro" id="card-pro">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-[10px] font-bold text-[#BF5AF2] uppercase tracking-widest">Pro</div>
+            <span class="text-[9px] bg-[#BF5AF2]/20 text-[#BF5AF2] px-1.5 py-0.5 rounded-full font-bold">MAX</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span id="price-pro" class="text-2xl font-bold text-[#e2e2e2]">7 900 ₽</span>
+            <span id="period-pro" class="text-xs text-[#8b90a0]">/мес</span>
+          </div>
+          <div id="annual-note-pro" class="hidden text-[10px] text-[#8b90a0] mt-0.5">≈ 5 267 ₽/мес · экономия 2 мес</div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Всё из Клиника</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>СЭМД-экспорт</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Свой брендинг</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>API-доступ</div>
+          <div class="feat-row"><span class="material-symbols-outlined check" style="font-size:14px;zoom:1">check_circle</span>Приоритетная поддержка</div>
+        </div>
+        <button class="btn-pay" id="pay-pro"
+          style="background:#BF5AF2;color:#fff"
+          onclick="startPayment('pro')">
+          Оплатить
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ── Пояснение ── -->
+    <p class="text-[11px] text-[#6b7280] text-center">
+      Оплата через&nbsp;ЮKassa&nbsp;— банковские карты, СБП и другие способы.
+      После оплаты тариф активируется автоматически в течение нескольких секунд.
+    </p>
+
+  </main>
+</div>
+
+<script type="module">
+import { buildSidebar } from './shared.js';
+import { requireAuth }  from './auth.js';
+import { initI18n }     from '/i18n.js';
+import { getToken }     from './api.js';
+
+const session = await requireAuth();
+await initI18n();
+document.getElementById('nav-mount').innerHTML = buildSidebar('subscription', session);
+
+const PRICES = {
+  practik: { monthly: 990,   annual: 7900  },
+  clinic:  { monthly: 3900,  annual: 31200 },
+  pro:     { monthly: 7900,  annual: 63200 },
+};
+const PLAN_LABELS = { practik: 'Практик', clinic: 'Клиника', pro: 'Pro' };
+
+let _period = 'monthly';
+let _subData = null;
+let _paying  = false;
+
+// ── Period toggle ──
+window.setPeriod = function(p) {
+  _period = p;
+  document.getElementById('btn-monthly').className = `period-btn ${p==='monthly'?'active':'inactive'}`;
+  document.getElementById('btn-annual').className  = `period-btn ${p==='annual' ?'active':'inactive'}`;
+
+  for (const plan of ['practik','clinic','pro']) {
+    const priceEl  = document.getElementById('price-' + plan);
+    const periodEl = document.getElementById('period-' + plan);
+    const noteEl   = document.getElementById('annual-note-' + plan);
+    if (p === 'annual') {
+      priceEl.textContent  = PRICES[plan].annual.toLocaleString('ru-RU') + ' ₽';
+      periodEl.textContent = '/год';
+      noteEl.classList.remove('hidden');
+    } else {
+      priceEl.textContent  = PRICES[plan].monthly.toLocaleString('ru-RU') + ' ₽';
+      periodEl.textContent = '/мес';
+      noteEl.classList.add('hidden');
+    }
+  }
+};
+
+// ── Current plan rendering ──
+function renderCurrentPlan(data) {
+  const ts    = data.trialStatus;
+  const plan  = data.plan;
+  const el    = document.getElementById('current-plan-area');
+  const until = data.paidUntil;
+
+  let badgeClass = 'badge-demo';
+  let statusText = '';
+  let expiredLine = '';
+
+  if (ts.status === 'paid') {
+    badgeClass  = 'badge-paid';
+    statusText  = until ? `Активна до ${fmtDate(until)}` : 'Активна';
+  } else if (ts.status === 'trial_active') {
+    badgeClass  = 'badge-trial';
+    statusText  = `Пробный · осталось ${ts.daysLeft} дн.`;
+  } else if (ts.status === 'trial_grace') {
+    badgeClass  = 'badge-grace';
+    statusText  = 'Пробный период истёк · ещё 24 ч. до блокировки';
+  } else if (ts.status === 'trial_expired') {
+    badgeClass  = 'badge-expired';
+    statusText  = 'Доступ заблокирован';
+  } else if (until && until < new Date().toISOString().slice(0, 10) && ['practik','clinic','pro'].includes(plan)) {
+    badgeClass  = 'badge-expired';
+    statusText  = '⛔ Подписка истекла';
+    expiredLine = `<div style="font-size:12px;color:#FF453A;margin-top:4px">Истекла: ${fmtDate(until)}</div>`;
+  } else {
+    statusText  = 'Демо-режим';
+  }
+
+  const planName = PLAN_LABELS[plan] || 'Демо';
+  const cancelBtn = (ts.status === 'paid' && data.autoRenewEnabled)
+    ? `<button onclick="cancelSubscription()" style="background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.35);color:#FF453A;font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;font-weight:600">Отменить подписку</button>`
+    : '';
+  const canceledBadge = (ts.status === 'paid' && data.subscriptionCanceled)
+    ? `<span class="text-xs" style="color:#FF9F0A">⚠ Автопродление отключено</span>`
+    : '';
+  const noAutoRenewInfo = (ts.status === 'paid' && !data.autoRenewEnabled && !data.subscriptionCanceled)
+    ? `<div style="font-size:12px;color:#636773;margin-top:8px">Ваша подписка оплачена через СБП. Автопродление недоступно. Для продления оплатите вручную.</div>`
+    : '';
+  el.innerHTML = `
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div class="flex items-center gap-3">
+        <span class="badge-plan ${badgeClass}">${planName}</span>
+        <span class="text-sm text-[#8b90a0]">${statusText}</span>
+        ${canceledBadge}
+      </div>
+      ${cancelBtn}
+    </div>
+    ${expiredLine}
+    ${noAutoRenewInfo}`;
+
+  // highlight current card
+  for (const p of ['practik','clinic','pro']) {
+    document.getElementById('card-' + p)?.classList.toggle('current', plan === p && ts.status === 'paid');
+  }
+}
+
+// ── Return-from-YooKassa state ──
+function renderReturnBar(data) {
+  const bar = document.getElementById('return-bar');
+  const lp  = data.latestPayment;
+
+  if (!lp) return;
+
+  const age = (Date.now() - new Date(lp.createdAt + 'Z').getTime()) / 1000;
+
+  if (lp.status === 'succeeded') {
+    const planLabel  = PLAN_LABELS[lp.planCode] || lp.planCode;
+    const paidUntil  = data.paidUntil ? fmtDate(data.paidUntil) : '—';
+    bar.innerHTML = `
+      <div style="background:rgba(52,199,89,0.08);border:1.5px solid rgba(52,199,89,0.35);border-radius:18px;padding:28px 24px;text-align:center;margin-bottom:8px">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(52,199,89,0.15);border:2px solid rgba(52,199,89,0.4);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <span class="material-symbols-outlined" style="font-size:30px;color:#34C759;zoom:1">check_circle</span>
+        </div>
+        <div style="font-size:20px;font-weight:800;color:#34C759;margin-bottom:6px">Оплата прошла успешно!</div>
+        <div style="font-size:14px;color:#8b90a0;margin-bottom:18px">Тариф <span style="color:#e2e2e2;font-weight:700">${planLabel}</span> активирован до <span style="color:#e2e2e2;font-weight:700">${paidUntil}</span></div>
+        <a href="treatment.html" style="display:inline-flex;align-items:center;gap:8px;background:#34C759;color:#000;font-weight:700;font-size:13px;padding:11px 24px;border-radius:10px;text-decoration:none">
+          <span class="material-symbols-outlined" style="font-size:16px;zoom:1">medical_services</span>
+          Перейти к приёму
+        </a>
+      </div>`;
+    bar.classList.remove('hidden');
+  } else if (lp.status === 'canceled') {
+    bar.innerHTML = `
+      <div style="background:rgba(255,69,58,0.07);border:1.5px solid rgba(255,69,58,0.3);border-radius:18px;padding:24px;text-align:center;margin-bottom:8px">
+        <span class="material-symbols-outlined" style="font-size:36px;color:#FF453A;display:block;margin-bottom:10px;zoom:1">cancel</span>
+        <div style="font-size:17px;font-weight:700;color:#FF453A;margin-bottom:6px">Оплата не завершена</div>
+        <div style="font-size:13px;color:#8b90a0;margin-bottom:16px">Деньги не списаны. Вы можете попробовать ещё раз.</div>
+        <button onclick="document.getElementById('return-bar').classList.add('hidden')" style="background:rgba(255,69,58,0.15);border:1px solid rgba(255,69,58,0.4);color:#FF453A;font-weight:700;font-size:13px;padding:9px 20px;border-radius:10px;cursor:pointer">
+          Выбрать тариф снова
+        </button>
+      </div>`;
+    bar.classList.remove('hidden');
+  } else if (lp.status === 'pending' && age < 900) {
+    bar.innerHTML = `
+      <div style="background:rgba(255,214,10,0.07);border:1.5px solid rgba(255,214,10,0.3);border-radius:18px;padding:24px;text-align:center;margin-bottom:8px">
+        <span class="material-symbols-outlined" style="font-size:32px;color:#FFD60A;display:block;margin-bottom:10px;zoom:1">hourglass_top</span>
+        <div style="font-size:16px;font-weight:700;color:#FFD60A;margin-bottom:6px">Ожидаем подтверждение…</div>
+        <div style="font-size:13px;color:#8b90a0">Страница обновится автоматически через несколько секунд.</div>
+      </div>`;
+    bar.classList.remove('hidden');
+    pollStatus(12, 5000);
+  }
+}
+
+async function pollStatus(retries, delayMs) {
+  if (retries <= 0) return;
+  await new Promise(r => setTimeout(r, delayMs));
+  const data = await fetchSub();
+  if (!data) return;
+  if (data.latestPayment?.status !== 'pending') {
+    renderReturnBar(data);
+    renderCurrentPlan(data);
+  } else {
+    pollStatus(retries - 1, delayMs);
+  }
+}
+
+// ── Data fetch ──
+async function fetchSub() {
+  const token = getToken();
+  const r = await fetch('/api/billing/subscription', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+// ── Cancel subscription ──
+window.cancelSubscription = async function() {
+  if (!confirm('Отменить подписку?\n\nДоступ сохранится до конца оплаченного периода. Автоматического списания больше не будет.')) return;
+  const token = getToken();
+  try {
+    const r = await fetch('/api/billing/cancel-subscription', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await r.json();
+    if (!r.ok) { alert(data.error || 'Ошибка отмены подписки.'); return; }
+    _subData = await fetchSub();
+    renderCurrentPlan(_subData);
+  } catch(e) {
+    alert('Ошибка подключения к серверу.');
+  }
+};
+
+// ── Pay button ──
+window.startPayment = async function(planCode) {
+  if (_paying) return;
+  _paying = true;
+  const btn = document.getElementById('pay-' + planCode);
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Создаём платёж…';
+
+  const token = getToken();
+  try {
+    const r = await fetch('/api/billing/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ planCode, billingPeriod: _period }),
+    });
+    const data = await r.json();
+    if (!r.ok || !data.confirmationUrl) {
+      alert(data.error || 'Не удалось создать платёж. Попробуйте позже.');
+      btn.disabled = false;
+      btn.textContent = origText;
+      _paying = false;
+      return;
+    }
+    // Сохраняем paymentId перед редиректом
+    sessionStorage.setItem('yk_pending_payment', data.paymentId);
+    location.href = data.confirmationUrl;
+  } catch (e) {
+    alert('Ошибка подключения к серверу платежей.');
+    btn.disabled = false;
+    btn.textContent = origText;
+    _paying = false;
+  }
+};
+
+// ── Date format helper ──
+function fmtDate(iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+// ── Init ──
+(async () => {
+  _subData = await fetchSub();
+  if (_subData) {
+    renderCurrentPlan(_subData);
+  }
+
+  // Если пришли с ЮKassa
+  if (new URLSearchParams(location.search).has('yk_return')) {
+    history.replaceState({}, '', '/subscription.html');
+    if (_subData) renderReturnBar(_subData);
+  }
+})();
+</script>
+</body>
+</html>

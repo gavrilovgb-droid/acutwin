@@ -119,17 +119,42 @@ select.glass-input option { background:#1f1f1f; }
       </div>
     </div>
 
+    <!-- Billing period toggle -->
+    <div>
+      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider" data-i18n="subscription:billing.period">Период оплаты</div>
+      <div class="flex items-center gap-2 mb-2">
+        <button id="period-monthly" onclick="setBillingPeriod('monthly')" class="btn-sm" style="background:rgba(0,242,255,.2);color:#00F2FF;border:1px solid rgba(0,242,255,.4)">
+          <span data-i18n="subscription:billing.monthly">Помесячно</span>
+        </button>
+        <button id="period-annual" onclick="setBillingPeriod('annual')" class="btn-sm" style="background:none;color:#8b90a0;border:1px solid #414755">
+          <span data-i18n="subscription:billing.annual">За год</span>
+        </button>
+      </div>
+      <div id="save-badge" class="hidden text-xs font-bold mb-2" style="color:#34C759" data-i18n="subscription:billing.saveLabel">Сэкономить 2 месяца</div>
+      <div class="text-xs text-[#8b90a0] mb-1 space-y-0.5">
+        <div>Практик: <span id="price-practik" class="font-bold text-[#e2e2e2]">990 ₽/мес</span></div>
+        <div>Клиника: <span id="price-clinic"  class="font-bold text-[#e2e2e2]">3 900 ₽/мес</span></div>
+        <div>Pro: <span id="price-pro" class="font-bold text-[#BF5AF2]">7 900 ₽/мес</span></div>
+      </div>
+    </div>
+
     <!-- Set plan -->
     <div>
       <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider" data-i18n="admin:billing.changePlan">Сменить тариф</div>
       <div class="flex gap-2 flex-wrap">
-        <button onclick="setPlan('demo')"      class="btn-sm" style="background:rgba(10,132,255,.12);color:#0A84FF">Demo</button>
-        <button onclick="setPlan('practik')"   class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Practik</button>
-        <button onclick="setPlan('clinic_s')"  class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Clinic S</button>
-        <button onclick="setPlan('clinic_m')"  class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Clinic M</button>
-        <button onclick="setPlan('clinic_pro')"class="btn-sm" style="background:rgba(191,90,242,.12);color:#BF5AF2">Clinic Pro</button>
+        <button onclick="setPlan('demo')"    class="btn-sm" style="background:rgba(10,132,255,.12);color:#0A84FF">Demo</button>
+        <button onclick="setPlan('practik')" class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Практик</button>
+        <button onclick="setPlan('clinic')"  class="btn-sm" style="background:rgba(52,199,89,.12);color:#34C759">Клиника</button>
+        <button onclick="setPlan('pro')"     class="btn-sm" style="background:rgba(191,90,242,.12);color:#BF5AF2">Pro</button>
       </div>
     </div>
+
+    <!-- Plan features -->
+    <div>
+      <div class="text-xs font-bold text-[#8b90a0] mb-2 uppercase tracking-wider">Функции плана</div>
+      <div id="ap-features" class="text-xs space-y-1"></div>
+    </div>
+
     <div id="ap-feedback" class="text-xs font-bold" style="min-height:18px"></div>
   </div>
 </div>
@@ -152,8 +177,8 @@ let _tenants = [];
 let _selected = null;
 
 const PLAN_LABELS = {
-  demo:'Demo', trial:'Trial', practik:'Practik',
-  clinic_s:'Clinic S', clinic_m:'Clinic M', clinic_pro:'Clinic Pro',
+  demo:'Demo', trial:'Trial', practik:'Практик',
+  clinic:'Клиника', pro:'Pro',
   trial_grace:'Trial Grace', trial_expired:'Trial Expired',
 };
 
@@ -246,6 +271,7 @@ function renderStatCards() {
 window.openPanel = function(id) {
   _selected = _tenants.find(t => t.id === id);
   if (!_selected) return;
+  setBillingPeriod('monthly'); // Fix 2.1: сброс к monthly при каждом открытии панели
   const s = _selected.trialStatus?.status || 'demo';
   document.getElementById('ap-name').textContent = _selected.clinic;
   document.getElementById('ap-plan-badge').innerHTML = `<span class="badge ${planBadgeClass(s)}">${planLabel(_selected)}</span>`;
@@ -257,6 +283,7 @@ window.openPanel = function(id) {
     _selected.paidUntil ? `<div>${t('admin:billing.paidUntilLabel', {date: formatDate(_selected.paidUntil)})}</div>` : '',
   ].filter(Boolean).join('') || `<div>${t('admin:billing.noTrialData')}</div>`;
   document.getElementById('ap-feedback').textContent = '';
+  renderFeatures(_selected.plan || 'demo');
   document.getElementById('action-panel').classList.remove('hidden');
   document.getElementById('panel-backdrop').classList.remove('hidden');
 };
@@ -283,11 +310,68 @@ window.doAction = async function(action, weeks) {
   }
 };
 
+const PRICES = {
+  practik: { monthly: 990,   annual: 7900  },
+  clinic:  { monthly: 3900,  annual: 31200 },
+  pro:     { monthly: 7900,  annual: 63200 },
+};
+
+let _billingPeriod = 'monthly';
+
+window.setBillingPeriod = function(period) {
+  _billingPeriod = period;
+  const annual = period === 'annual';
+  document.getElementById('period-monthly').style.cssText =
+    annual ? 'background:none;color:#8b90a0;border:1px solid #414755'
+           : 'background:rgba(0,242,255,.2);color:#00F2FF;border:1px solid rgba(0,242,255,.4)';
+  document.getElementById('period-annual').style.cssText =
+    annual ? 'background:rgba(0,242,255,.2);color:#00F2FF;border:1px solid rgba(0,242,255,.4)'
+           : 'background:none;color:#8b90a0;border:1px solid #414755';
+  document.getElementById('save-badge').classList.toggle('hidden', !annual);
+  const suffix = annual ? ' ₽/год' : ' ₽/мес';
+  for (const [plan, p] of Object.entries(PRICES)) {
+    const el = document.getElementById('price-' + plan);
+    if (el) el.textContent = (annual ? p.annual : p.monthly).toLocaleString('ru-RU') + suffix;
+  }
+};
+
+const FEATURE_LABELS = {
+  manager_panel:       { label: 'Панель руководителя', plan: 'clinic' },
+  clinic_stats:        { label: 'Аналитика клиники',   plan: 'clinic' },
+  csv_export:          { label: 'CSV-экспорт',          plan: 'clinic' },
+  semd_export:         { label: 'СЭМД-экспорт',        plan: 'pro'    },
+  custom_branding:     { label: 'Свой брендинг',       plan: 'pro'    },
+  api_access:          { label: 'API-доступ',           plan: 'pro'    },
+  priority_support:    { label: 'Приоритетная поддержка', plan: 'pro'  },
+};
+
+const PLAN_FEAT_SERVER = {
+  demo:    ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video'],
+  trial:   ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video'],
+  practik: ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video'],
+  clinic:  ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video', 'manager_panel', 'clinic_stats', 'email_notifications', 'analytics', 'pdf_branding', 'csv_export'],
+  pro:     ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video', 'manager_panel', 'clinic_stats', 'email_notifications', 'analytics', 'pdf_branding', 'csv_export', 'semd_export', 'custom_branding', 'api_access', 'priority_support'],
+};
+
+function renderFeatures(plan) {
+  const el = document.getElementById('ap-features');
+  if (!el) return;
+  const feats = PLAN_FEAT_SERVER[plan] || PLAN_FEAT_SERVER.demo;
+  el.innerHTML = Object.entries(FEATURE_LABELS).map(([key, { label, plan: minPlan }]) => {
+    const has = feats.includes(key);
+    return `<div style="display:flex;align-items:center;gap:6px;color:${has ? '#34C759' : '#414755'}">
+      <span class="material-symbols-outlined" style="font-size:14px;zoom:1">${has ? 'check_circle' : 'lock'}</span>
+      <span style="${has ? '' : 'text-decoration:line-through'}">${label}</span>
+      ${!has ? `<span style="font-size:9px;color:#8b90a0;margin-left:auto">от ${minPlan}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
 window.setPlan = async function(plan) {
   if (!_selected) return;
   const fb = document.getElementById('ap-feedback');
   fb.style.color = '#8b90a0'; fb.textContent = t('admin:billing.saving');
-  const r = await apiBillingAction(_selected.id, 'set_plan', { plan });
+  const r = await apiBillingAction(_selected.id, 'set_plan', { plan, billing_period: _billingPeriod });
   if (r?.ok) {
     fb.style.color = '#34C759'; fb.textContent = t('admin:billing.planChanged', {plan: PLAN_LABELS[plan] || plan});
     await reload();

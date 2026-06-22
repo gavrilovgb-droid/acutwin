@@ -28,6 +28,17 @@ try { db.exec("ALTER TABLE records ADD COLUMN soap_s TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN soap_o TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN soap_a TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE records ADD COLUMN soap_p TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN phone TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN email TEXT NOT NULL DEFAULT ''"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN full_name_normalized TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN phone_normalized TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE records ADD COLUMN email_normalized TEXT"); } catch(e) {}
+// Backfill normalized fields for existing records
+try {
+  db.exec(`UPDATE records SET full_name_normalized = LOWER(TRIM(REPLACE(REPLACE(REPLACE(patient,'  ',' '),'  ',' '),'  ',' '))) WHERE full_name_normalized IS NULL AND patient IS NOT NULL AND patient != ''`);
+  db.exec(`UPDATE records SET phone_normalized = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone,'+',''),'-',''),' ',''),'(',''),')',''),'.',''),',','') WHERE phone_normalized IS NULL AND phone IS NOT NULL AND phone != ''`);
+  db.exec(`UPDATE records SET email_normalized = LOWER(TRIM(email)) WHERE email_normalized IS NULL AND email IS NOT NULL AND email != ''`);
+} catch(e) {}
 try { db.exec(`CREATE TABLE IF NOT EXISTS trial_requests (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   method     TEXT NOT NULL,
@@ -85,6 +96,7 @@ try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slu
 try { db.exec("ALTER TABLE appointments ADD COLUMN tg_chat_id TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN tg_token TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE appointments ADD COLUMN tg_reminder_1h_at TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE appointments ADD COLUMN email_remind_1h_at TEXT"); } catch(e) {}
 try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_tg_token ON appointments(tg_token) WHERE tg_token IS NOT NULL'); } catch(e) {}
 try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_appt_unique_slot ON appointments(doctor, start_at) WHERE status != 'cancelled'"); } catch(e) {}
 
@@ -257,12 +269,32 @@ module.exports.addUser    = (username, name, hash, role='doctor') => {
 };
 module.exports.deleteUser = u => _delUser.run(u);
 
+// ── НОРМАЛИЗАЦИЯ ПАЦИЕНТОВ ─────────────────────────────────
+function normalizeFullName(v) {
+  if (!v) return null;
+  const s = String(v).trim().toLowerCase().replace(/\s+/g, ' ');
+  return s || null;
+}
+function normalizePhone(v) {
+  if (!v) return null;
+  const s = String(v).replace(/\D/g, '');
+  return s.length >= 10 ? s : null;
+}
+function normalizeEmail(v) {
+  if (!v) return null;
+  const s = String(v).trim().toLowerCase();
+  return s || null;
+}
+module.exports.normalizeFullName = normalizeFullName;
+module.exports.normalizePhone    = normalizePhone;
+module.exports.normalizeEmail    = normalizeEmail;
+
 // ── RECORDS ────────────────────────────────────────────────
 const _getRecords      = db.prepare('SELECT * FROM records ORDER BY date DESC, time DESC');
 const _getMyRecords    = db.prepare('SELECT * FROM records WHERE doctor=? ORDER BY date DESC, time DESC');
 const _addRecord       = db.prepare(`
-  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome,nrs_before,nrs_after,treatment_type,stimulation,exposure,deqi,progress,soap_s,soap_o,soap_a,soap_p)
-  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome,@nrs_before,@nrs_after,@treatment_type,@stimulation,@exposure,@deqi,@progress,@soap_s,@soap_o,@soap_a,@soap_p)
+  INSERT INTO records (id,doctor,doctorName,date,time,patient,age,gender,reason,notes,points,meridians,type,outcome,nrs_before,nrs_after,treatment_type,stimulation,exposure,deqi,progress,soap_s,soap_o,soap_a,soap_p,phone,email,full_name_normalized,phone_normalized,email_normalized)
+  VALUES (@id,@doctor,@doctorName,@date,@time,@patient,@age,@gender,@reason,@notes,@points,@meridians,@type,@outcome,@nrs_before,@nrs_after,@treatment_type,@stimulation,@exposure,@deqi,@progress,@soap_s,@soap_o,@soap_a,@soap_p,@phone,@email,@full_name_normalized,@phone_normalized,@email_normalized)
 `);
 const _delRecord       = db.prepare('DELETE FROM records WHERE id=?');
 
@@ -277,23 +309,63 @@ module.exports.getRecordsByLogins = logins => {
   if (!logins || logins.length === 0) return [];
   return _getRecords.all().map(parseRecord).filter(r => logins.includes(r.doctor));
 };
-module.exports.addRecord    = rec => _addRecord.run({
+module.exports.addRecord = rec => _addRecord.run({
   ...rec,
-  points:         JSON.stringify(rec.points    || []),
-  meridians:      JSON.stringify(rec.meridians || []),
-  nrs_before:     rec.nrs_before     ?? null,
-  nrs_after:      rec.nrs_after      ?? null,
-  treatment_type: rec.treatment_type || null,
-  stimulation:    rec.stimulation    || null,
-  exposure:       rec.exposure       ?? null,
-  deqi:           rec.deqi           ? 1 : 0,
-  progress:       rec.progress       ?? null,
-  soap_s:         rec.soap_s         || null,
-  soap_o:         rec.soap_o         || null,
-  soap_a:         rec.soap_a         || null,
-  soap_p:         rec.soap_p         || null,
+  points:               JSON.stringify(rec.points    || []),
+  meridians:            JSON.stringify(rec.meridians || []),
+  nrs_before:           rec.nrs_before     ?? null,
+  nrs_after:            rec.nrs_after      ?? null,
+  treatment_type:       rec.treatment_type || null,
+  stimulation:          rec.stimulation    || null,
+  exposure:             rec.exposure       ?? null,
+  deqi:                 rec.deqi           ? 1 : 0,
+  progress:             rec.progress       ?? null,
+  soap_s:               rec.soap_s         || null,
+  soap_o:               rec.soap_o         || null,
+  soap_a:               rec.soap_a         || null,
+  soap_p:               rec.soap_p         || null,
+  phone:                rec.phone          || '',
+  email:                rec.email          || '',
+  full_name_normalized: normalizeFullName(rec.patient),
+  phone_normalized:     normalizePhone(rec.phone),
+  email_normalized:     normalizeEmail(rec.email),
 });
 module.exports.deleteRecord   = id => _delRecord.run(id);
+
+module.exports.checkDuplicatePatients = (fullName, phone, email) => {
+  const nameNorm  = normalizeFullName(fullName);
+  const phoneNorm = normalizePhone(phone);
+  const emailNorm = normalizeEmail(email);
+  const conditions = [];
+  const params     = {};
+  if (phoneNorm) { conditions.push('phone_normalized = :phoneNorm'); params.phoneNorm = phoneNorm; }
+  if (emailNorm) { conditions.push('email_normalized = :emailNorm'); params.emailNorm = emailNorm; }
+  if (nameNorm)  { conditions.push('full_name_normalized = :nameNorm'); params.nameNorm = nameNorm; }
+  if (!conditions.length) return [];
+  const sql = `
+    SELECT patient, phone, email, MAX(date) AS last_visit_at,
+           phone_normalized, email_normalized, full_name_normalized
+    FROM records
+    WHERE (${conditions.join(' OR ')})
+      AND full_name_normalized IS NOT NULL
+    GROUP BY full_name_normalized
+    ORDER BY last_visit_at DESC
+    LIMIT 10
+  `;
+  const rows = db.prepare(sql).all(params);
+  return rows.map(r => ({
+    fullName:    r.patient,
+    phone:       r.phone || null,
+    email:       r.email || null,
+    lastVisitAt: r.last_visit_at || null,
+    matchBy: [
+      ...(phoneNorm && r.phone_normalized === phoneNorm ? ['phone'] : []),
+      ...(emailNorm && r.email_normalized === emailNorm ? ['email'] : []),
+      ...(nameNorm  && r.full_name_normalized === nameNorm  ? ['name']  : []),
+    ],
+  }));
+};
+
 const _getRecsByPatientDoctor = db.prepare('SELECT id FROM records WHERE patient=? AND doctor=? AND date=? LIMIT 5');
 module.exports.getRecordsByPatientDoctor = (patient, doctor, date) => _getRecsByPatientDoctor.all(patient, doctor, date);
 const _getRecord = db.prepare('SELECT * FROM records WHERE id=?');
@@ -331,6 +403,7 @@ module.exports.setClinic = obj => {
  'payments TEXT DEFAULT "[]"'].forEach(col => {
   try { db.prepare(`ALTER TABLE tenants ADD COLUMN ${col}`).run(); } catch {}
 });
+try { db.prepare("ALTER TABLE tenants ADD COLUMN subscription_canceled INTEGER DEFAULT 0").run(); } catch {}
 // Trial-поля
 ['trial_start TEXT', 'trial_weeks INTEGER', 'trial_end TEXT'].forEach(col => {
   try { db.prepare(`ALTER TABLE tenants ADD COLUMN ${col}`).run(); } catch {}
@@ -339,6 +412,24 @@ module.exports.setClinic = obj => {
 try { db.prepare("UPDATE tenants SET plan='practik' WHERE plan='solo'").run(); } catch {}
 try { db.prepare("UPDATE tenants SET plan='clinic_s' WHERE plan='clinic'").run(); } catch {}
 try { db.prepare("UPDATE tenants SET plan='demo' WHERE plan IN ('base','free','basic')").run(); } catch {}
+// Новая структура тарифов: clinic_s/clinic_m→clinic, clinic_pro→pro, trial→practik
+try { db.prepare("UPDATE tenants SET plan='clinic' WHERE plan IN ('clinic_s','clinic_m')").run(); } catch {}
+try { db.prepare("UPDATE tenants SET plan='pro' WHERE plan='clinic_pro'").run(); } catch {}
+try { db.prepare("UPDATE tenants SET plan='practik' WHERE plan='trial'").run(); } catch {}
+
+// ── PAYMENTS TABLE (YooKassa) ──────────────────────────────
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS payments (
+    id             TEXT PRIMARY KEY,
+    tenant_id      TEXT NOT NULL,
+    plan_code      TEXT NOT NULL,
+    billing_period TEXT NOT NULL,
+    amount         TEXT NOT NULL,
+    status         TEXT NOT NULL DEFAULT 'pending',
+    created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT
+  )`);
+} catch (e) { console.error('[db] payments table:', e.message); }
 
 const _getTenants = db.prepare('SELECT * FROM tenants');
 const _getTenant  = db.prepare('SELECT * FROM tenants WHERE id=?');
@@ -488,8 +579,19 @@ module.exports.getApptsForTgRemind1h = (fromISO, toISO) => _getApptsTgRemind1h.a
 module.exports.markTgRemind1h        = id => _markTgRemind1h.run(id);
 module.exports.getApptsForTgRemind24h = (fromISO, toISO) => _getApptsTgRemind24h.all(fromISO, toISO);
 
+// Email-напоминание за 1 час (по patient_email, отдельный флаг)
+const _getApptsEmailRemind1h = db.prepare(`
+  SELECT * FROM appointments
+  WHERE status='scheduled' AND patient_email IS NOT NULL AND patient_email != ''
+    AND email_remind_1h_at IS NULL
+    AND start_at >= ? AND start_at < ?
+`);
+const _markEmailRemind1h = db.prepare("UPDATE appointments SET email_remind_1h_at=datetime('now') WHERE id=?");
+module.exports.getApptsForEmailRemind1h = (fromISO, toISO) => _getApptsEmailRemind1h.all(fromISO, toISO);
+module.exports.markEmailRemind1h        = id => _markEmailRemind1h.run(id);
+
 // ── TRIAL ──────────────────────────────────────────────────
-const PAID_PLANS = new Set(['practik', 'clinic_s', 'clinic_m', 'clinic_pro']);
+const PAID_PLANS = new Set(['practik', 'clinic', 'pro']);
 
 // trial_end = DATE at 20:59:59 UTC = 23:59:59 MSK
 function computeTrialEnd(trialStart, trialWeeks) {
@@ -500,8 +602,21 @@ function computeTrialEnd(trialStart, trialWeeks) {
 
 function getTrialStatus(tenant) {
   if (!tenant || tenant.plan === 'demo') return { status: 'demo', blocked: false, grace: false };
-  if (PAID_PLANS.has(tenant.plan)) return { status: 'paid', blocked: false, grace: false };
-  if (tenant.plan !== 'trial') return { status: 'unknown', blocked: false, grace: false };
+  // Оплаченный тариф без активного триала
+  if (PAID_PLANS.has(tenant.plan) && !tenant.trial_end) {
+    if (tenant.status === 'past_due') return { status: 'past_due', blocked: false, grace: true, paidUntil: tenant.paidUntil };
+    if (tenant.paidUntil) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (tenant.paidUntil >= today) return { status: 'paid', blocked: false, grace: false, paidUntil: tenant.paidUntil };
+      const graceEnd = new Date(new Date(tenant.paidUntil + 'T00:00:00Z').getTime() + 3*24*3600000).toISOString().slice(0,10);
+      if (today <= graceEnd) return { status: 'past_due', blocked: false, grace: true, paidUntil: tenant.paidUntil };
+      return { status: 'past_due', blocked: true, grace: false, paidUntil: tenant.paidUntil };
+    }
+    return { status: 'paid', blocked: false, grace: false };
+  }
+  // Триал: старый plan='trial' (legacy) или любой тариф с trial_end
+  const inTrial = tenant.plan === 'trial' || !!tenant.trial_end;
+  if (!inTrial) return { status: 'unknown', blocked: false, grace: false };
   if (!tenant.trial_end) return { status: 'trial_active', blocked: false, grace: false, daysLeft: null };
 
   const now = new Date();
@@ -515,11 +630,11 @@ function getTrialStatus(tenant) {
 }
 
 const _setTenantTrial = db.prepare(
-  "UPDATE tenants SET trial_start=@ts, trial_weeks=@tw, trial_end=@te, plan='trial' WHERE id=@id"
+  "UPDATE tenants SET trial_start=@ts, trial_weeks=@tw, trial_end=@te, plan='practik' WHERE id=@id"
 );
 const _setTenantPlan    = db.prepare("UPDATE tenants SET plan=? WHERE id=?");
 const _clearTenantTrial = db.prepare("UPDATE tenants SET trial_start=NULL, trial_weeks=NULL, trial_end=NULL WHERE id=?");
-const _setTrialEnd      = db.prepare("UPDATE tenants SET trial_end=?, plan='trial' WHERE id=?");
+const _setTrialEnd      = db.prepare("UPDATE tenants SET trial_end=? WHERE id=?");
 const _logAudit = db.prepare(
   "INSERT INTO billing_audit (ts, admin_user, action, tenant_id, old_value, new_value, extra) VALUES (?, ?, ?, ?, ?, ?, ?)"
 );
@@ -580,6 +695,89 @@ module.exports.setTenantPlan = (id, plan, actor = 'system') => {
   _auditLog(actor, 'change_plan', id, oldPlan, plan, null);
 };
 
+// ── FEATURE FLAGS ──────────────────────────────────────────
+const _PRACTIK_FEAT = ['atlas', 'soap', 'schedule', 'booking', 'pdf_export', 'qr_code', 'video'];
+const _CLINIC_FEAT  = [..._PRACTIK_FEAT, 'manager_panel', 'clinic_stats', 'email_notifications', 'analytics', 'pdf_branding', 'csv_export'];
+const _PRO_FEAT     = [..._CLINIC_FEAT,  'semd_export', 'custom_branding', 'api_access', 'priority_support'];
+
+const PLAN_FEATURES = {
+  demo:    _PRACTIK_FEAT,
+  trial:   _PRACTIK_FEAT,
+  practik: _PRACTIK_FEAT,
+  clinic:  _CLINIC_FEAT,
+  pro:     _PRO_FEAT,
+};
+
+module.exports.PLAN_FEATURES = PLAN_FEATURES;
+module.exports.hasFeature = (tenant, feature) =>
+  (PLAN_FEATURES[tenant?.plan || 'demo'] || []).includes(feature);
+
+// ── PAYMENTS ───────────────────────────────────────────────
+const _insertPayment = db.prepare(`
+  INSERT INTO payments (id, tenant_id, plan_code, billing_period, amount, status)
+  VALUES (@id, @tenantId, @planCode, @billingPeriod, @amount, @status)
+`);
+const _getLatestPayment = db.prepare(`
+  SELECT * FROM payments WHERE tenant_id=? ORDER BY created_at DESC LIMIT 1
+`);
+const _getPayment = db.prepare(`SELECT * FROM payments WHERE id=?`);
+const _getPaymentsByTenant = db.prepare(`SELECT * FROM payments WHERE tenant_id=? ORDER BY created_at DESC LIMIT 20`);
+const _updatePaymentStatus = db.prepare(`
+  UPDATE payments SET status=?, updated_at=datetime('now')
+  WHERE id=? AND status != 'succeeded'
+`);
+const _activatePaidPlan = db.prepare(`
+  UPDATE tenants
+  SET plan=?, paidUntil=?, status='active',
+      trial_start=NULL, trial_weeks=NULL, trial_end=NULL
+  WHERE id=?
+`);
+
+module.exports.createPayment = ({ id, tenantId, planCode, billingPeriod, amount, status = 'pending' }) => {
+  _insertPayment.run({ id, tenantId, planCode, billingPeriod, amount, status });
+};
+
+module.exports.getLatestPayment = (tenantId) => _getLatestPayment.get(tenantId) || null;
+
+module.exports.getPayment = (id) => _getPayment.get(id) || null;
+module.exports.getPaymentsByTenant = (tenantId) => _getPaymentsByTenant.all(tenantId);
+
+module.exports.updatePaymentStatus = (id, status) => {
+  const r = _updatePaymentStatus.run(status, id);
+  return r.changes > 0; // false if already succeeded (idempotent guard)
+};
+
+module.exports.activatePaidPlan = (tenantId, planCode, billingPeriod, actor = 'yookassa') => {
+  const ms = billingPeriod === 'annual' ? 365 * 24 * 3600000 : 30 * 24 * 3600000;
+  const newUntil  = new Date(Date.now() + ms).toISOString().slice(0, 10);
+  const current   = db.prepare('SELECT paidUntil FROM tenants WHERE id=?').get(tenantId);
+  const paidUntil = (current?.paidUntil && current.paidUntil > newUntil) ? current.paidUntil : newUntil;
+  _activatePaidPlan.run(planCode, paidUntil, tenantId);
+  _auditLog(actor, 'payment_activate', tenantId, null, paidUntil, { planCode, billingPeriod });
+};
+
+module.exports.savePaymentMethod = (tenantId, pmId) => {
+  db.prepare('UPDATE tenants SET payment_method_id=? WHERE id=?').run(pmId, tenantId);
+};
+
+
+module.exports.cancelSubscription = (tenantId, actor = 'user') => {
+  db.prepare('UPDATE tenants SET payment_method_id=NULL, subscription_canceled=1 WHERE id=?').run(tenantId);
+  _auditLog(actor, 'subscription_cancel', tenantId, null, 'canceled', null);
+};
+
+module.exports.setTenantPastDue = (tenantId) => {
+  db.prepare("UPDATE tenants SET status='past_due' WHERE id=?").run(tenantId);
+  _auditLog('cron', 'past_due', tenantId, null, 'past_due', null);
+};
+
+module.exports.getExpiringTenants = (daysAhead = 3) => {
+  const cutoff = new Date(Date.now() + daysAhead * 24 * 3600000).toISOString().slice(0, 10);
+  return db.prepare(
+    "SELECT * FROM tenants WHERE payment_method_id IS NOT NULL AND paidUntil IS NOT NULL AND paidUntil <= ? AND plan IN ('practik','clinic','pro') AND status != 'past_due'"
+  ).all(cutoff);
+};
+
 // Clinic stats: записи и записи на приём по врачам за период
 module.exports.getClinicStats = (doctorLogins, fromISO) => {
   if (!doctorLogins || doctorLogins.length === 0) return [];
@@ -591,3 +789,30 @@ module.exports.getClinicStats = (doctorLogins, fromISO) => {
     return { username: login, name: user.name, recordCount: recCount.c, apptCount: apptCount.c };
   }).filter(Boolean);
 };
+
+// ── Webhook event queue (R-5) ────────────────────────────────
+try {
+  db.exec(`CREATE TABLE IF NOT EXISTS webhook_events (
+    id TEXT PRIMARY KEY,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    error TEXT,
+    created_at TEXT NOT NULL,
+    processed_at TEXT
+  )`);
+} catch(e) {}
+
+const _insertWhEvent    = db.prepare("INSERT OR IGNORE INTO webhook_events (id, payload, status, created_at) VALUES (?, ?, 'pending', ?)");
+const _getPendingWhEvts = db.prepare("SELECT * FROM webhook_events WHERE status='pending' ORDER BY created_at LIMIT 10");
+const _claimWhEvent     = db.prepare("UPDATE webhook_events SET status='processing' WHERE id=? AND status='pending'");
+const _doneWhEvent      = db.prepare("UPDATE webhook_events SET status='done', processed_at=? WHERE id=?");
+const _failWhEvent      = db.prepare("UPDATE webhook_events SET status='failed', error=?, processed_at=? WHERE id=?");
+
+module.exports.insertWebhookEvent      = (id, payload) => _insertWhEvent.run(id, JSON.stringify(payload), new Date().toISOString());
+module.exports.getPendingWebhookEvents = () => _getPendingWhEvts.all();
+module.exports.claimWebhookEvent       = (id) => _claimWhEvent.run(id).changes > 0;
+module.exports.doneWebhookEvent        = (id) => _doneWhEvent.run(new Date().toISOString(), id);
+module.exports.failWebhookEvent        = (id, err) => _failWhEvent.run(String(err), new Date().toISOString(), id);
+
+module.exports.getWebhookEvents = (limit = 20) =>
+  db.prepare("SELECT id, status, error, created_at, processed_at FROM webhook_events ORDER BY created_at DESC LIMIT ?").all(limit);

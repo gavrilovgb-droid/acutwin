@@ -3,6 +3,7 @@ const https   = require('https');
 const fs      = require('fs');
 const path    = require('path');
 const crypto  = require('crypto');
+const zlib    = require('zlib');
 const jwt     = require('jsonwebtoken');
 const bcrypt  = require('bcryptjs');
 const QRCode  = require('qrcode');
@@ -18,7 +19,7 @@ try {
 
 const {
   sendPatientTg, registerPatientTgWebhook,
-  sendTgNotify, sendTgBookingNotify,
+  sendTgNotify, sendTgBookingNotify, sendAdminTg,
   PATIENT_TG_TOKEN, PATIENT_TG_BOT_NAME,
 } = require('./tg');
 const TG_TOKEN   = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -75,15 +76,20 @@ async function sendCredentialsMail(to, login, password) {
 }
 
 // ── Email-напоминания за день до приёма ───────────────────
-async function sendReminderEmail(appt, clinicName) {
+async function sendReminderEmail(appt, clinicName, kind = 'day') {
   if (!process.env.RESEND_API_KEY) return;
+  const isHour = kind === 'hour';
   const dt = new Date(appt.start_at.replace(' ','T'));
   const dateStr = dt.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
   const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const introLine = isHour ? 'Ваш приём сегодня — уже через час.' : 'Напоминаем о вашей записи на приём.';
+  const subject = isHour
+    ? `Напоминание: сегодня через час приём у ${appt.doctorName} в ${timeStr}`
+    : `Напоминание: завтра приём у ${appt.doctorName} в ${timeStr}`;
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f9f9f9;border-radius:12px;color:#111">
       <h2 style="color:#0a0a0a;margin:0 0 14px">Напоминание о приёме</h2>
-      <p style="color:#444;margin:0 0 24px;font-size:15px;line-height:1.5">Здравствуйте, ${escapeHtml(appt.patient)}!<br>Напоминаем о вашей записи на приём.</p>
+      <p style="color:#444;margin:0 0 24px;font-size:15px;line-height:1.5">Здравствуйте, ${escapeHtml(appt.patient)}!<br>${introLine}</p>
       <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:18px">
         <div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Врач</span><br><span style="font-size:17px;font-weight:700">${escapeHtml(appt.doctorName)}</span></div>
         ${clinicName ? `<div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Клиника</span><br><span style="font-size:15px">${escapeHtml(clinicName)}</span></div>` : ''}
@@ -96,7 +102,7 @@ async function sendReminderEmail(appt, clinicName) {
   const body = JSON.stringify({
     from: 'AcuTwin <info@acutwin.ru>',
     to: appt.patient_email,
-    subject: `Напоминание: завтра приём у ${appt.doctorName} в ${timeStr}`,
+    subject,
     html
   });
   return new Promise((resolve, reject) => {
@@ -201,6 +207,24 @@ async function runHourlyTgReminders() {
   }
 }
 
+// За 1 час до приёма — Email (для записей с patient_email)
+async function runHourlyEmailReminders() {
+  if (!process.env.RESEND_API_KEY) return;
+  const now = new Date();
+  const in1h = new Date(now.getTime() + 60*60*1000);
+  const in1h10 = new Date(now.getTime() + 70*60*1000); // окно 10 минут
+  const list = db.getApptsForEmailRemind1h(fmtLocal(in1h), fmtLocal(in1h10));
+  for (const a of list) {
+    try {
+      const tenant = db.findTenantByDoctor(a.doctor);
+      if (tenant?.plan === 'demo') { console.log(`[Reminders] skip demo email1h: ${a.patient}`); continue; }
+      await sendReminderEmail(a, tenant ? tenant.clinic : '', 'hour');
+      db.markEmailRemind1h(a.id);
+      console.log(`[Reminders] email 1h sent: ${a.patient} <${a.patient_email}>`);
+    } catch (e) { console.error(`[Reminders] email 1h fail ${a.id}: ${e.message}`); }
+  }
+}
+
 // Планировщик: каждую минуту проверяем
 let _reminderLastRun = null;
 function scheduleReminders() {
@@ -212,7 +236,8 @@ function scheduleReminders() {
       _reminderLastRun = stamp;
       runDailyReminders().catch(e => console.error('[Reminders] crash:', e.message));
     }
-    // Каждую минуту — tg за 1ч
+    // Каждую минуту — за 1ч (email + tg)
+    runHourlyEmailReminders().catch(e => console.error('[Reminders] email 1h crash:', e.message));
     runHourlyTgReminders().catch(e => console.error('[Reminders] 1h crash:', e.message));
   }, 60_000);
 }
@@ -283,6 +308,12 @@ function requireAdmin(req, res) {
   return user;
 }
 
+function requirePaidAccess(req, res, user) {
+  const ts = getUserTrialStatus(user);
+  if (ts.blocked) { json(res, 402, { error: 'subscription_expired' }); return false; }
+  return true;
+}
+
 // bcrypt (новые пароли) — cost 12
 async function hashPwd(password) {
   return bcrypt.hash(password, 12);
@@ -340,6 +371,43 @@ function checkPublicRate(ip, limit=5, windowMs=60_000) {
   r.count++;
   _publicRateMap[ip] = r;
   return r.count > limit;
+}
+
+// ── YooKassa HTTP helper ───────────────────────────────────
+function ykRequest(method, apiPath, body, idempotenceKey) {
+  const shopId    = process.env.YOOKASSA_SHOP_ID;
+  const secretKey = process.env.YOOKASSA_SECRET_KEY;
+  if (!shopId || !secretKey) return Promise.reject(new Error('YooKassa credentials not configured'));
+
+  const auth    = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+  const bodyStr = body ? JSON.stringify(body) : null;
+
+  return new Promise((resolve, reject) => {
+    const opts = {
+      hostname: 'api.yookassa.ru',
+      port: 443,
+      path: `/v3${apiPath}`,
+      method,
+      headers: {
+        'Authorization':  `Basic ${auth}`,
+        'Content-Type':   'application/json',
+        'Accept':         'application/json',
+        ...(idempotenceKey ? { 'Idempotence-Key': idempotenceKey } : {}),
+        ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
+      },
+    };
+    const req = https.request(opts, ykRes => {
+      let data = '';
+      ykRes.on('data', c => data += c);
+      ykRes.on('end', () => {
+        try { resolve({ status: ykRes.statusCode, body: JSON.parse(data) }); }
+        catch { resolve({ status: ykRes.statusCode, body: data }); }
+      });
+    });
+    req.on('error', reject);
+    if (bodyStr) req.write(bodyStr);
+    req.end();
+  });
 }
 
 // ── API Router ─────────────────────────────────────────────
@@ -444,7 +512,7 @@ async function handleAPI(method, endpoint, req, res) {
       throw e;
     }
     const tenant = db.findTenantByDoctor(u.username);
-    sendTgBookingNotify(apptData, u.name, tenant ? tenant.clinic : '');
+    sendTgBookingNotify(apptData, u.name, tenant ? tenant.clinic : '', u.email);
     return json(res, 201, { ok: true, id });
   }
 
@@ -508,10 +576,8 @@ async function handleAPI(method, endpoint, req, res) {
     if (tenant && user.role === 'doctor') {
       const today = new Date().toISOString().slice(0, 10);
       if (tenant.paidUntil && tenant.paidUntil < today) {
-        db.updateTenant({ ...tenant, status: 'expired' });
-        return json(res, 403, { error: 'Срок пробного доступа истёк.' });
+        db.updateTenant({ ...tenant, status: 'expired' }); // фиксируем статус, но логин разрешаем
       }
-      if (tenant.status === 'expired')   return json(res, 403, { error: 'Срок действия подписки истёк.' });
       if (tenant.status === 'suspended') return json(res, 403, { error: 'Доступ приостановлен.' });
     }
 
@@ -521,6 +587,13 @@ async function handleAPI(method, endpoint, req, res) {
       SECRET,
       { expiresIn: '8h' }
     );
+    if (user.username === 'reviewer') {
+      const ts = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+      sendAdminTg(`🔔 <b>ЮKassa проверяющий вошёл в AcuTwin</b>\nВремя: ${ts} (МСК)\nЛогин: reviewer`);
+    }
+    const _today = new Date().toISOString().slice(0, 10);
+    const _subExp = !!(tenant && user.role === 'doctor' && tenant.paidUntil && tenant.paidUntil < _today);
+    res.setHeader('Set-Cookie', `acutwin_sub=${_subExp ? 'exp' : 'ok'}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800`);
     return json(res, 200, { ok: true, token, user: { username: user.username, name: user.name, role: user.role } });
   }
 
@@ -594,18 +667,39 @@ async function handleAPI(method, endpoint, req, res) {
       return json(res, 200, { ok: true, trialEnd: newEnd });
     }
     if (action === 'set_plan') {
-      const allowed = ['demo', 'trial', 'practik', 'clinic_s', 'clinic_m', 'clinic_pro'];
+      const allowed = ['demo', 'trial', 'practik', 'clinic', 'pro'];
       if (!allowed.includes(plan)) return json(res, 400, { error: 'invalid plan' });
+      const billing_period = ['monthly', 'annual'].includes(body.billing_period) ? body.billing_period : 'monthly';
       if (plan === 'trial') {
         if (!weeks || weeks < 1 || weeks > 4) return json(res, 400, { error: 'weeks required for trial' });
         const today = new Date().toISOString().slice(0, 10);
         const trialEnd = db.setTenantTrial(id, today, weeks, user.username);
-        return json(res, 200, { ok: true, trialEnd });
+        return json(res, 200, { ok: true, trialEnd, billing_period });
       }
       db.setTenantPlan(id, plan, user.username);
-      return json(res, 200, { ok: true });
+      return json(res, 200, { ok: true, billing_period });
     }
     return json(res, 400, { error: 'unknown action' });
+  }
+
+  // GET /api/billing/payments/:tenantId
+  if (method === 'GET' && endpoint.startsWith('/api/billing/payments/')) {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'forbidden' });
+    const tenantId = endpoint.slice('/api/billing/payments/'.length);
+    return json(res, 200, db.getPaymentsByTenant(tenantId));
+  }
+
+  // POST /api/patients/check-duplicate
+  if (method === 'POST' && endpoint === '/api/patients/check-duplicate') {
+    const user = requireAuth(req, res); if (!user) return;
+    const body = await readBody(req);
+    try {
+      const candidates = db.checkDuplicatePatients(body.fullName, body.phone, body.email);
+      return json(res, 200, { candidates });
+    } catch (e) {
+      return json(res, 500, { error: 'check_failed' });
+    }
   }
 
   // GET /api/billing/audit
@@ -617,6 +711,197 @@ async function handleAPI(method, endpoint, req, res) {
       tenantId: qs.get('tenant_id') || null,
       limit:    qs.get('limit')     || 100,
     }));
+  }
+
+  // ── YooKassa / self-service billing ─────────────────────
+
+  // GET /api/billing/subscription — текущий статус подписки для UI
+  if (method === 'GET' && endpoint === '/api/billing/subscription') {
+    const user = requireAuth(req, res); if (!user) return;
+    let tenant = db.findTenantByDoctor(user.username);
+    const ts = getUserTrialStatus(user);
+    let latest = tenant ? db.getLatestPayment(tenant.id) : null;
+
+    // D-4 fix: авто-сброс зависших pending-платежей
+    if (latest && latest.status === 'pending') {
+      const tenMinsAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const createdAt = new Date(latest.created_at.replace(' ', 'T') + 'Z');
+      if (createdAt < tenMinsAgo) {
+        // Старше 10 мин — авто-отмена без запроса к YK
+        db.updatePaymentStatus(latest.id, 'canceled');
+        latest = { ...latest, status: 'canceled' };
+        console.log('[D-4] auto-canceled stale pending payment', latest.id);
+      } else {
+        // Свежий pending — верифицируем через YooKassa
+        try {
+          const ykResp = await ykRequest('GET', `/payments/${latest.id}`);
+          if (ykResp.status === 200 && ykResp.body.status !== 'pending') {
+            const newStatus = ykResp.body.status;
+            db.updatePaymentStatus(latest.id, newStatus);
+            latest = { ...latest, status: newStatus };
+            if (newStatus === 'succeeded') {
+              const { tenant_id, plan_code, billing_period } = ykResp.body.metadata || {};
+              if (tenant_id && plan_code && billing_period) {
+                db.activatePaidPlan(tenant_id, plan_code, billing_period);
+                if (ykResp.body.payment_method?.id && ykResp.body.payment_method.saved) {
+                  db.savePaymentMethod(tenant_id, ykResp.body.payment_method.id);
+                }
+                tenant = db.findTenantByDoctor(user.username);
+                console.log('[D-4] recovered succeeded payment', latest.id);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[D-4] YK verify failed for pending', latest.id, e.message);
+        }
+      }
+    }
+
+    return json(res, 200, {
+      plan:          tenant?.plan   || 'demo',
+      paidUntil:     tenant?.paidUntil || null,
+      trialStatus:   ts,
+      autoRenewEnabled:    !!(tenant?.payment_method_id),
+      subscriptionCanceled: !!(tenant?.subscription_canceled),
+      latestPayment: latest ? {
+        id:            latest.id,
+        status:        latest.status,
+        planCode:      latest.plan_code,
+        billingPeriod: latest.billing_period,
+        amount:        latest.amount,
+        createdAt:     latest.created_at,
+      } : null,
+    });
+  }
+
+  // POST /api/billing/create-payment — создать платёж в ЮKassa
+  if (method === 'POST' && endpoint === '/api/billing/create-payment') {
+    const user = requireAuth(req, res); if (!user) return;
+    const body = await readBody(req);
+    const { planCode, billingPeriod } = body;
+
+    const YK_PLANS   = ['practik', 'clinic', 'pro'];
+    const YK_PERIODS = ['monthly', 'annual'];
+    if (!YK_PLANS.includes(planCode))   return json(res, 400, { error: 'invalid plan' });
+    if (!YK_PERIODS.includes(billingPeriod)) return json(res, 400, { error: 'invalid billing period' });
+
+    const tenant = db.findTenantByDoctor(user.username);
+    if (!tenant) return json(res, 404, { error: 'tenant not found' });
+
+    const YK_PRICES = {
+      practik: { monthly: 990,   annual: 7900  },
+      clinic:  { monthly: 3900,  annual: 31200 },
+      pro:     { monthly: 7900,  annual: 63200 },
+    };
+    const YK_PLAN_LABELS = { practik: 'Практик', clinic: 'Клиника', pro: 'Pro' };
+    const amount = YK_PRICES[planCode][billingPeriod];
+    const amountStr = amount.toFixed(2);
+    const periodLabel = billingPeriod === 'annual' ? 'за год' : 'помесячно';
+    const description = `AcuTwin ${YK_PLAN_LABELS[planCode]} (${periodLabel})`;
+
+    try {
+      const ykResp = await ykRequest('POST', '/payments', {
+        amount:               { value: amountStr, currency: 'RUB' },
+        capture:              true,
+        confirmation: { type: 'redirect', return_url: 'https://acutwin.ru/subscription.html?yk_return=1' },
+        description,
+        metadata:     { tenant_id: tenant.id, plan_code: planCode, billing_period: billingPeriod },
+      }, crypto.randomUUID());
+
+      if (ykResp.status !== 200) {
+        console.error('[YooKassa] create-payment error:', ykResp.body);
+        return json(res, 502, { error: 'payment_creation_failed' });
+      }
+      const payment = ykResp.body;
+      db.createPayment({
+        id: payment.id, tenantId: tenant.id,
+        planCode, billingPeriod, amount: amountStr, status: payment.status,
+      });
+      if (payment.payment_method?.id && payment.payment_method.saved) {
+        db.savePaymentMethod(tenant.id, payment.payment_method.id);
+      }
+      return json(res, 200, {
+        paymentId:       payment.id,
+        confirmationUrl: payment.confirmation.confirmation_url,
+      });
+    } catch (err) {
+      console.error('[YooKassa] create-payment exception:', err.message);
+      return json(res, 502, { error: 'payment_service_unavailable' });
+    }
+  }
+
+
+  // POST /api/billing/cancel-subscription — отмена автосписания
+  if (method === 'POST' && endpoint === '/api/billing/cancel-subscription') {
+    const user = requireAuth(req, res); if (!user) return;
+    const tenant = db.findTenantByDoctor(user.username);
+    if (!tenant) return json(res, 404, { error: 'tenant_not_found' });
+    const ts = getUserTrialStatus(user);
+    if (ts.status !== 'paid') return json(res, 400, { error: 'no_active_subscription' });
+
+    if (tenant.payment_method_id) {
+      try {
+        const ykResp = await ykRequest('DELETE', `/payment_methods/${tenant.payment_method_id}`);
+        if (ykResp.status === 200) {
+          console.log(`[YooKassa] payment_method deleted for tenant ${tenant.id}`);
+        } else {
+          console.warn('[YooKassa] cancel-subscription: delete failed', ykResp.body);
+        }
+      } catch (err) {
+        console.error('[YooKassa] cancel-subscription exception:', err.message);
+      }
+    }
+
+    db.cancelSubscription(tenant.id, user.username);
+    console.log(`[Billing] subscription canceled for tenant ${tenant.id} by ${user.username}`);
+    return json(res, 200, { ok: true });
+  }
+
+  // POST /api/webhook/yookassa — входящие уведомления от ЮKassa
+  if (method === 'POST' && endpoint === '/api/webhook/yookassa') {
+    // IP-whitelist (https://yookassa.ru/developers/using-api/webhooks)
+    const YK_PREFIXES = ['185.71.76.', '185.71.77.', '77.75.153.', '77.75.154.', '77.75.156.'];
+    const clientIp = (req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const isYkIp = YK_PREFIXES.some(p => clientIp.startsWith(p)) || clientIp === '77.75.156.11' || clientIp === '77.75.156.35';
+    if (!isYkIp) {
+      console.warn('[YooKassa] webhook rejected from IP:', clientIp);
+      return json(res, 403, { error: 'forbidden' });
+    }
+
+    const body = await readBody(req);
+    const paymentId = body?.object?.id;
+    if (!paymentId) return json(res, 400, { error: 'invalid notification' });
+
+    db.insertWebhookEvent(paymentId, body);
+    console.log('[webhook] queued event', paymentId);
+    return json(res, 200, { ok: true });
+  }
+
+  // ── Feature-gated export stubs ───────────────────────────
+
+
+  // GET /api/admin/webhook-events — debug queue (admin/boss only)
+  if (method === 'GET' && endpoint === '/api/admin/webhook-events') {
+    const user = requireAuth(req, res); if (!user) return;
+    if (user.role !== 'admin' && user.role !== 'boss') return json(res, 403, { error: 'admin only' });
+    return json(res, 200, { events: db.getWebhookEvents(50) });
+  }
+  // GET /api/export/csv — доступно с плана clinic+
+  if (method === 'GET' && endpoint === '/api/export/csv') {
+    const user = requireAuth(req, res); if (!user) return;
+    const tenant = db.findTenantByDoctor(user.username);
+    if (!db.hasFeature(tenant, 'csv_export'))
+      return json(res, 403, { error: 'Функция CSV-экспорта доступна в плане Клиника и выше', feature: 'csv_export' });
+    return json(res, 200, { ok: true, stub: true });
+  }
+
+  // GET /api/export/semd — доступно только в плане pro
+  if (method === 'GET' && endpoint === '/api/export/semd') {
+    const user = requireAuth(req, res); if (!user) return;
+    const tenant = db.findTenantByDoctor(user.username);
+    if (!db.hasFeature(tenant, 'semd_export'))
+      return json(res, 403, { error: 'СЭМД-экспорт доступен только в плане Pro', feature: 'semd_export' });
+    return json(res, 200, { ok: true, stub: true });
   }
 
   // ── Clinic Stats (manager/admin) ──────────────────────────
@@ -666,6 +951,7 @@ async function handleAPI(method, endpoint, req, res) {
   // GET /api/records
   if (method === 'GET' && endpoint.split('?')[0] === '/api/records') {
     const user = requireAuth(req, res); if (!user) return;
+    if (!requirePaidAccess(req, res, user)) return;
     const qs = new URLSearchParams(endpoint.split('?')[1] || '');
     const qDoctor  = qs.get('doctor')  || '';
     const qPatient = qs.get('patient') || '';
@@ -682,7 +968,7 @@ async function handleAPI(method, endpoint, req, res) {
       records = db.getMyRecords(user.username);
     }
     if (qDoctor)  records = records.filter(r => r.doctor  === qDoctor);
-    if (qPatient) records = records.filter(r => r.patient === qPatient);
+    if (qPatient) { const _pn = qPatient.trim().toLowerCase(); records = records.filter(r => r.patient?.trim().toLowerCase() === _pn); }
     if (qFrom)    records = records.filter(r => r.date >= qFrom);
     if (qTo)      records = records.filter(r => r.date <= qTo);
     if (qStatus)  records = records.filter(r => r.status  === qStatus);
@@ -724,6 +1010,8 @@ async function handleAPI(method, endpoint, req, res) {
       soap_o:         body.soap_o ? String(body.soap_o).slice(0,2000) : null,
       soap_a:         body.soap_a ? String(body.soap_a).slice(0,2000) : null,
       soap_p:         body.soap_p ? String(body.soap_p).slice(0,2000) : null,
+      phone:          String(body.phone || '').slice(0, 30),
+      email:          String(body.email || '').slice(0, 100),
     };
     db.addRecord(rec);
     // Связь с записью расписания: автозавершение приёма
@@ -741,6 +1029,7 @@ async function handleAPI(method, endpoint, req, res) {
   // PATCH /api/records/:id/outcome
   if (method === 'PATCH' && endpoint.match(/^\/api\/records\/[^/]+\/outcome$/)) {
     const user = requireAuth(req, res); if (!user) return;
+    if (!requirePaidAccess(req, res, user)) return;
     const id = endpoint.split('/')[3];
     const { outcome } = await readBody(req);
     if (!['positive','neutral','negative'].includes(outcome)) return json(res, 400, { error: 'Invalid outcome' });
@@ -756,6 +1045,7 @@ async function handleAPI(method, endpoint, req, res) {
   // PATCH /api/records/:id/status
   if (method === 'PATCH' && endpoint.match(/^\/api\/records\/[^/]+\/status$/)) {
     const user = requireAuth(req, res); if (!user) return;
+    if (!requirePaidAccess(req, res, user)) return;
     const id = endpoint.split('/')[3];
     const { status } = await readBody(req);
     if (!['started','active','completed'].includes(status)) return json(res, 400, { error: 'Invalid status' });
@@ -771,6 +1061,7 @@ async function handleAPI(method, endpoint, req, res) {
   // DELETE /api/records/:id
   if (method === 'DELETE' && endpoint.startsWith('/api/records/')) {
     const user = requireAuth(req, res); if (!user) return;
+    if (!requirePaidAccess(req, res, user)) return;
     const id = endpoint.slice('/api/records/'.length);
     if (user.role !== 'admin' && user.role !== 'boss') {
       const rec = db.getRecord(id);
@@ -812,6 +1103,7 @@ async function handleAPI(method, endpoint, req, res) {
   // POST /api/appointments
   if (method === 'POST' && endpoint === '/api/appointments') {
     const user = requireAuth(req, res); if (!user) return;
+    if (!requirePaidAccess(req, res, user)) return;
     const body = await readBody(req);
     if (!body.patient || !body.start_at) return json(res, 400, { error: 'patient и start_at обязательны' });
     const doctorUsername = (user.role === 'admin' || user.role === 'boss') && body.doctor ? body.doctor : user.username;
@@ -1078,6 +1370,19 @@ async function handleAPI(method, endpoint, req, res) {
     return json(res, 200, { ok: true });
   }
 
+  // PATCH /api/users/:username/password — смена пароля (только admin)
+  if (method === 'PATCH' && endpoint.match(/^\/api\/users\/[^/]+\/password$/)) {
+    const user = requireAdmin(req, res); if (!user) return;
+    const username = decodeURIComponent(endpoint.slice('/api/users/'.length, -'/password'.length));
+    const { newPassword } = await readBody(req);
+    if (!newPassword || newPassword.length < 6) return json(res, 400, { error: 'Пароль минимум 6 символов' });
+    const target = db.getUser(username.trim());
+    if (!target) return json(res, 404, { error: 'Пользователь не найден' });
+    const hash = await hashPwd(newPassword);
+    db.updateUserHash(username.trim(), hash);
+    return json(res, 200, { ok: true });
+  }
+
   // POST /api/users/:username/reset-password — аварийный сброс пароля (суточный токен)
   if (method === 'POST' && endpoint.match(/^\/api\/users\/[^/]+\/reset-password$/)) {
     const username = decodeURIComponent(endpoint.slice('/api/users/'.length, -'/reset-password'.length));
@@ -1206,6 +1511,61 @@ async function handleAPI(method, endpoint, req, res) {
   return json(res, 404, { error: 'Endpoint not found' });
 }
 
+// ── Auto-renewal cron (daily at 04:00 MSK = 01:00 UTC) ─────────────────────────
+const YK_PRICES_RENEWAL = {
+  practik: { monthly: 990,   annual: 7900  },
+  clinic:  { monthly: 3900,  annual: 31200 },
+  pro:     { monthly: 7900,  annual: 63200 },
+};
+let _renewalLastRun = null;
+setInterval(async () => {
+  const now = new Date();
+  if (now.getUTCHours() !== 1) return;
+  const today = now.toISOString().slice(0, 10);
+  if (_renewalLastRun === today) return;
+  _renewalLastRun = today;
+
+  console.log('[AutoRenew] daily check started');
+  let expiring;
+  try { expiring = db.getExpiringTenants(3); } catch(e) { console.error('[AutoRenew] db error:', e.message); return; }
+  console.log(`[AutoRenew] ${expiring.length} tenants to renew`);
+
+  for (const tenant of expiring) {
+    try {
+      const lastPayment = db.getLatestPayment(tenant.id);
+      const billingPeriod = lastPayment?.billing_period || 'monthly';
+      const amount = YK_PRICES_RENEWAL[tenant.plan]?.[billingPeriod];
+      if (!amount) { console.warn(`[AutoRenew] unknown plan for tenant ${tenant.id}`); continue; }
+
+      const ykResp = await ykRequest('POST', '/payments', {
+        amount:            { value: amount.toFixed(2), currency: 'RUB' },
+        capture:           true,
+        payment_method_id: tenant.payment_method_id,
+        description:       `AcuTwin автопродление (${tenant.plan}/${billingPeriod})`,
+        metadata:          { tenant_id: tenant.id, plan_code: tenant.plan, billing_period: billingPeriod, auto_renewal: 'true' },
+      }, `renew-${tenant.id}-${today}`);
+
+      if (ykResp.status === 200 && ykResp.body.status === 'succeeded') {
+        const alreadyProcessed = db.getPayment(ykResp.body.id);
+        if (!alreadyProcessed) {
+          db.createPayment({ id: ykResp.body.id, tenantId: tenant.id, planCode: tenant.plan, billingPeriod, amount: amount.toFixed(2), status: 'succeeded' });
+          db.activatePaidPlan(tenant.id, tenant.plan, billingPeriod, 'auto_renewal');
+          console.log(`[AutoRenew] renewed tenant ${tenant.id} (${tenant.plan}/${billingPeriod})`);
+        } else {
+          console.log(`[AutoRenew] skipped duplicate for tenant ${tenant.id}, payment ${ykResp.body.id} already processed`);
+        }
+      } else {
+        console.warn(`[AutoRenew] failed for tenant ${tenant.id}:`, ykResp.body?.description || ykResp.status);
+        db.setTenantPastDue(tenant.id);
+      }
+    } catch (err) {
+      console.error(`[AutoRenew] exception for tenant ${tenant.id}:`, err.message);
+      db.setTenantPastDue(tenant.id);
+    }
+  }
+  console.log('[AutoRenew] done');
+}, 60_000);
+
 // ── Main handler ───────────────────────────────────────────
 http.createServer(async (req, res) => {
   const method = req.method.toUpperCase();
@@ -1260,7 +1620,17 @@ http.createServer(async (req, res) => {
 
   // Static files
   if (url === '/' || url === '/new/' || url === '/new') url = '/treatment.html';
+  if (url === '/favicon.ico') url = '/favicon.svg';
   url = url.replace(/^\/new\//, '/');
+
+  // D-6/D-8: server-side guard — redirect treatment.html при expired подписке
+  if (url === '/treatment.html') {
+    const _sc = (req.headers.cookie || '').match(/(?:^|;\s*)acutwin_sub=([^;]*)/);
+    if (_sc && _sc[1] === 'exp') {
+      res.writeHead(302, { Location: '/subscription.html?expired=1' });
+      return res.end();
+    }
+  }
 
   // Медиафайлы: /media/ → папка на уровень выше от ROOT
   const MEDIA_ROOT = path.join(ROOT, '..', 'media');
@@ -1325,9 +1695,19 @@ http.createServer(async (req, res) => {
   try {
     const data = fs.readFileSync(fp);
     const ext  = path.extname(fp).toLowerCase();
-    const cc = ext === '.html' ? 'no-store, no-cache' : 'no-cache';
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': cc });
-    res.end(data);
+    const cc   = ext === '.html' ? 'no-store, no-cache' : 'no-cache';
+    const mime = MIME[ext] || 'application/octet-stream';
+    const acceptsGzip = /gzip/.test(req.headers['accept-encoding'] || '');
+    if (acceptsGzip && ext === '.json') {
+      zlib.gzip(data, (err, compressed) => {
+        if (err) { res.writeHead(500); return res.end('Compression error'); }
+        res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc, 'Content-Encoding': 'gzip' });
+        res.end(compressed);
+      });
+    } else {
+      res.writeHead(200, { 'Content-Type': mime, 'Cache-Control': cc });
+      res.end(data);
+    }
   } catch {
     res.writeHead(404);
     res.end('Not found');
@@ -1346,3 +1726,42 @@ http.createServer(async (req, res) => {
 process.on('uncaughtException',  (err) => console.error('[uncaughtException]',  err.message));
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err));
 process.on('SIGHUP', () => console.log('[SIGHUP] ignored, server keeps running'));
+
+
+// ── Webhook event queue worker (R-5) ────────────────────────
+setInterval(async () => {
+  const events = db.getPendingWebhookEvents();
+  for (const evt of events) {
+    if (!db.claimWebhookEvent(evt.id)) continue;
+    try {
+      const payment = JSON.parse(evt.payload)?.object || {};
+      const paymentId = evt.id;
+      const ykResp = await ykRequest('GET', `/payments/${paymentId}`);
+      if (ykResp.status !== 200) {
+        db.failWebhookEvent(evt.id, `YK verify ${ykResp.status}`);
+        continue;
+      }
+      const verified = ykResp.body;
+      if (verified.status === 'succeeded') {
+        const activated = db.updatePaymentStatus(paymentId, 'succeeded');
+        if (activated) {
+          const { tenant_id, plan_code, billing_period } = verified.metadata || {};
+          if (tenant_id && plan_code && billing_period) {
+            db.activatePaidPlan(tenant_id, plan_code, billing_period);
+            if (verified.payment_method?.id && verified.payment_method.saved) {
+              db.savePaymentMethod(tenant_id, verified.payment_method.id);
+            }
+            console.log(`[webhook-worker] activated ${plan_code}/${billing_period} tenant ${tenant_id}`);
+          }
+        }
+      } else if (verified.status === 'canceled') {
+        db.updatePaymentStatus(paymentId, 'canceled');
+        console.log('[webhook-worker] canceled:', paymentId);
+      }
+      db.doneWebhookEvent(evt.id);
+    } catch (err) {
+      console.error('[webhook-worker] error', evt.id, err.message);
+      db.failWebhookEvent(evt.id, err.message);
+    }
+  }
+}, 5000);

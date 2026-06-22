@@ -366,13 +366,13 @@ function renderTimeline(filter='', page=0) {
                 <button onclick='event.stopPropagation();sessionStorage.setItem("acutwin_patient_view",${JSON.stringify(s.patient)});location.href="patient.html"'
                         class="font-bold text-[#e2e2e2] hover:text-[#00F2FF] transition-colors truncate max-w-[240px]">${esc(s.patient)}</button>
                 ${s.type ? `<span class="text-xs text-[#8b90a0]">${esc(s.type)}</span>` : ''}
+                ${s.notes && s.notes.length < 80 ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00F2FF]/8 text-[#00F2FF] border border-[#00F2FF]/20" title="${esc(s.notes)}">${esc(s.notes)}</span>` : ''}
                 ${s.treatment_type ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#BF5AF2]/10 text-[#BF5AF2] border border-[#BF5AF2]/20">${esc(s.treatment_type)}</span>` : ''}
                 ${s.stimulation ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#FFD60A]/10 text-[#FFD60A] border border-[#FFD60A]/20">${esc(s.stimulation)}</span>` : ''}
                 ${(s.nrs_before != null || s.nrs_after != null) ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FF6B35]/10 text-[#FF6B35] border border-[#FF6B35]/20">NRS ${s.nrs_before ?? '?'}→${s.nrs_after ?? '?'}</span>` : ''}
                 ${s.deqi ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20">${t('sessions:history.card.deqi')}</span>` : ''}
                 ${s.session && s.session!=='1/1' ? `<span class="text-[10px] font-mono text-[#adc6ff] bg-[#adc6ff]/10 px-1.5 py-0.5 rounded">${t('sessions:history.card.sessionBadge')} ${esc(s.session)}</span>` : ''}
                 ${isBoss && s.doctorName ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#0A84FF]/10 text-[#0A84FF] border border-[#0A84FF]/20">${esc(s.doctorName)}</span>` : ''}
-                ${renderStatusBadge(s.id, s.status)}
               </div>
               <div class="text-xs text-[#8b90a0]">${new Date(s.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</div>
               ${s.soap_s ? `<div class="text-[10px] text-[#8b90a0] mt-0.5 truncate max-w-xs" title="${esc(s.soap_s)}" style="max-width:280px">${esc(s.soap_s.slice(0,90))}${s.soap_s.length>90?'…':''}</div>` : ''}

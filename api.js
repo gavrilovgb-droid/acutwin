@@ -118,6 +118,11 @@ export async function apiDeleteUser(username) {
   return r?.data || { ok: false };
 }
 
+export async function apiResetUserPassword(username, newPassword) {
+  const r = await req('PATCH', `/api/users/${encodeURIComponent(username)}/password`, { newPassword });
+  return r?.data || { ok: false };
+}
+
 // ── Clinic ─────────────────────────────────────────────────
 export async function apiGetClinic() {
   const r = await req('GET', '/api/clinic');

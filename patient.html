@@ -584,20 +584,6 @@ tl.innerHTML = recs.map((r, idx) => {
           <div class="flex items-center gap-2 flex-wrap mb-0.5">
             <span class="font-semibold text-[#e2e2e2]">${new Date(r.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}${timeText}</span>
             ${r.type ? `<span class="text-xs text-[#8b90a0]">${esc(r.type)}</span>` : ''}
-            <div class="relative visit-status-wrap" data-id="${r.id}" style="display:inline-flex;position:relative">
-              <button onclick="event.stopPropagation();toggleVisitStatusDrop('${r.id}')"
-                      class="visit-status-btn" data-id="${r.id}"
-                      style="font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:3px;background:${status ? status.color+'18' : '#41475518'};border:1px solid ${status ? status.color+'55' : '#41475555'};color:${status ? status.color : '#8b90a0'}">
-                ${status ? status.label : 'Статус'}<span style="opacity:.6;font-size:8px">▾</span>
-              </button>
-              <div class="visit-status-drop" data-id="${r.id}"
-                   style="display:none;position:absolute;left:0;top:calc(100% + 3px);z-index:60;background:#1f1f1f;border:1px solid #414755;border-radius:10px;padding:4px 0;min-width:130px;box-shadow:0 4px 20px rgba(0,0,0,.6)">
-                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','')"       style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#8b90a0;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#ffffff10'" onmouseout="this.style.background='none'">— Не указан</button>
-                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','started')"   style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#0A84FF;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#0A84FF18'" onmouseout="this.style.background='none'">● Начат</button>
-                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','active')"    style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#FFD60A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#FFD60A18'" onmouseout="this.style.background='none'">● В процессе</button>
-                <button onmousedown="event.stopPropagation();setVisitStatus('${r.id}','completed')" style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 12px;font-size:.7rem;font-weight:600;color:#5AC85A;background:none;border:none;cursor:pointer" onmouseover="this.style.background='#5AC85A18'" onmouseout="this.style.background='none'">● Завершён</button>
-              </div>
-            </div>
             ${r.nrs_before != null ? (() => { const c = nrsColor(Number(r.nrs_before)); return `<span style="font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${c}18;border:1px solid ${c}44;color:${c}">NRS ${r.nrs_before}</span>`; })() : ''}
             ${r.stimulation ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#FFD60A10;border:1px solid #FFD60A33;color:#FFD60A">${esc(r.stimulation)}</span>` : ''}
             ${r.treatment_type ? `<span style="font-size:.65rem;padding:2px 7px;border-radius:10px;background:#BF5AF210;border:1px solid #BF5AF230;color:#BF5AF2">${esc(r.treatment_type)}</span>` : ''}

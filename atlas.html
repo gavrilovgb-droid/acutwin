@@ -22,6 +22,16 @@
   overflow: hidden;
 }
 .md\:ml-64 > header, .md\:ml-64 > * { position: relative; z-index: 1; }
+
+/* Embed mode — inside iframe from treatment.html */
+body.embed #nav-mount        { display: none !important; }
+body.embed #body-bg          { left: 0 !important; }
+body.embed .md\:ml-64       { margin-left: 0 !important; max-width: 100% !important; overflow-x: unset !important; }
+body.embed #mob-atlas-nav    { display: flex !important; }
+body.embed #static-content,
+body.embed #meridian-content { max-width: none; width: 100%; margin: 0; }
+body.embed #point-detail .page-enter { max-width: none !important; width: 100% !important; margin: 0 !important; }
+body.embed #point-detail { align-items: flex-start !important; }
 </style>
 </head>
 <body class="bg-[#131313] text-[#e2e2e2] h-screen overflow-hidden" style="font-family:'Inter',sans-serif">
@@ -49,6 +59,7 @@
 
   <!-- Mobile atlas filter bar (sections + meridians) -->
   <div id="mob-atlas-nav" style="display:none;flex-direction:column;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.1);background:rgba(14,14,14,0.97);position:sticky;top:64px;z-index:30"></div>
+  <script>if(location.search.includes('embed=1')){var _n=document.getElementById('mob-atlas-nav');if(_n)_n.style.display='flex';}</script>
 
   <!-- Hidden elements kept for JS compatibility -->
   <div id="section-tabs" class="hidden"></div>
@@ -110,12 +121,18 @@ import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVide
 import { initI18n, t } from '/i18n.js';
 import { requireAuth } from './auth.js';
 import { getToken } from './api.js';
+
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 await initI18n();
 document.title = t('atlas:pageTitle');
 
-document.getElementById('nav-mount').innerHTML = buildSidebar('atlas', session);
-initElementClock();
+const _isEmbed = new URLSearchParams(location.search).get('embed') === '1';
+if (_isEmbed) {
+  document.body.classList.add('embed');
+} else {
+  document.getElementById('nav-mount').innerHTML = buildSidebar('atlas', session);
+  initElementClock();
+}
 
 const SPECIAL = [
   {key:'standard',  icon:'star',      label:'Стандартные точки', color:'#FFD60A'}, /* i18n-ok */
@@ -280,6 +297,7 @@ function buildMobAtlasNav() {
       ${ALL_MERS.map(m => `
         <button id="mob-mer-${m.key}" onclick="setMer('${m.key}')" class="mob-mer-chip" data-mer="${m.key}" data-color="${m.color}">${m.label}</button>`).join('')}
     </div>`;
+  if (_isEmbed) nav.style.setProperty('display', 'flex', 'important');
   updateMobAtlasNav();
 }
 
@@ -629,16 +647,19 @@ const STATIC_SECTIONS = {
         {mer:'VB', tony:'VB43',sedat:'VB38',luo:'VB37',yuan:'VB40',shu:'V19', mu:'VB24',xi:'VB36' },
         {mer:'F',  tony:'F8',  sedat:'F2',  luo:'F5',  yuan:'F3',  shu:'V18', mu:'F14', xi:'F6' },
       ];
+      const MER_ACT = {P:3,Gi:5,E:7,RP:9,C:11,iG:13,V:15,R:17,MC:19,TR:21,VB:23,F:1};
+      const fh = h => `${h}:00–${(h+2)%24}:00`;
       return `
         <h3 class="text-base font-bold mb-4 text-[#0A84FF]" style="font-family:'Hanken Grotesk',sans-serif">${t('atlas:table.standardTitle')}</h3>
         <div class="glass-panel rounded-xl overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm" style="min-width:700px">
               <thead>
                 <tr class="border-b border-white/10">
                   <th class="text-left px-4 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colMeridian')}</th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#FFD60A] uppercase tracking-wider font-bold">${t('atlas:table.colTonify')}</th>
-                  <th class="text-center px-3 py-2.5 text-[10px] text-[#ffb4ab] uppercase tracking-wider font-bold">${t('atlas:table.colSedate')}</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#FF453A] uppercase tracking-wider font-bold">${t('atlas:table.colTonify')}</th>
+                  <th class="text-center px-3 py-2.5 text-[10px] text-[#30D158] uppercase tracking-wider font-bold">${t('atlas:table.colSedate')}</th>
+                  <th class="text-center px-2 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold whitespace-nowrap">Время ч.</th>
                   <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colLo')} <span class="normal-case opacity-60">${t('atlas:table.colLoSub')}</span></th>
                   <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colYuan')} <span class="normal-case opacity-60">${t('atlas:table.colYuanSub')}</span></th>
                   <th class="text-center px-3 py-2.5 text-[10px] text-[#8b90a0] uppercase tracking-wider font-bold">${t('atlas:table.colShu')} <span class="normal-case opacity-60">${t('atlas:table.colShuSub')}</span></th>
@@ -649,6 +670,9 @@ const STATIC_SECTIONS = {
               <tbody>
                 ${rows.map(r => {
                   const m = MERIDIANS[r.mer];
+                  const s = MER_ACT[r.mer];
+                  const sedTime = fh(s);
+                  const tonTime = fh((s + 12) % 24);
                   return `<tr class="border-b border-white/5 hover:bg-white/3 transition-colors">
                     <td class="px-4 py-2.5">
                       <div class="flex items-center gap-2">
@@ -657,8 +681,14 @@ const STATIC_SECTIONS = {
                         <span class="text-[#c1c6d7] text-xs font-medium">${m.name}</span>
                       </div>
                     </td>
-                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.tony}" class="font-mono font-bold text-[#FFD60A] hover:underline">${r.tony}</a></td>
-                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.sedat}" class="font-mono font-bold text-[#ffb4ab] hover:underline">${r.sedat}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.tony}" class="font-mono font-bold text-[#FF453A] hover:underline">${r.tony}</a></td>
+                    <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.sedat}" class="font-mono font-bold text-[#30D158] hover:underline">${r.sedat}</a></td>
+                    <td class="text-center px-2 py-2.5 whitespace-nowrap">
+                      <div style="font-size:10px;font-weight:700;color:#30D158;line-height:1.6">${sedTime}</div>
+                      <div style="font-size:9px;color:#8b90a0;line-height:1">↓ сед</div>
+                      <div style="font-size:10px;font-weight:700;color:#FF453A;line-height:1.6;margin-top:3px">${tonTime}</div>
+                      <div style="font-size:9px;color:#8b90a0;line-height:1">↑ тон</div>
+                    </td>
                     <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.luo}" class="font-mono text-[#adc6ff] hover:underline">${r.luo}</a></td>
                     <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.yuan}" class="font-mono text-[#adc6ff] hover:underline">${r.yuan}</a></td>
                     <td class="text-center px-3 py-2.5"><a href="atlas.html?code=${r.shu}" class="font-mono text-[#c1c6d7] hover:underline">${r.shu}</a></td>

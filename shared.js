@@ -16,15 +16,196 @@ export function applyI18nToDom(root) {
     if (v && v !== el.getAttribute('data-i18n-placeholder')) el.placeholder = v;
   });
 }
-initI18n().then(() => applyI18nToDom());
+initI18n().then(() => {
+  applyI18nToDom();
+  _initTrialBannerAuto().catch(() => {});
+});
+
+async function _initTrialBannerAuto() {
+  const token = sessionStorage.getItem('acutwin_token');
+  if (!token) return;
+  if (sessionStorage.getItem('trial_banner_dismissed')) return;
+  const page = (location.pathname.split('/').pop() || '').toLowerCase();
+  if (['billing.html', 'login.html', 'landing.html', ''].includes(page)) return;
+  if (page.includes('admin')) return; // Fix 1.4: admin panel никогда не показывает баннер
+
+  const res = await fetch('/api/trial-status', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!res.ok) return;
+  const data = await res.json();
+  const { status } = data;
+  const dl = Number(data.daysLeft) || 0;
+
+  // Fix 1.3: показываем только при trial_active или trial_grace; платящие не видят баннер
+  if (status !== 'trial_active' && status !== 'trial_grace') return;
+  if (status === 'trial_active' && dl <= 0) return;
+
+  // Fix 1.1: предупреждение при daysLeft ≤ 3 или grace-период
+  const warn = status === 'trial_grace' || dl <= 3;
+  const bg        = warn ? 'rgba(255,159,10,0.95)' : 'rgba(0,18,24,0.92)';
+  const color     = warn ? '#1a1a1a' : '#e2e2e2';
+  const bdr       = warn ? 'none' : '1px solid rgba(0,242,255,0.2)';
+  const linkColor = warn ? '#4a2e00' : '#00F2FF';
+
+  const bannerText = status === 'trial_grace'
+    ? t('subscription:grace.banner', { days: 0 })
+    : t('subscription:trial.banner', { days: dl });
+
+  const el = document.createElement('div');
+  el.id = 'trial-active-banner';
+  if (warn) el.classList.add('trial-banner--warning');
+  el.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:300',
+    'display:flex;align-items:center;justify-content:center;gap:10px',
+    `padding:7px 44px 7px 16px;font-size:13px;font-weight:600`,
+    `background:${bg};color:${color};border-bottom:${bdr};backdrop-filter:blur(4px)`,
+  ].join(';');
+  el.innerHTML = `
+    <span>${bannerText}</span>
+    <a href="billing.html" style="color:${linkColor};font-weight:700;text-decoration:underline;white-space:nowrap">
+      ${t('subscription:trial.choosePlan')}
+    </a>
+    <button onclick="document.getElementById('trial-active-banner').remove();sessionStorage.setItem('trial_banner_dismissed','1')"
+      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+        background:none;border:none;cursor:pointer;color:${color};font-size:20px;line-height:1;opacity:0.7;padding:2px 4px">×</button>
+  `;
+  document.body.insertBefore(el, document.body.firstChild);
+}
+
+// ── Nav guard — защита при уходе с несохранённого приёма (П1) ────────────────
+function _createUnsavedModal(href) {
+  document.getElementById('unsaved-confirm-modal')?.remove();
+  const el = document.createElement('div');
+  el.id = 'unsaved-confirm-modal';
+  el.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px';
+  el.innerHTML = `
+    <div style="background:#1a1f2e;border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:24px;max-width:360px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+      <div style="font-size:15px;font-weight:700;color:#e2e2e2;margin-bottom:8px">
+        ⚠️ ${t('sessions:treatment.unsavedConfirm.title')}
+      </div>
+      <div style="font-size:13px;color:#8b90a0;margin-bottom:20px">
+        ${t('sessions:treatment.unsavedConfirm.message')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button id="usm-save" style="padding:10px 16px;border-radius:10px;border:1px solid rgba(0,242,255,0.3);cursor:pointer;font-size:13px;font-weight:700;background:rgba(0,242,255,0.12);color:#00F2FF">
+          💾 ${t('sessions:treatment.unsavedConfirm.save')}
+        </button>
+        <button id="usm-leave" style="padding:10px 16px;border-radius:10px;border:1px solid rgba(255,69,58,0.3);cursor:pointer;font-size:13px;font-weight:700;background:rgba(255,69,58,0.12);color:#FF453A">
+          ${t('sessions:treatment.unsavedConfirm.leave')}
+        </button>
+        <button id="usm-cancel" style="padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;font-size:13px;font-weight:700;background:rgba(255,255,255,0.06);color:#8b90a0">
+          ${t('sessions:treatment.unsavedConfirm.cancel')}
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  document.getElementById('usm-save').addEventListener('click', async () => {
+    el.remove();
+    if (window.savePatientSession) await window.savePatientSession();
+    window.location.href = href;
+  });
+  document.getElementById('usm-leave').addEventListener('click', () => {
+    window.isDirty = false;
+    el.remove();
+    window.location.href = href;
+  });
+  document.getElementById('usm-cancel').addEventListener('click', () => el.remove());
+}
+
+window._navClickHandler = function(event, href) {
+  if (!window.isDirty) return;
+  event.preventDefault();
+  _createUnsavedModal(href);
+};
 
 // Глобальный обработчик logout — использует t() для confirm-текста
 window._logoutConfirm = function() {
   if (confirm(t('auth:login.logoutConfirm'))) {
+    document.getElementById('trial-active-banner')?.remove(); // Fix 1.2: убираем баннер из DOM при logout
     sessionStorage.clear();
     location.href = 'login.html';
   }
 };
+
+// ── PWA install banner (П3) ───────────────────────────────────────────────
+(function() {
+  const SEEN_KEY = 'pwa_prompt_seen';
+  if (localStorage.getItem(SEEN_KEY)) return;
+  if (window.navigator.standalone) return; // уже установлено (iOS)
+  if (window.matchMedia('(display-mode: standalone)').matches) return; // уже PWA
+
+  function _dismissPWA() {
+    localStorage.setItem(SEEN_KEY, '1');
+    document.getElementById('pwa-install-banner')?.remove();
+  }
+
+  function _buildBanner(innerHTML) {
+    const el = document.createElement('div');
+    el.id = 'pwa-install-banner';
+    el.style.cssText = [
+      'position:fixed;bottom:16px;left:50%;transform:translateX(-50%)',
+      'z-index:250;width:calc(100% - 32px);max-width:400px',
+      'background:#1a1f2e;border:1px solid rgba(0,242,255,0.25)',
+      'border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.5)',
+      'display:flex;align-items:center;gap:12px;animation:pwaSlideUp .3s ease',
+    ].join(';');
+    el.innerHTML = innerHTML;
+    if (!document.getElementById('pwa-banner-style')) {
+      const s = document.createElement('style');
+      s.id = 'pwa-banner-style';
+      s.textContent = '@keyframes pwaSlideUp{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+      document.head.appendChild(s);
+    }
+    document.body.appendChild(el);
+  }
+
+  function _showAndroidBanner(deferredPrompt) {
+    _buildBanner(`
+      <span style="font-size:28px;flex-shrink:0">📱</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:#e2e2e2;margin-bottom:2px">${t('common:pwa.banner')}</div>
+        <div style="font-size:11px;color:#8b90a0">AcuTwin</div>
+      </div>
+      <button id="pwa-install-btn" style="flex-shrink:0;padding:7px 14px;border-radius:10px;border:none;cursor:pointer;font-size:12px;font-weight:700;background:rgba(0,242,255,0.15);color:#00F2FF;border:1px solid rgba(0,242,255,0.3)">${t('common:pwa.install')}</button>
+      <button onclick="(function(){localStorage.setItem('pwa_prompt_seen','1');document.getElementById('pwa-install-banner')?.remove()})()" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#8b90a0;font-size:20px;line-height:1;padding:2px 4px">×</button>
+    `);
+    document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      localStorage.setItem(SEEN_KEY, '1');
+      document.getElementById('pwa-install-banner')?.remove();
+    });
+  }
+
+  function _showIOSBanner() {
+    _buildBanner(`
+      <span style="font-size:28px;flex-shrink:0">📱</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:#e2e2e2;margin-bottom:2px">${t('common:pwa.banner')}</div>
+        <div style="font-size:11px;color:#8b90a0">${t('common:pwa.iosHint')}</div>
+      </div>
+      <button onclick="(function(){localStorage.setItem('pwa_prompt_seen','1');document.getElementById('pwa-install-banner')?.remove()})()" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#8b90a0;font-size:20px;line-height:1;padding:2px 4px">×</button>
+    `);
+  }
+
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    // iOS не поддерживает beforeinstallprompt — показываем после i18n
+    initI18n().then(() => _showIOSBanner()).catch(() => {});
+    return;
+  }
+
+  // Android / Desktop Chrome
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    initI18n().then(() => _showAndroidBanner(e)).catch(() => {});
+  });
+
+  window.addEventListener('appinstalled', () => {
+    localStorage.setItem(SEEN_KEY, '1');
+    document.getElementById('pwa-install-banner')?.remove();
+  });
+})();
 
 // Защита видео от скачивания
 document.addEventListener('keydown', e => {
@@ -273,14 +454,15 @@ export function displayCode(code) {
 }
 
 const NAV_I18N = {
-  index:    'common:nav.newVisit',
-  schedule: 'common:nav.schedule',
-  treatment:'common:nav.treatment',
-  atlas:    'common:nav.atlas',
-  history:  'common:nav.history',
-  video:    'common:nav.video',
-  profile:  'common:nav.profile',
-  admin:    'common:nav.admin',
+  index:        'common:nav.newVisit',
+  schedule:     'common:nav.schedule',
+  treatment:    'common:nav.treatment',
+  atlas:        'common:nav.atlas',
+  history:      'common:nav.history',
+  video:        'common:nav.video',
+  profile:      'common:nav.profile',
+  subscription: 'common:nav.subscription',
+  admin:        'common:nav.admin',
 };
 
 export function buildSidebar(activePage, session) {
@@ -293,17 +475,18 @@ export function buildSidebar(activePage, session) {
     { id:'history',   href:'history.html',     icon:'history',              label:'История приёмов' /* i18n-ok */ },
     { id:'video',     href:'video.html',       icon:'play_circle',          label:'Видеообучение' /* i18n-ok */ },
     { id:'divider' },
-    { id:'profile',   href:'profile.html',     icon:'badge',                label:'Профиль' /* i18n-ok */ },
-    { id:'admin',     href:'admin.html',       icon:'admin_panel_settings', label:'Клиенты и оплата' /* i18n-ok */ },
+    { id:'profile',       href:'profile.html',      icon:'badge',                label:'Профиль' /* i18n-ok */ },
+    { id:'admin',         href:'admin.html',         icon:'admin_panel_settings', label:'Клиенты и оплата' /* i18n-ok */ },
   ] : [
-    { id:'index',     href:'index.html',     icon:'edit_calendar',    label:'Новый приём' /* i18n-ok */ },
-    { id:'schedule',  href:'schedule.html',  icon:'calendar_month',   label:'Расписание' /* i18n-ok */ },
-    { id:'treatment', href:'treatment.html',  icon:'medical_services', label:'Тактика лечения' /* i18n-ok */ },
-    { id:'atlas',     href:'atlas.html',      icon:'menu_book',        label:'Атлас точек' /* i18n-ok */ },
-    { id:'history',   href:'history.html',    icon:'history',          label:'История приёмов' /* i18n-ok */ },
-    { id:'video',     href:'video.html',      icon:'play_circle',      label:'Видеообучение' /* i18n-ok */ },
+    { id:'index',         href:'index.html',         icon:'edit_calendar',    label:'Новый приём' /* i18n-ok */ },
+    { id:'schedule',      href:'schedule.html',       icon:'calendar_month',   label:'Расписание' /* i18n-ok */ },
+    { id:'treatment',     href:'treatment.html',      icon:'medical_services', label:'Тактика лечения' /* i18n-ok */ },
+    { id:'atlas',         href:'atlas.html',          icon:'menu_book',        label:'Атлас точек' /* i18n-ok */ },
+    { id:'history',       href:'history.html',        icon:'history',          label:'История приёмов' /* i18n-ok */ },
+    { id:'video',         href:'video.html',          icon:'play_circle',      label:'Видеообучение' /* i18n-ok */ },
     { id:'divider' },
-    { id:'profile',   href:'profile.html',    icon:'badge',            label:'Профиль' /* i18n-ok */ },
+    { id:'profile',       href:'profile.html',        icon:'badge',            label:'Профиль' /* i18n-ok */ },
+    { id:'subscription',  href:'subscription.html',   icon:'workspace_premium', label:'Подписка' /* i18n-ok */ },
   ];
   const doctorBlock = session ? `
     <div class="px-4 py-3 border-t border-white/10 flex items-center gap-2 flex-shrink-0">
@@ -343,6 +526,7 @@ export function buildSidebar(activePage, session) {
         ${items.map(i => i.id === 'divider'
           ? `<div style="height:1px;background:rgba(255,255,255,0.08);margin:6px 8px"></div>`
           : `<a href="${i.href}"
+             onclick="window._navClickHandler && window._navClickHandler(event, '${i.href}')"
              class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all duration-200
                     ${activePage===i.id
                       ? 'bg-[#00F2FF]/10 text-[#00F2FF] border-r-2 border-[#00F2FF]'
@@ -365,31 +549,37 @@ export function buildSidebar(activePage, session) {
             <div style="font-size:10px;font-weight:700;color:#5a8fa8;line-height:1.3">${t('common:wuxing.metal')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">P · Gi</div>
             <div style="font-size:7.5px;color:#90c8e0;line-height:1.3">3–5 · 5–7</div>
+            <div id="ec-metal-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
           <div id="ec-earth"  style="border-radius:8px;border:1px solid #c0784055;background:#c0784010;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#c07840;line-height:1.3">${t('common:wuxing.earth')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">E · RP</div>
             <div style="font-size:7.5px;color:#f0a060;line-height:1.3">7–9 · 9–11</div>
+            <div id="ec-earth-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
           <div id="ec-fire"   style="border-radius:8px;border:1px solid #c0392b55;background:#c0392b10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#c0392b;line-height:1.3">${t('common:wuxing.fire')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">C · iG</div>
             <div style="font-size:7.5px;color:#f07060;line-height:1.3">11–13 · 13–15</div>
+            <div id="ec-fire-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
           <div id="ec-water"  style="border-radius:8px;border:1px solid #2471a355;background:#2471a310;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#2471a3;line-height:1.3">${t('common:wuxing.water')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">V · R</div>
             <div style="font-size:7.5px;color:#50a0d8;line-height:1.3">15–17 · 17–19</div>
+            <div id="ec-water-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
           <div id="ec-fire2"  style="border-radius:8px;border:1px solid #a0305a55;background:#a0305a10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#a0305a;line-height:1.3">${t('common:wuxing.fire2')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">MC · TR</div>
             <div style="font-size:7.5px;color:#d06090;line-height:1.3">19–21 · 21–23</div>
+            <div id="ec-fire2-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
           <div id="ec-wood"   style="border-radius:8px;border:1px solid #3d8a5c55;background:#3d8a5c10;padding:6px 3px 5px;text-align:center;transition:all 0.5s;opacity:0.5">
             <div style="font-size:10px;font-weight:700;color:#3d8a5c;line-height:1.3">${t('common:wuxing.wood')}</div>
             <div style="font-size:9px;color:#8b90a0;line-height:1.4">VB · F</div>
             <div style="font-size:7.5px;color:#60c080;line-height:1.3">23–1 · 1–3</div>
+            <div id="ec-wood-state" style="font-size:8px;font-weight:700;line-height:1.4;min-height:11px;margin-top:2px"></div>
           </div>
         </div>
       </div>
@@ -406,12 +596,12 @@ export function buildSidebar(activePage, session) {
 }
 
 const _EC = {
-  metal: { hours:[3,4,5,6],    color:'#5a8fa8' },
-  earth: { hours:[7,8,9,10],   color:'#c07840' },
-  fire:  { hours:[11,12,13,14],color:'#c0392b' },
-  water: { hours:[15,16,17,18],color:'#2471a3' },
-  fire2: { hours:[19,20,21,22],color:'#a0305a' },
-  wood:  { hours:[23,0,1,2],   color:'#3d8a5c' },
+  metal: { hours:[3,4,5,6],    passive:[15,16,17,18], color:'#5a8fa8' },
+  earth: { hours:[7,8,9,10],   passive:[19,20,21,22], color:'#c07840' },
+  fire:  { hours:[11,12,13,14],passive:[23,0,1,2],    color:'#c0392b' },
+  water: { hours:[15,16,17,18],passive:[3,4,5,6],     color:'#2471a3' },
+  fire2: { hours:[19,20,21,22],passive:[7,8,9,10],    color:'#a0305a' },
+  wood:  { hours:[23,0,1,2],   passive:[11,12,13,14], color:'#3d8a5c' },
 };
 
 // ── Модальное окно «О программе» ──────────────────────────
@@ -595,20 +785,55 @@ window._showAbout = function() {
 };
 
 export function initElementClock() {
+  const SED = '#30D158';
+  const TON = '#FF453A';
+
+  function getHour() {
+    const inp = document.getElementById('ctx-time');
+    if (inp && inp.value) {
+      const h = parseInt(inp.value.split(':')[0], 10);
+      if (!isNaN(h)) return h;
+    }
+    return new Date().getHours();
+  }
+
   function tick() {
-    const h = new Date().getHours();
+    const h = getHour();
     Object.entries(_EC).forEach(([id, cfg]) => {
-      const el = document.getElementById('ec-' + id);
+      const el   = document.getElementById('ec-' + id);
+      const stEl = document.getElementById('ec-' + id + '-state');
       if (!el) return;
-      const active = cfg.hours.includes(h);
-      el.style.opacity     = active ? '1'              : '0.5';
-      el.style.borderColor = active ? cfg.color + 'cc' : cfg.color + '55';
-      el.style.background  = active ? cfg.color + '25' : cfg.color + '10';
-      el.style.boxShadow   = active ? '0 0 8px ' + cfg.color + '60' : 'none';
+      const isActive  = cfg.hours.includes(h);
+      const isPassive = cfg.passive.includes(h);
+      if (isActive) {
+        el.style.opacity     = '1';
+        el.style.borderColor = SED + 'bb';
+        el.style.background  = SED + '22';
+        el.style.boxShadow   = '0 0 8px ' + SED + '50';
+        if (stEl) { stEl.textContent = '↓ Сед'; stEl.style.color = SED; }
+      } else if (isPassive) {
+        el.style.opacity     = '1';
+        el.style.borderColor = TON + 'bb';
+        el.style.background  = TON + '18';
+        el.style.boxShadow   = '0 0 8px ' + TON + '50';
+        if (stEl) { stEl.textContent = '↑ Тон'; stEl.style.color = TON; }
+      } else {
+        el.style.opacity     = '0.38';
+        el.style.borderColor = cfg.color + '40';
+        el.style.background  = cfg.color + '08';
+        el.style.boxShadow   = 'none';
+        if (stEl) { stEl.textContent = ''; }
+      }
     });
   }
+
+  window.refreshElementClock = tick;
   tick();
   setInterval(tick, 60000);
+
+  document.addEventListener('input', e => {
+    if (e.target && e.target.id === 'ctx-time') tick();
+  });
 }
 
 // ── Мобильная кнопка пользователя в шапке ─────────────────

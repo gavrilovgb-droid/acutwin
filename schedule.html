@@ -422,7 +422,7 @@ window.openApptModal = (appt) => {
   document.getElementById('ap-dur').value = String(appt && appt.duration_min || 60);
   document.getElementById('ap-patient').value = (appt && appt.patient) || '';
   document.getElementById('ap-service').value = (appt && appt.service) || t('schedule:form.serviceDefault');
-  document.getElementById('ap-phone').value   = (appt && appt.patient_phone) || '';
+  document.getElementById('ap-phone').value   = (appt && appt.patient_phone) || '+7 ';
   document.getElementById('ap-email').value   = (appt && appt.patient_email) || '';
   document.getElementById('ap-price').value   = (appt && appt.price) ?? '';
   document.getElementById('ap-notes').value   = (appt && appt.notes) || '';
@@ -454,7 +454,7 @@ window.saveAppt = async () => {
     start_at,
     duration_min: dur,
     service: document.getElementById('ap-service').value.trim() || null,
-    patient_phone: document.getElementById('ap-phone').value.trim() || null,
+    patient_phone: (() => { const v = document.getElementById('ap-phone').value.trim(); return v.replace(/\D/g, '').length > 1 ? v : null; })(),
     patient_email: document.getElementById('ap-email').value.trim() || null,
     price: document.getElementById('ap-price').value ? Number(document.getElementById('ap-price').value) : null,
     notes: document.getElementById('ap-notes').value.trim() || null,

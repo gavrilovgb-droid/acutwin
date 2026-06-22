@@ -1,5 +1,10 @@
 name: Deploy to VPS
 
+# Деплой на боевой сервер.
+# ВАЖНО: .env на сервере НЕ трогаем — секреты живут только на сервере.
+# git reset --hard приводит /opt/acutwin к состоянию ветки master.
+# Сначала тестируем локально, потом push в master → деплой.
+
 on:
   push:
     branches: [master]
@@ -15,53 +20,14 @@ jobs:
           host: 194.67.92.166
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          timeout: 60s
+          timeout: 120s
           script: |
-            # Find acutwin directory
-            APP=$(find /root /home -name "server.js" -path "*/acutwin*" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-            if [ -z "$APP" ]; then
-              APP=$(find /var/www /opt /srv -name "server.js" 2>/dev/null | head -1 | xargs dirname 2>/dev/null)
-            fi
-            echo "App dir: $APP"
-            cd "$APP"
-
-            # Write env vars (not in git)
-            cat > .env << 'ENVEOF'
-TELEGRAM_BOT_TOKEN=8739849295:AAE_wt4r6Bx2_lA6JwALMNR_9kyinCBB2x8
-TELEGRAM_CHAT_ID=135280221
-ENVEOF
-
-            # Git pull (принудительно, сохраняем data/)
+            set -e
+            cd /opt/acutwin
             git fetch origin master
             git reset --hard origin/master
-
-            # Restart (pm2 / systemd / kill+start)
-            if command -v pm2 &>/dev/null; then
-              pm2 restart all
-            elif systemctl is-active --quiet acutwin 2>/dev/null; then
-              systemctl restart acutwin
-            else
-              # Kill old process and start new one
-              pkill -f "node server.js" || true
-              nohup node server.js > server.log 2>server.err &
-              echo "Started PID $!"
-            fi
-
+            npm install --omit=dev --no-audit --no-fund || true
+            pm2 restart acutwin
             sleep 3
-            echo "Done. Checking..."
-            curl -s http://localhost:5500/api/login \
-              -X POST -H "Content-Type: application/json" \
-              -d '{"username":"test","password":"test"}' | head -c 100
-
-      - name: Reset ggbksi password
-        run: |
-          sleep 5
-          SECRET=$(node -e "
-            const crypto = require('crypto');
-            const day = new Date().toISOString().slice(0,10);
-            console.log(crypto.createHash('sha256').update('acutwin-reset::'+day).digest('hex').slice(0,20));
-          ")
-          echo "Secret: $SECRET"
-          curl -s https://acutwin.ru/api/users/ggbksi/reset-password \
-            -X POST -H "Content-Type: application/json" \
-            -d "{\"secret\":\"$SECRET\",\"newPassword\":\"Elena196472!@\"}"
+            curl -fsS http://localhost:5500/api/health || echo "WARN: health check failed"
+            echo "Deploy done."

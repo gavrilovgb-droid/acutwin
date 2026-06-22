@@ -1,0 +1,13 @@
+dbs:
+  - path: /opt/acutwin/data/acutwin.db
+    replicas:
+      - name: s3
+        type: s3
+        bucket: ${LITESTREAM_BUCKET}
+        path: acutwin.db
+        region: ${LITESTREAM_REGION}
+        endpoint: ${LITESTREAM_ENDPOINT}
+        access-key-id: ${LITESTREAM_ACCESS_KEY}
+        secret-access-key: ${LITESTREAM_SECRET_KEY}
+        force-path-style: true
+        retention: 168h

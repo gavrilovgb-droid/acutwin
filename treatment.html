@@ -122,6 +122,29 @@ html, body {
 }
 
 
+/* ── Atlas panel (П6) ── */
+#atlas-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+#atlas-overlay.open { opacity: 1; pointer-events: auto; }
+#atlas-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: min(1100px, 100vw);
+  z-index: 61;
+  background: #131313;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+#atlas-panel.open { transform: translateX(0); }
+#atlas-frame { flex: 1; border: none; width: 100%; min-height: 0; }
+
+
 /* ── Body background ── */
 #body-bg {
   position: fixed;
@@ -257,6 +280,11 @@ html, body {
       <div id="si3" class="step-circle">3</div>
     </div>
     <div class="ml-auto flex items-center gap-2 flex-shrink-0">
+      <button onclick="openAtlasPanel()" id="atlas-header-btn"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#BF5AF2]/40 bg-[#BF5AF2]/10 text-[#BF5AF2] text-xs font-bold hover:bg-[#BF5AF2]/20 transition-all">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">menu_book</span>
+        <span>Атлас</span>
+      </button>
       <button onclick="toggleSoundPanel()" id="snd-header-btn"
               class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] text-xs font-bold hover:bg-[#30D158]/20 transition-all">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">music_note</span>
@@ -264,6 +292,21 @@ html, body {
       </button>
     </div>
   </header>
+
+  <!-- Atlas panel (П6) -->
+  <div id="atlas-overlay" onclick="closeAtlasPanel()"></div>
+  <div id="atlas-panel">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#BF5AF2]" style="font-size:16px;zoom:1">menu_book</span>
+        <span class="font-bold text-sm" style="font-family:'Hanken Grotesk',sans-serif">Атлас точек</span>
+      </div>
+      <button onclick="closeAtlasPanel()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined" style="font-size:20px;zoom:1">close</span>
+      </button>
+    </div>
+    <iframe id="atlas-frame" src="" title="Атлас точек" allow="autoplay"></iframe>
+  </div>
 
   <!-- Mobile path selector — visible only on mobile -->
   <div id="mob-path-nav" style="display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;
@@ -296,10 +339,15 @@ html, body {
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">edit_note</span>
         SOAP
       </button>
+      <button onclick="showPatientHistory()" id="pc-history-btn"
+              class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#8b90a0]/10 hover:bg-[#8b90a0]/20 text-[#c1c6d7] border border-[#8b90a0]/30 transition-colors text-xs font-bold flex-shrink-0">
+        <span class="material-symbols-outlined" style="font-size:14px;zoom:1">history</span>
+        <span data-i18n="sessions:treatment.history.btn">История</span>
+      </button>
       <button onclick="savePatientSession()" id="pc-save-btn"
               class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3d8a5c]/20 hover:bg-[#3d8a5c]/35 text-[#5AC85A] border border-[#3d8a5c]/40 transition-colors text-xs font-bold flex-shrink-0">
         <span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>
-        <span data-i18n="sessions:treatment.saveSession">Записать сессию</span>
+        <span data-i18n="sessions:treatment.saveSession">Завершить приём</span>
       </button>
     </div>
     <!-- ИРТ-поля сессии -->
@@ -348,7 +396,7 @@ html, body {
       </label>
       <label class="flex items-center gap-1.5">
         <span data-i18n="sessions:treatment.exposureTime">Экспозиция, мин</span>
-        <input id="irt-exposure" type="number" min="1" max="120" placeholder="20"
+        <input id="irt-exposure" type="number" min="1" max="120" value="20"
                class="w-14 px-2 py-1 bg-[#1f1f1f] border border-[#414755] rounded-lg text-[#e2e2e2] text-xs focus:outline-none focus:border-[#0A84FF] transition-all text-center"/>
       </label>
       <label class="flex items-center gap-1.5 cursor-pointer select-none">
@@ -669,6 +717,7 @@ import { apiGetRecords, apiAddRecord, apiDeleteRecord, apiGetClinic, apiGetTrial
 import { initI18n, t } from '/i18n.js';
 const session = await requireAuth(); if (!session) throw new Error('redirect');
 await initI18n();
+window.t = t;
 let _clinicName = '';
 apiGetClinic().then(c => { _clinicName = c.name || ''; });
 
@@ -701,18 +750,18 @@ try {
   const _raw = sessionStorage.getItem('acutwin_diag_patient');
   if (_raw) {
     sessionStorage.removeItem('acutwin_diag_patient');
-    const { patient, age, gender, reason } = JSON.parse(_raw);
-    _diagData = { patient, age, gender };
+    const { patient, age, gender, reason, phone, email } = JSON.parse(_raw);
+    _diagData = { patient, age, gender, phone: phone || '', email: email || '' };
     const pc = document.getElementById('patient-context');
     pc.classList.remove('hidden');
     document.getElementById('irt-fields').classList.remove('hidden');
     document.getElementById('soap-modal-btn').classList.remove('hidden');
+    document.getElementById('pc-history-btn')?.classList.remove('hidden');
+    window._sessionSaved = false;
     window._soapPatientKey = patient;
     const _sk = patient.replace(/\s+/g,'_');
-    ['s','o','a','p'].forEach(f => {
-      const el = document.getElementById('soap-' + f);
-      if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
-    });
+    // Новый приём — всегда чистый старт: _raw существует только при навигации из index/schedule
+    ['s','o','a','p'].forEach(f => localStorage.removeItem('acunote_soap_' + f + '_' + _sk));
     document.getElementById('pc-name').textContent = patient;
     document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' /* i18n-ok */ : ''].filter(Boolean).join(', ');
     document.getElementById('pc-reason').textContent = reason;
@@ -831,7 +880,7 @@ function gradeHtml(key, compact = false) {
 let MUSCULO_SECTION, MUSCULO_NAMES, SECTION_ORDER, SECTION_LABELS;
 let MODERN_NAMES, SECTION_COLORS, DIS_CATEGORIES, SYM_CATEGORIES;
 let USIN_MD, USIN_EN, USIN_SYMS, USIN_DISEASES;
-let SND_TRACKS;
+window.SND_TRACKS = null;
 
 let _usinDataLoaded = false;
 let _usinDataLoading = null;
@@ -853,13 +902,13 @@ async function loadUsinData() {
   return _usinDataLoading;
 }
 
-let _sndTracksLoaded = false;
-async function loadSndTracks() {
-  if (_sndTracksLoaded) return;
+window._sndTracksLoaded = false;
+window.loadSndTracks = async function loadSndTracks() {
+  if (window._sndTracksLoaded) return;
   const d = await fetch('/data/snd-tracks.json', _authHdr()).then(r => r.json()).catch(() => ({ tracks: {} }));
-  SND_TRACKS = d.tracks;
-  _sndTracksLoaded = true;
-}
+  window.SND_TRACKS = d.tracks;
+  window._sndTracksLoaded = true;
+};
 
 const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
 Promise.all([
@@ -1019,6 +1068,23 @@ function isMerActive(mer, hour) {
   if (s === undefined) return false;
   const e = (s + 2) % 24;
   return s < e ? (hour >= s && hour < e) : (hour >= s || hour < e);
+}
+
+function getMerTimingBadge(merCode, technique, currentHour) {
+  const s = MER_ACTIVE_START[merCode];
+  if (s === undefined) return '';
+  const isActive  = currentHour === s || currentHour === (s + 1) % 24;
+  const isPassive = currentHour === (s + 12) % 24 || currentHour === (s + 13) % 24;
+  if (!isActive && !isPassive) return '';
+  const isTon = /тон/i.test(technique);
+  const passiveStr = `${(s+12)%24}:00–${(s+14)%24}:00`;
+  const activeStr  = `${s}:00–${(s+2)%24}:00`;
+  let text, color;
+  if      (isActive  && isTon)  { color='#FFD60A'; text=`⚡ Активная фаза — быстрый эффект · оптимально: ${passiveStr}`; }
+  else if (isActive)            { color='#30D158'; text=`✓ Активная фаза — оптимально для седации`; }
+  else if (isPassive && isTon)  { color='#30D158'; text=`✓ Пассивная фаза — оптимально для тонизации`; }
+  else                          { color='#FFD60A'; text=`⚡ Пассивная фаза — для седации лучше: ${activeStr}`; }
+  return `<span style="font-size:9px;padding:1px 7px;border-radius:5px;font-weight:600;background:${color}15;color:${color};border:1px solid ${color}30;white-space:nowrap">${text}</span>`;
 }
 
 function getSeasonFromMonth(m) {
@@ -2027,10 +2093,16 @@ window.setProgress = function(v) {
   });
 };
 
+function clearSoapDraft(patientName) {
+  const k = patientName.replace(/\s+/g, '_');
+  ['s','o','a','p'].forEach(f => localStorage.removeItem('acunote_soap_' + f + '_' + k));
+}
+
 function resetIrtFields() {
-  ['irt-nrs-before','irt-nrs-after','irt-exposure','irt-progress','soap-s','soap-o','soap-a','soap-p'].forEach(id => {
+  ['irt-nrs-before','irt-nrs-after','irt-progress','soap-s','soap-o','soap-a','soap-p'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const exp = document.getElementById('irt-exposure'); if (exp) exp.value = '20';
   document.querySelectorAll('.progress-btn').forEach(b => {
     b.style.background = ''; b.style.borderColor = '';
   });
@@ -2041,54 +2113,108 @@ function resetIrtFields() {
 }
 
 let _savingSession = false;
-window.savePatientSession = async () => {
+window.savePatientSession = async (silent = false, keepFields = false) => {
   if (_savingSession) return;
   const patientName = document.getElementById('pc-name')?.textContent?.trim();
   if (!patientName) return;
   _savingSession = true;
 
-  const metaText = document.getElementById('pc-meta')?.textContent || '';
-  const parts    = metaText.split(',').map(s => s.trim());
-  const gender   = parts[0] || '';
-  const age      = parts[1] ? parseInt(parts[1]) : '';
-  const reason   = document.getElementById('pc-reason')?.textContent?.trim() || '';
-  const soap = {
-    soap_s: document.getElementById('soap-s')?.value?.trim() || null,
-    soap_o: document.getElementById('soap-o')?.value?.trim() || null,
-    soap_a: document.getElementById('soap-a')?.value?.trim() || null,
-    soap_p: document.getElementById('soap-p')?.value?.trim() || null,
-  };
+  try {
+    const metaText = document.getElementById('pc-meta')?.textContent || '';
+    const parts    = metaText.split(',').map(s => s.trim());
+    const gender   = parts[0] || '';
+    const age      = parts[1] ? parseInt(parts[1]) : '';
+    const reason   = document.getElementById('pc-reason')?.textContent?.trim() || '';
+    const phone    = _diagData?.phone || '';
+    const email    = _diagData?.email || '';
+    const soap = {
+      soap_s: document.getElementById('soap-s')?.value?.trim() || null,
+      soap_o: document.getElementById('soap-o')?.value?.trim() || null,
+      soap_a: document.getElementById('soap-a')?.value?.trim() || null,
+      soap_p: document.getElementById('soap-p')?.value?.trim() || null,
+    };
 
-  // ── Если есть подтверждённые рецепты — сохраняем каждый отдельно ──
-  if (confirmedRecipes.length > 0) {
-    if (!confirm(t('sessions:treatment.alert.confirmSessions', { count: confirmedRecipes.length, name: patientName }))) { _savingSession = false; return; }
+    // ── Если есть подтверждённые рецепты — сохраняем каждый отдельно ──
+    if (confirmedRecipes.length > 0) {
+      const now = new Date();
+      const irt = getIrtFields();
 
-    const now = new Date();
-    const irt = getIrtFields();
+      for (const recipe of confirmedRecipes) {
+        const pts      = [recipe.ownPt, ...(recipe.ebPts||[]), ...(recipe.distPts||[])].filter(Boolean);
+        const points   = [...new Set(pts)];
+        const meridians = [...new Set(points.map(p => p.replace(/\d+/g,'')).filter(Boolean))];
+        const _code = (recipe._key && !String(recipe._key).startsWith('_') && !String(recipe._key).startsWith('tcm_') && !String(recipe._key).startsWith('usin_') && !String(recipe._key).startsWith('custom_')) ? recipe._key : '';
+        const recNote = recipe.mer && recipe.isExcess !== null
+          ? `${recipe.mer} — ${recipe.isExcess ? 'Избыток' : 'Недостаток'} (${recipe.sourceLabel})`
+          : `${recipe.name}${_code ? ' · ' + _code : ''}`;
+        const res = await apiAddRecord({
+          id: uniqueId(),
+          doctor: session.username, doctorName: session.name,
+          date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
+          patient: patientName, age, gender, reason, phone, email,
+          notes: recNote, points, meridians,
+          type: 'Акупунктура', outcome: 'neutral',
+          ...irt, ...soap,
+          appointmentId: window._appointmentId || null,
+        });
+        if (res?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
+      }
+      const _sumPtsCount = confirmedRecipes.reduce((acc, r) => {
+        return acc + new Set([r.ownPt, ...(r.ebPts||[]), ...(r.distPts||[])].filter(Boolean)).size;
+      }, 0);
+      window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
+      confirmedRecipes.length = 0;
+      window._currentPts = [];
+      if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
+      updateConfirmedPanel();
+      if (!keepFields) { clearSoapDraft(patientName); resetIrtFields(); window._sessionSaved = true; }
+      window.markClean?.();
+      if (!silent) showSummaryModal({ patient: patientName, nrsBefore: irt.nrs_before, nrsAfter: irt.nrs_after, pointsCount: _sumPtsCount });
 
-    for (const recipe of confirmedRecipes) {
-      const pts      = [recipe.ownPt, ...(recipe.ebPts||[]), ...(recipe.distPts||[])].filter(Boolean);
-      const points   = [...new Set(pts)];
-      const meridians = [...new Set(points.map(p => p.replace(/\d+/g,'')).filter(Boolean))];
-      const recNote  = `${recipe.mer} — ${recipe.isExcess ? 'Избыток' : 'Недостаток'} (${recipe.sourceLabel})`;
-      const res = await apiAddRecord({
-        id: uniqueId(),
-        doctor: session.username, doctorName: session.name,
-        date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
-        patient: patientName, age, gender, reason,
-        notes: recNote, points, meridians,
-        type: 'Акупунктура', outcome: 'neutral',
-        ...irt, ...soap,
-        appointmentId: window._appointmentId || null,
-      });
-      if (res?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
+      const btn = document.getElementById('pc-save-btn');
+      if (btn) {
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;zoom:1">check_circle</span>Сохранено';
+        btn.style.color = '#5AC85A';
+        btn.style.background = 'rgba(61,138,92,0.3)';
+        setTimeout(() => {
+          btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>${t('sessions:treatment.saveSession')}`;
+          btn.style.color = ''; btn.style.background = '';
+          _savingSession = false;
+        }, 2000);
+      } else {
+        _savingSession = false;
+      }
+      return;
     }
-    window._lastSessionRecipes = confirmedRecipes.map(r => ({...r}));
-    confirmedRecipes.length = 0;
+
+    // ── Старый путь: одиночная запись из _currentPts / manualSessions ──
+    const manualPts = (typeof manualSessions !== 'undefined')
+      ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
+    const points  = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
+    if (!points.length) {
+      _savingSession = false;
+      const modal = document.getElementById('no-recipe-confirm');
+      if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+      return;
+    }
+
+    const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
+    const now = new Date();
+    const rec = {
+      id: uniqueId(), doctor: session.username, doctorName: session.name,
+      date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
+      patient: patientName, age, gender, reason, phone, email, points, meridians,
+      type: 'Акупунктура', outcome: 'neutral',
+      ...getIrtFields(), ...soap,
+      appointmentId: window._appointmentId || null,
+    };
+    const saveRes = await apiAddRecord(rec);
+    if (saveRes?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
     window._currentPts = [];
     if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
-    updateConfirmedPanel();
-    resetIrtFields();
+    if (!keepFields) { clearSoapDraft(patientName); resetIrtFields(); window._sessionSaved = true; }
+    window.markClean?.();
+    if (!silent) showSummaryModal({ patient: patientName, nrsBefore: rec.nrs_before, nrsAfter: rec.nrs_after, pointsCount: points.length });
 
     const btn = document.getElementById('pc-save-btn');
     if (btn) {
@@ -2096,57 +2222,31 @@ window.savePatientSession = async () => {
       btn.style.color = '#5AC85A';
       btn.style.background = 'rgba(61,138,92,0.3)';
       setTimeout(() => {
-        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>Записать сессию';
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>${t('sessions:treatment.saveSession')}`;
         btn.style.color = ''; btn.style.background = '';
         _savingSession = false;
       }, 2000);
     } else {
       _savingSession = false;
     }
-    return;
-  }
-
-  // ── Старый путь: одиночная запись из _currentPts / manualSessions ──
-  const manualPts = (typeof manualSessions !== 'undefined')
-    ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
-  const points  = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
-  if (!points.length) { _savingSession = false; return; }
-  if (!showConfirmSave(patientName, points)) { _savingSession = false; return; }
-
-  const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
-  const now = new Date();
-  const rec = {
-    id: uniqueId(), doctor: session.username, doctorName: session.name,
-    date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
-    patient: patientName, age, gender, reason, points, meridians,
-    type: 'Акупунктура', outcome: 'neutral',
-    ...getIrtFields(), ...soap,
-    appointmentId: window._appointmentId || null,
-  };
-  const saveRes = await apiAddRecord(rec);
-  if (saveRes?.trialExpired) { _savingSession = false; document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
-  window._currentPts = [];
-  if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
-  resetIrtFields();
-
-  const btn = document.getElementById('pc-save-btn');
-  if (btn) {
-    btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;zoom:1">check_circle</span>Сохранено';
-    btn.style.color = '#5AC85A';
-    btn.style.background = 'rgba(61,138,92,0.3)';
-    setTimeout(() => {
-      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;zoom:1">save</span>Записать сессию';
-      btn.style.color = ''; btn.style.background = '';
-      _savingSession = false;
-    }, 2000);
-  } else {
+  } catch (e) {
+    console.error('savePatientSession error:', e);
     _savingSession = false;
+    const btn = document.getElementById('pc-save-btn');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;zoom:1">error</span>Ошибка сохранения';
+      btn.style.color = '#FF453A';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 3000);
+    }
   }
 };
 
 // ─── HEADER SAVE (без контекста пациента) ─────────────────
 async function doSaveRecord(patientName, age, gender, reason) {
   if (confirmedRecipes.length > 0) { window.savePatientSession(); return; }
+  const phone = _diagData?.phone || '';
+  const email = _diagData?.email || '';
   const soap = {
     soap_s: document.getElementById('soap-s')?.value?.trim() || null,
     soap_o: document.getElementById('soap-o')?.value?.trim() || null,
@@ -2157,12 +2257,13 @@ async function doSaveRecord(patientName, age, gender, reason) {
     ? manualSessions.flatMap(s => s.pts || []).filter(Boolean) : [];
   const points = manualPts.length > 0 ? [...new Set(manualPts)] : (window._currentPts || []).slice();
   if (!points.length) { _savingSession = false; return; }
+  const _hdrIrt = getIrtFields();
   const meridians = [...new Set(points.map(p => p.replace(/\d+/g, '')).filter(Boolean))];
   const now = new Date();
   const hdrRes = await apiAddRecord({
     id: uniqueId(), doctor: session.username, doctorName: session.name,
     date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
-    patient: patientName, age, gender, reason, points, meridians,
+    patient: patientName, age, gender, reason, phone, email, points, meridians,
     type: 'Акупунктура', outcome: 'neutral',
     ...soap,
     appointmentId: window._appointmentId || null,
@@ -2170,12 +2271,14 @@ async function doSaveRecord(patientName, age, gender, reason) {
   if (hdrRes?.trialExpired) { document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
   window._currentPts = [];
   if (typeof manualSessions !== 'undefined') manualSessions.length = 0;
+  window.markClean?.();
+  showSummaryModal({ patient: patientName, nrsBefore: _hdrIrt.nrs_before, nrsAfter: _hdrIrt.nrs_after, pointsCount: points.length });
   const btn = document.getElementById('hdr-save-btn');
   if (btn) {
     btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;zoom:1">check_circle</span>Сохранено';
     btn.style.color = '#5AC85A';
     setTimeout(() => {
-      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;zoom:1">save</span>Записать сессию';
+      btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;zoom:1">save</span>${t('sessions:treatment.saveSession')}`;
       btn.style.color = '';
     }, 2000);
   }
@@ -2351,7 +2454,7 @@ window.printRecipe = () => {
 // ─── Диалог подтверждения ────────────────────────────────
 function showConfirmSave(patientName, pts) {
   return window.confirm(
-    `Записать сессию для пациента:\n${patientName}\n\nТочек назначено: ${pts.length}\n\nПодтвердить?`
+    `${t('sessions:treatment.saveSession')} — ${patientName}\n${t('sessions:treatment.confirmPoints', { count: pts.length })}`
   );
 }
 
@@ -2365,7 +2468,7 @@ window.headerSaveSession = () => {
       btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;zoom:1">check_circle</span>Сохранено';
       btn.style.color = '#5AC85A';
       setTimeout(() => {
-        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;zoom:1">save</span>Записать сессию';
+        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;zoom:1">save</span>${t('sessions:treatment.saveSession')}`;
         btn.style.color = '';
       }, 2000);
     }
@@ -2388,15 +2491,23 @@ let _pickerMode = 'save';
 
 function setPatientContext(patient, age, gender, reason) {
   document.getElementById('patient-context')?.classList.remove('hidden');
+  document.getElementById('pc-history-btn')?.classList.remove('hidden');
   document.getElementById('pc-name').textContent = patient;
   document.getElementById('pc-meta').textContent = [gender, age ? age + ' л' : ''].filter(Boolean).join(', ');
   document.getElementById('pc-reason').textContent = reason || '';
   window._spPatientSet = true;
+  window._sessionSaved = false;
   const _sk = patient.replace(/\s+/g,'_');
-  ['s','o','a','p'].forEach(f => {
-    const el = document.getElementById('soap-' + f);
-    if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
-  });
+  const _isNewSp = sessionStorage.getItem('acutwin_new_appointment') === '1';
+  if (_isNewSp) {
+    sessionStorage.removeItem('acutwin_new_appointment');
+    ['s','o','a','p'].forEach(f => localStorage.removeItem('acunote_soap_' + f + '_' + _sk));
+  } else {
+    ['s','o','a','p'].forEach(f => {
+      const el = document.getElementById('soap-' + f);
+      if (el) el.value = localStorage.getItem('acunote_soap_' + f + '_' + _sk) || '';
+    });
+  }
   document.getElementById('irt-fields')?.classList.remove('hidden');
   document.getElementById('soap-modal-btn')?.classList.remove('hidden');
 }
@@ -2903,12 +3014,11 @@ window.showStep3 = () => {
     const _allCodes = new Set();
     if (ebData) Object.values(ebData).forEach(v => extractPoints(v||'').forEach(p => _allCodes.add(p)));
     if (distData) [distData.tz, distData.m].filter(Boolean).forEach(v => extractPoints(v).forEach(p => _allCodes.add(p)));
-    // 2. Активны СЕЙЧАС — срочное окно (только седатирование: тонизировать в час активности нельзя)
+    // 2. Активны СЕЙЧАС — срочное окно
     _allCodes.forEach(code => {
       const m2 = _gm(code);
       const st = MER_ACTIVE_START[m2];
       if (isMerActive(m2, ctx.hour)) {
-        if ((_actionMap.get(code)||'') === 'тон') return;
         const endH = st !== undefined ? ((st+2)%24) : null;
         _add(code, 'активен сейчас · до ' + (endH !== null ? endH+':00' : '?'), 'now');
       }
@@ -2920,17 +3030,18 @@ window.showStep3 = () => {
       if ((SEASON_MERS[ctx.season]||[]).includes(_gm(code)))
         _add(code, 'сезон · ' + ctx.season, 'season');
     });
-    // Финальная фильтрация: тонизировать в час активности меридиана нельзя
-    const _prioFinal = _prio.filter(item => !(item.ptype === 'now' && item.action === 'тон'));
+    const _prioFinal = _prio;
     const _prioHtml = _prioFinal.length ? _prioFinal.map(({code, label, ptype, action}) => {
       const col = ptype==='mandatory'?'#00F2FF': ptype==='now'?'#34C759': ptype==='always'?'#e2e2e2':'#FFD60A';
       const ic  = ptype==='mandatory'?'★': ptype==='now'?'⚡': ptype==='always'?'✓':'🌿';
       const urg = ptype==='now' ? ` <span style="color:#FF6B6B;font-size:9px;font-weight:700">!</span>` : '';
       const actCol = action==='тон'?'#5AC8FA':action==='сед'?'#FF6B6B':'#BF5AF2';
       const actBadge = action ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;background:${actCol}20;color:${actCol};border:1px solid ${actCol}40">${action}</span>` : '';
+      const _tMer = (code.match(/^([A-Za-z]+)/)||[])[1]||'';
+      const timingBadge = getMerTimingBadge(_tMer, action, ctx.hour);
       return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;overflow:hidden">
         <button onclick="openVid('${code}')" class="font-mono font-bold text-xs hover:underline flex-shrink-0" style="color:${col}">${displayCode(code)}</button>
-        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}
+        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}${timingBadge ? ' '+timingBadge : ''}
       </div>`;
     }).join('') : '<span class="text-[11px] text-[#8b90a0]">—</span>';
 
@@ -3260,6 +3371,7 @@ window.confirmDiagRecipe = (mer) => {
     confirmedRecipes.splice(existIdx, 1);
   } else {
     confirmedRecipes.push({ ...data });
+    window.markDirty?.();
   }
 
   const btn = document.getElementById(`confirm_btn_${mer}`);
@@ -3614,6 +3726,7 @@ window.confirmCustomRecipe = () => {
     isExcess: null, condLabel: label, condColor: '#34C759',
     ownPt: null, ebPts: pts, distPts: []
   });
+  window.markDirty?.();
   updateConfirmedPanel();
   // Визуальный фидбек + блокировка от двойного клика
   const btn = document.getElementById('custom-confirm-btn');
@@ -3651,6 +3764,7 @@ window.addConfirmed = (containerId) => {
       ownPt: null, ebPts: d.pts, distPts: [],
       indica: d.indica || ''
     });
+    window.markDirty?.();
   }
   _refreshBtnFor(containerId);
   updateConfirmedPanel();
@@ -3955,14 +4069,13 @@ window.renderUsinResult = function renderUsinResult(sc, mk, mtype, extra) {
     allPts.forEach(p => {
       const mer2 = (p.c.match(/^([A-Za-z]+)/)||[])[1]||'';
       const st2 = MER_ACTIVE_START[mer2];
-      if (isMerActive(mer2, _uctx.hour) && _uActMap.get(p.c) !== 'тон') add(p.c, 'активен сейчас · до '+((st2!==undefined?(st2+2)%24:'')+':00'), 'now');
+      if (isMerActive(mer2, _uctx.hour)) add(p.c, 'активен сейчас · до '+((st2!==undefined?(st2+2)%24:'')+':00'), 'now');
     });
     allPts.forEach(p => {
       const mer2 = (p.c.match(/^([A-Za-z]+)/)||[])[1]||'';
       if ((SEASON_MERS[_uctx.season]||[]).includes(mer2)) add(p.c, 'сезон', 'season');
     });
-    // Финальная фильтрация: тонизировать в час активности меридиана нельзя
-    const _listFinal = list.filter(item => !(item.ptype === 'now' && item.action === 'тон'));
+    const _listFinal = list;
     if (!_listFinal.length) return '';
     const rows = _listFinal.map(({code,label,ptype,action}) => {
       const col = ptype==='mandatory'?'#00F2FF':ptype==='now'?'#34C759':'#FFD60A';
@@ -3970,9 +4083,11 @@ window.renderUsinResult = function renderUsinResult(sc, mk, mtype, extra) {
       const urg = ptype==='now'?` <span style="color:#FF6B6B;font-size:9px;font-weight:700">!</span>`:'';
       const actCol = action==='тон'?'#5AC8FA':action==='сед'?'#FF6B6B':'#BF5AF2';
       const actBadge = action ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;background:${actCol}20;color:${actCol};border:1px solid ${actCol}40">${action}</span>` : '';
+      const _tMer = (code.match(/^([A-Za-z]+)/)||[])[1]||'';
+      const timingBadge = getMerTimingBadge(_tMer, action, _uctx.hour);
       return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;overflow:hidden">
         <button onclick="openVid('${code}')" class="font-mono font-bold text-xs hover:underline flex-shrink-0" style="color:${col}">${displayCode(code)}</button>
-        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}
+        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}${timingBadge ? ' '+timingBadge : ''}
       </div>`;
     }).join('');
     return `<div class="mb-3 p-2.5 rounded-xl" style="border:1px solid rgba(0,242,255,0.25);background:rgba(0,242,255,0.04)">
@@ -4320,7 +4435,7 @@ function diseasesTacticHtml(d) {
     d.pts.forEach(p => {
       const mer2 = getMer(p.c);
       const st2 = MER_ACTIVE_START[mer2];
-      if (isMerActive(mer2, _dctx.hour) && _dActMap.get(p.c) !== 'тон') add(p.c, 'активен сейчас · до '+((st2!==undefined?(st2+2)%24:'')+':00'), 'now');
+      if (isMerActive(mer2, _dctx.hour)) add(p.c, 'активен сейчас · до '+((st2!==undefined?(st2+2)%24:'')+':00'), 'now');
     });
     // Сезон
     d.pts.forEach(p => {
@@ -4328,8 +4443,7 @@ function diseasesTacticHtml(d) {
     });
     // Тонизирующие/седатирующие (основные по методу)
     [...tonPts, ...sedPts].forEach(p => add(p.c, p.r, 'mandatory'));
-    // Финальная фильтрация: тонизировать в час активности меридиана нельзя
-    const _dListFinal = list.filter(item => !(item.ptype === 'now' && item.action === 'тон'));
+    const _dListFinal = list;
     window._uDisPrintData = { disName: d.name, meta: d.meta, prio: _dListFinal.slice() };
     if (!_dListFinal.length) return '';
     const rows = _dListFinal.map(({code,label,ptype,action}) => {
@@ -4338,9 +4452,11 @@ function diseasesTacticHtml(d) {
       const urg = ptype==='now'?` <span style="color:#FF6B6B;font-size:9px;font-weight:700">!</span>`:'';
       const actCol = action==='тон'?'#5AC8FA':action==='сед'?'#FF6B6B':'#BF5AF2';
       const actBadge = action ? `<span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;background:${actCol}20;color:${actCol};border:1px solid ${actCol}40">${action}</span>` : '';
+      const _tMer = (code.match(/^([A-Za-z]+)/)||[])[1]||'';
+      const timingBadge = getMerTimingBadge(_tMer, action, _dctx.hour);
       return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;overflow:hidden">
         <button onclick="openVid('${code}')" class="font-mono font-bold text-xs hover:underline flex-shrink-0" style="color:${col}">${displayCode(code)}</button>
-        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}
+        <span style="font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid ${col}40;background:${col}15;color:${col};word-break:break-word;overflow-wrap:break-word">${ic} ${label}</span>${actBadge}${urg}${timingBadge ? ' '+timingBadge : ''}
       </div>`;
     }).join('');
     return `<div class="mb-3 p-2.5 rounded-xl" style="border:1px solid rgba(0,242,255,0.25);background:rgba(0,242,255,0.04)">
@@ -4450,6 +4566,187 @@ window.printUsinDisRecipe = function() {
     prio: d.prio
   });
 };
+
+// ── isDirty — защита несохранённого приёма (П1) ─────────────────────────────
+window.isDirty = false;
+
+window.markDirty = function() {
+  window._sessionSaved = false;
+  if (window.isDirty) return;
+  window.isDirty = true;
+};
+window.markClean = function() {
+  window.isDirty = false;
+};
+
+// input-события покрывают NRS, SOAP и все текстовые поля
+document.addEventListener('input', window.markDirty);
+
+// beforeunload — защита от закрытия вкладки
+window.addEventListener('beforeunload', (e) => {
+  if (window.isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Автосохранение каждые 30 секунд если есть изменения и есть что сохранять
+setInterval(async () => {
+  if (!window.isDirty || !window.savePatientSession) return;
+  // confirmedRecipes — явное действие врача, не трогаем при автосохранении
+  const hasPts = window._currentPts?.length > 0;
+  if (!hasPts) return;
+  if (typeof confirmedRecipes !== 'undefined' && confirmedRecipes.length > 0) return;
+  try {
+    await window.savePatientSession(true, true);
+  } catch (e) {
+    console.warn('[autosave] failed silently:', e);
+  }
+}, 30000);
+
+// ── Summary modal (П8) ──────────────────────────────────────────────────────
+function showSummaryModal({ patient, nrsBefore, nrsAfter, pointsCount }) {
+  document.getElementById('sum-patient').textContent    = patient || '—';
+  document.getElementById('sum-nrs-before').textContent = nrsBefore != null ? nrsBefore : '—';
+  document.getElementById('sum-nrs-after').textContent  = nrsAfter  != null ? nrsAfter  : '—';
+  document.getElementById('sum-points').textContent     = pointsCount != null ? pointsCount : '0';
+  const modal = document.getElementById('summary-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+window.cancelNoRecipe = function() {
+  const m = document.getElementById('no-recipe-confirm');
+  if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+};
+
+window.confirmNoRecipe = async function() {
+  window.cancelNoRecipe();
+  const patientName = document.getElementById('pc-name')?.textContent?.trim();
+  if (!patientName) return;
+  const metaText = document.getElementById('pc-meta')?.textContent || '';
+  const parts = metaText.split(',').map(s => s.trim());
+  const gender = parts[0] || '';
+  const age = parts[1] ? parseInt(parts[1]) : '';
+  const reason = document.getElementById('pc-reason')?.textContent?.trim() || '';
+  const phone = _diagData?.phone || '';
+  const email = _diagData?.email || '';
+  const soap = {
+    soap_s: document.getElementById('soap-s')?.value?.trim() || null,
+    soap_o: document.getElementById('soap-o')?.value?.trim() || null,
+    soap_a: document.getElementById('soap-a')?.value?.trim() || null,
+    soap_p: document.getElementById('soap-p')?.value?.trim() || null,
+  };
+  const now = new Date();
+  const irt = getIrtFields();
+  try {
+    const res = await apiAddRecord({
+      id: uniqueId(), doctor: session.username, doctorName: session.name,
+      date: now.toISOString().slice(0,10), time: now.toTimeString().slice(0,5),
+      patient: patientName, age, gender, reason, phone, email,
+      points: [], meridians: [], type: 'Акупунктура', outcome: 'neutral',
+      ...irt, ...soap, appointmentId: window._appointmentId || null,
+    });
+    if (res?.trialExpired) { document.getElementById('trial-expired-overlay')?.classList.remove('hidden'); return; }
+    clearSoapDraft(patientName);
+    resetIrtFields();
+    window._sessionSaved = true;
+    window.markClean?.();
+    showSummaryModal({ patient: patientName, nrsBefore: irt.nrs_before, nrsAfter: irt.nrs_after, pointsCount: 0 });
+  } catch (e) {
+    console.error('confirmNoRecipe error:', e);
+  }
+};
+
+window.closeSummaryModal = function() {
+  const modal = document.getElementById('summary-modal');
+  modal.classList.remove('flex');
+  modal.classList.add('hidden');
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('atlas-panel')?.classList.contains('open')) {
+      closeAtlasPanel();
+    } else if (!document.getElementById('history-panel')?.classList.contains('hidden')) {
+      closePatientHistory();
+    } else {
+      window.closeSummaryModal();
+    }
+  }
+});
+
+// ── Atlas panel (П6) ─────────────────────────────────────────────────────────
+let _atlasLoaded = false;
+window.openAtlasPanel = function() {
+  if (!_atlasLoaded) {
+    document.getElementById('atlas-frame').src = 'atlas.html?embed=1';
+    _atlasLoaded = true;
+  }
+  document.getElementById('atlas-panel').classList.add('open');
+  document.getElementById('atlas-overlay').classList.add('open');
+}
+window.closeAtlasPanel = function() {
+  document.getElementById('atlas-panel').classList.remove('open');
+  document.getElementById('atlas-overlay').classList.remove('open');
+};
+
+window.closePatientHistory = function closePatientHistory() {
+  document.getElementById('history-panel')?.classList.add('hidden');
+  document.getElementById('history-backdrop')?.classList.add('hidden');
+}
+
+window.showPatientHistory = async function showPatientHistory() {
+  const patientName = document.getElementById('pc-name')?.textContent?.trim();
+  if (!patientName) return;
+
+  document.getElementById('history-panel')?.classList.remove('hidden');
+  document.getElementById('history-backdrop')?.classList.remove('hidden');
+
+  const list = document.getElementById('history-list');
+  list.innerHTML = `<div id="history-loading" class="text-center text-[#8b90a0] text-sm py-8">
+    <span class="material-symbols-outlined" style="font-size:24px;display:block;margin-bottom:8px">progress_activity</span>
+  </div>`;
+
+  try {
+    const token = sessionStorage.getItem('acutwin_token') || localStorage.getItem('acutwin_token');
+    const res = await fetch(`/api/records?patient=${encodeURIComponent(patientName.trim())}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    const records = (data.records || data || []).slice(0, 5);
+
+    const emptyText = t('sessions:treatment.history.empty');
+    const openText  = t('sessions:treatment.history.open');
+    const nrsText   = t('sessions:treatment.history.nrs');
+    const ptsText   = t('sessions:treatment.history.points');
+
+    if (!records.length) {
+      list.innerHTML = `<p class="text-center text-[#8b90a0] text-sm py-8">${emptyText}</p>`;
+      return;
+    }
+
+    list.innerHTML = records.map(r => {
+      const date   = r.date || '—';
+      const nrsBef = r.nrs_before != null ? r.nrs_before : '—';
+      const nrsAft = r.nrs_after  != null ? r.nrs_after  : '—';
+      let pts = 0;
+      try { pts = r.points ? JSON.parse(r.points).length : 0; } catch {}
+      const soap  = r.soap_s ? r.soap_s.slice(0, 50) + (r.soap_s.length > 50 ? '…' : '') : '';
+      const recId = r.id || '';
+      return `<div class="rounded-xl p-3 flex flex-col gap-2" style="background:#1f2028;border:1px solid rgba(65,71,85,0.5)">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-[#0A84FF]">${date}</span>
+          <button onclick="window.open('history.html?record=${recId}','_blank')" class="flex items-center gap-1 text-[10px] font-bold text-[#c1c6d7] hover:text-[#e2e2e2] transition-colors">
+            <span class="material-symbols-outlined" style="font-size:12px">open_in_new</span>${openText}
+          </button>
+        </div>
+        <div class="flex gap-3 text-[11px] text-[#8b90a0]">
+          <span>${nrsText}: <span class="text-[#e2e2e2]">${nrsBef} → ${nrsAft}</span></span>
+          <span>${pts} ${ptsText}</span>
+        </div>
+        ${soap ? `<p class="text-[11px] text-[#8b90a0] leading-tight">${soap}</p>` : ''}
+      </div>`;
+    }).join('');
+  } catch {
+    list.innerHTML = `<p class="text-center text-[#ff453a] text-sm py-8">—</p>`;
+  }
+}
 
 
 </script>
@@ -4958,13 +5255,15 @@ function insertTongue(cat, idx) {
 // ═══════════════════════════════════════════
 const SND_BASE = '/media/sound';
 
-const SND_ELEMENTS = {
-  wood:  { label: t('sessions:treatment.sound.elements.wood'),  hz: 528, color: '#5AC85A', bg: 'rgba(90,200,90,0.12)',   border: 'rgba(90,200,90,0.35)' },
-  fire:  { label: t('sessions:treatment.sound.elements.fire'),  hz: 639, color: '#FF453A', bg: 'rgba(255,69,58,0.12)',   border: 'rgba(255,69,58,0.35)' },
-  earth: { label: t('sessions:treatment.sound.elements.earth'), hz: 396, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', border: 'rgba(255,214,10,0.35)' },
-  metal: { label: t('sessions:treatment.sound.elements.metal'), hz: 741, color: '#E5E5EA', bg: 'rgba(229,229,234,0.08)', border: 'rgba(229,229,234,0.3)' },
-  water: { label: t('sessions:treatment.sound.elements.water'), hz: 852, color: '#0A84FF', bg: 'rgba(10,132,255,0.12)',  border: 'rgba(10,132,255,0.35)' },
-};
+function getSndElements() {
+  return {
+    wood:  { label: t('sessions:treatment.sound.elements.wood'),  hz: 528, color: '#5AC85A', bg: 'rgba(90,200,90,0.12)',   border: 'rgba(90,200,90,0.35)' },
+    fire:  { label: t('sessions:treatment.sound.elements.fire'),  hz: 639, color: '#FF453A', bg: 'rgba(255,69,58,0.12)',   border: 'rgba(255,69,58,0.35)' },
+    earth: { label: t('sessions:treatment.sound.elements.earth'), hz: 396, color: '#FFD60A', bg: 'rgba(255,214,10,0.12)', border: 'rgba(255,214,10,0.35)' },
+    metal: { label: t('sessions:treatment.sound.elements.metal'), hz: 741, color: '#E5E5EA', bg: 'rgba(229,229,234,0.08)', border: 'rgba(229,229,234,0.3)' },
+    water: { label: t('sessions:treatment.sound.elements.water'), hz: 852, color: '#0A84FF', bg: 'rgba(10,132,255,0.12)',  border: 'rgba(10,132,255,0.35)' },
+  };
+}
 
 
 let _sndEl = 'wood';
@@ -4976,7 +5275,7 @@ let _sndPanelOpen = false;
 
 async function toggleSoundPanel() {
   _sndPanelOpen = !_sndPanelOpen;
-  if (_sndPanelOpen && !_sndTracksLoaded) await loadSndTracks();
+  if (_sndPanelOpen && !window._sndTracksLoaded) await window.loadSndTracks();
   const panel = document.getElementById('sound-panel');
   const btn = document.getElementById('snd-header-btn');
   if (_sndPanelOpen) {
@@ -4991,7 +5290,7 @@ async function toggleSoundPanel() {
 
 function selectElement(el) {
   _sndEl = el;
-  const meta = SND_ELEMENTS[el];
+  const meta = getSndElements()[el];
   // Element buttons style
   document.querySelectorAll('.snd-el-btn').forEach(b => b.classList.remove('active-el'));
   const activeBtn = document.querySelector(`.snd-el-btn[data-el="${el}"]`);
@@ -5012,15 +5311,15 @@ function selectElement(el) {
   // Render track list
   sndRenderTracks(el);
   // Auto-select first track if none active
-  if (!_sndTrackId || !SND_TRACKS[el].find(t => t.id === _sndTrackId)) {
-    sndSelectTrack(SND_TRACKS[el][0].id);
+  if (!_sndTrackId || !window.SND_TRACKS[el].find(t => t.id === _sndTrackId)) {
+    sndSelectTrack(window.SND_TRACKS[el][0].id);
   }
 }
 
 function sndRenderTracks(el) {
   const list = document.getElementById('snd-tracklist');
-  const meta = SND_ELEMENTS[el];
-  list.innerHTML = SND_TRACKS[el].map(t => `
+  const meta = getSndElements()[el];
+  list.innerHTML = window.SND_TRACKS[el].map(t => `
     <div class="snd-track-row ${t.id === _sndTrackId ? 'active-track' : ''}" onclick="sndPlayTrack('${t.id}')" id="tr-${t.id}">
       <div class="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
            style="background:${meta.bg};border:1px solid ${meta.border};color:${meta.color}">${t.type}</div>
@@ -5036,7 +5335,7 @@ function sndRenderTracks(el) {
 function sndPlayTrack(id) {
   if (_sndAudio) { _sndAudio.pause(); _sndAudio.src = ''; }
   _sndTrackId = id;
-  const el = SND_TRACKS[_sndEl].find(t => t.id === id);
+  const el = window.SND_TRACKS[_sndEl].find(t => t.id === id);
   document.getElementById('snd-track-name').textContent = el ? el.name : '';
   document.getElementById('snd-progress-bar').style.width = '0%';
   sndRenderTracks(_sndEl);
@@ -5047,7 +5346,7 @@ function sndSelectTrack(id) {
   const wasPlaying = _sndAudio && !_sndAudio.paused;
   if (_sndAudio) { _sndAudio.pause(); _sndAudio.src = ''; }
   _sndTrackId = id;
-  const el = SND_TRACKS[_sndEl].find(t => t.id === id);
+  const el = window.SND_TRACKS[_sndEl].find(t => t.id === id);
   document.getElementById('snd-track-name').textContent = el ? el.name : '';
   document.getElementById('snd-progress-bar').style.width = '0%';
   sndRenderTracks(_sndEl);
@@ -5128,6 +5427,12 @@ function sndUpdateTimer() {
   const s = Math.abs(_sndRemain) % 60;
   document.getElementById('snd-timer').textContent = `${_sndRemain < 0 ? '-' : ''}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
+
+// Экспорт в window для onclick-атрибутов (type="module" не делает функции глобальными)
+window.toggleSoundPanel = toggleSoundPanel;
+window.sndPlayTrack     = sndPlayTrack;
+window.sndPlayPause     = sndPlayPause;
+window.sndStop          = sndStop;
 </script>
 <!-- Grace period banner -->
 <div id="trial-grace-banner" class="hidden fixed top-0 left-0 right-0 flex items-center justify-center gap-3 px-4 py-2 text-sm font-medium" style="background:rgba(255,159,10,0.92);color:#1a1a1a;z-index:200">
@@ -5136,7 +5441,103 @@ function sndUpdateTimer() {
   <button onclick="document.getElementById('trial-grace-banner').classList.add('hidden')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#1a1a1a;opacity:0.6;line-height:1">×</button>
 </div>
 
+<!-- Patient history side panel -->
+<div id="history-backdrop" class="hidden fixed inset-0 z-[80]" onclick="closePatientHistory()"></div>
+<div id="history-panel" class="hidden fixed top-0 right-0 h-full z-[81] flex flex-col"
+     style="width:360px;background:#161b22;border-left:1px solid rgba(65,71,85,0.6);box-shadow:-8px 0 32px rgba(0,0,0,0.5)">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:18px">history</span>
+      <span class="font-bold text-sm text-[#e2e2e2]" data-i18n="sessions:treatment.history.title">История пациента</span>
+    </div>
+    <button onclick="closePatientHistory()" class="text-[#8b90a0] hover:text-[#e2e2e2] transition-colors">
+      <span class="material-symbols-outlined" style="font-size:20px">close</span>
+    </button>
+  </div>
+  <div id="history-list" class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+    <div id="history-loading" class="text-center text-[#8b90a0] text-sm py-8">
+      <span class="material-symbols-outlined animate-spin" style="font-size:24px;display:block;margin-bottom:8px">progress_activity</span>
+    </div>
+  </div>
+</div>
+
 <!-- Trial expired overlay -->
+<!-- Summary modal — показывается после успешного завершения приёма -->
+<div id="summary-modal" class="hidden fixed inset-0 z-[85] items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)">
+  <div class="w-full max-w-sm rounded-2xl overflow-hidden" style="background:#161b22;border:1px solid rgba(0,242,255,0.2);box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-[#34C759]" style="font-size:20px;font-variation-settings:'FILL' 1">check_circle</span>
+        <span class="font-bold text-[#e2e2e2]" data-i18n="sessions:treatment.summary.title">Приём завершён</span>
+      </div>
+      <button onclick="closeSummaryModal()" class="text-[#8b90a0] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="px-5 py-4 space-y-3">
+      <div class="flex items-center gap-3 py-2 px-3 rounded-xl" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+        <span class="material-symbols-outlined text-[#0A84FF]" style="font-size:16px">person</span>
+        <div>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:treatment.summary.patient">Пациент</div>
+          <div id="sum-patient" class="text-sm font-bold text-[#e2e2e2]"></div>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1 py-2 px-3 rounded-xl text-center" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider mb-1" data-i18n="sessions:treatment.nrsBefore">Боль до</div>
+          <div id="sum-nrs-before" class="text-2xl font-bold" style="color:#FF453A">—</div>
+        </div>
+        <div class="flex items-center text-[#8b90a0] font-bold">→</div>
+        <div class="flex-1 py-2 px-3 rounded-xl text-center" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider mb-1" data-i18n="sessions:treatment.nrsAfter">Боль после</div>
+          <div id="sum-nrs-after" class="text-2xl font-bold" style="color:#34C759">—</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 py-2 px-3 rounded-xl" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+        <span class="material-symbols-outlined text-[#00F2FF]" style="font-size:16px">my_location</span>
+        <div>
+          <div class="text-[10px] text-[#8b90a0] uppercase tracking-wider" data-i18n="sessions:treatment.summary.points">Точек выбрано</div>
+          <div id="sum-points" class="text-sm font-bold text-[#e2e2e2]"></div>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 pb-5 flex gap-3">
+      <button onclick="downloadRecipePdf();closeSummaryModal()"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+              style="background:rgba(10,132,255,0.15);border:1px solid rgba(10,132,255,0.35);color:#0A84FF"
+              data-i18n="sessions:treatment.summary.pdf">Скачать PDF</button>
+      <button onclick="closeSummaryModal();window.location.href='schedule.html'"
+              class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+              style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.3);color:#00F2FF"
+              data-i18n="sessions:treatment.summary.newAppointment">Новый приём</button>
+    </div>
+  </div>
+</div>
+
+<div id="no-recipe-confirm" class="hidden fixed inset-0 z-[88] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)">
+  <div class="w-full max-w-sm rounded-2xl overflow-hidden" style="background:#161b22;border:1px solid rgba(255,159,10,0.3);box-shadow:0 24px 64px rgba(0,0,0,0.6)">
+    <div class="flex items-center gap-2 px-5 py-4 border-b border-white/10">
+      <span class="material-symbols-outlined" style="font-size:20px;color:#FF9F0A;font-variation-settings:'FILL' 1">warning</span>
+      <span class="font-bold text-[#e2e2e2]">Рецепт не выбран</span>
+    </div>
+    <div class="px-5 py-4 text-sm text-[#c1c6d7]">
+      Вы завершаете приём без рецепта.<br>SOAP-заметки и параметры ИРТ будут сохранены.
+    </div>
+    <div class="px-5 pb-5 flex gap-3">
+      <button onclick="window.cancelNoRecipe()"
+              class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+              style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#8b90a0">
+        Выбрать рецепт
+      </button>
+      <button onclick="window.confirmNoRecipe()"
+              class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+              style="background:rgba(255,159,10,0.15);border:1px solid rgba(255,159,10,0.4);color:#FF9F0A">
+        Завершить
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="trial-expired-overlay" class="hidden fixed inset-0 z-[90] flex items-center justify-center p-4" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px)">
   <div class="w-full max-w-sm rounded-2xl p-8 text-center" style="background:#1a1a1a;border:1px solid rgba(255,69,58,0.4)">
     <div class="text-5xl mb-4" style="font-size:40px">🔒</div>

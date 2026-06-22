@@ -78,6 +78,12 @@
     "fire2": "Fire²",
     "wood": "Wood"
   },
+  "pwa": {
+    "banner":  "Add AcuTwin to your home screen for quick access",
+    "install": "Install",
+    "dismiss": "Not now",
+    "iosHint": "Tap  → \"Add to Home Screen\""
+  },
   "about": {
     "tabs": {
       "features": "Features",

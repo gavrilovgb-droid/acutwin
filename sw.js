@@ -1,4 +1,4 @@
-const CACHE = 'acutwin-v24';
+const CACHE = 'acutwin-v60';
 
 // JS-файлы с логикой — НЕ кэшируем, чтобы обновления доходили сразу
 const NO_CACHE_JS = ['/shared.js', '/auth.js', '/api.js'];
@@ -45,11 +45,16 @@ self.addEventListener('fetch', e => {
 
   if (isHtml) {
     e.respondWith(
-      fetch(e.request)
-        .catch(() => caches.match(e.request)) // офлайн-фолбэк
+      fetch(e.request, { cache: 'no-store' }).catch(async () => {
+        const cached = await caches.match(e.request);
+        return cached || new Response('Нет соединения', { status: 503, headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+      })
     );
     return;
   }
+
+  // favicon.ico — не кешируем, не ломаем SW
+  if (url.pathname === '/favicon.ico') return;
 
   // Статика (CSS, JS, изображения) — cache-first
   e.respondWith(

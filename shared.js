@@ -453,6 +453,40 @@ export function displayCode(code) {
     .replace(/^J(\d)/,  'VC$1');
 }
 
+// Точки с видео в интимных/чувствительных зонах — требуют подтверждения 18+ перед просмотром.
+// Внутренние коды (display: VG1, VG2, VC1, VC17–VC22).
+export const ADULT_POINTS = new Set(['T1', 'T2', 'J1', 'J17', 'J18', 'J19', 'J20', 'J21', 'J22']);
+
+// Возрастной гейт перед видео чувствительных точек. Возвращает Promise<boolean>:
+// true — можно показывать, false — пользователь отказался. Подтверждение запоминается на сессию.
+export function confirmAdult(code) {
+  if (!ADULT_POINTS.has(code)) return Promise.resolve(true);
+  // Подтверждение запрашивается КАЖДЫЙ раз перед просмотром (не запоминается).
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px)';
+    ov.innerHTML = `
+      <div style="width:100%;max-width:460px;background:#12121a;border:1px solid #414755;border-radius:16px;padding:24px;color:#e2e2e2;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <span class="material-symbols-outlined" style="color:#FF9F0A;font-size:22px">warning</span>
+          <span style="font-size:16px;font-weight:700">Материал 18+</span>
+        </div>
+        <p style="font-size:13px;line-height:1.55;color:#c1c6d7;margin:0 0 12px">Данное видео содержит демонстрацию медицинской манипуляции (иглорефлексотерапии) в области интимных зон и грудной клетки и может включать изображения обнажённого тела. Материал носит исключительно учебно-методический характер и предназначен для медицинских специалистов.</p>
+        <p style="font-size:13px;line-height:1.55;color:#ffb4ab;font-weight:600;margin:0 0 12px">Просмотр лицами, не достигшими 18 лет, не допускается.</p>
+        <p style="font-size:12px;line-height:1.5;color:#8b90a0;margin:0 0 20px">Нажимая «Продолжить», вы подтверждаете, что вам исполнилось 18 лет и вы знакомитесь с материалом в профессиональных целях.</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button data-act="cancel" style="padding:9px 16px;border-radius:10px;border:1px solid #414755;background:transparent;color:#8b90a0;font-size:13px;font-weight:600;cursor:pointer">Отмена</button>
+          <button data-act="ok" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(10,132,255,.4);background:rgba(10,132,255,.15);color:#0A84FF;font-size:13px;font-weight:700;cursor:pointer">Мне есть 18 лет — продолжить</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    const done = val => { ov.remove(); resolve(val); };
+    ov.querySelector('[data-act="ok"]').addEventListener('click', () => done(true));
+    ov.querySelector('[data-act="cancel"]').addEventListener('click', () => done(false));
+    ov.addEventListener('click', e => { if (e.target === ov) done(false); });
+  });
+}
+
 const NAV_I18N = {
   index:        'common:nav.newVisit',
   schedule:     'common:nav.schedule',

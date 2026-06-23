@@ -117,7 +117,23 @@ body.embed #point-detail { align-items: flex-start !important; }
 </div>
 
 <script type="module">
-import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, esc, displayCode } from './shared.js';
+import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, esc, displayCode, confirmAdult, ADULT_POINTS } from './shared.js';
+
+// Плейсхолдер-гейт 18+ поверх инлайн-видео (точки/меридианы с чувствительным контентом).
+function _adultPh(confirmCode) {
+  return `<div class="adult-ph" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#0e0e0e;text-align:center;padding:16px;z-index:2">
+    <span style="font-weight:700;color:#FF9F0A;font-size:13px">🔞 Материал 18+</span>
+    <p style="font-size:11px;color:#8b90a0;max-width:340px;line-height:1.45">Видео содержит медицинскую демонстрацию в интимной зоне / на обнажённом теле. Просмотр запрещён лицам младше 18 лет.</p>
+    <button onclick="_revealVid(this,'${confirmCode}')" style="padding:7px 14px;border-radius:9px;border:1px solid rgba(10,132,255,.4);background:rgba(10,132,255,.15);color:#0A84FF;font-size:12px;font-weight:700;cursor:pointer">Показать видео</button>
+  </div>`;
+}
+window._revealVid = async (btn, confirmCode) => {
+  if (!(await confirmAdult(confirmCode))) return;
+  const wrap = btn.closest('[data-vid]');
+  const v = wrap?.querySelector('video');
+  if (v && wrap.dataset.src) { v.src = wrap.dataset.src; v.load(); }
+  wrap?.querySelector('.adult-ph')?.remove();
+};
 import { initI18n, t } from '/i18n.js';
 import { requireAuth } from './auth.js';
 import { getToken } from './api.js';
@@ -358,7 +374,7 @@ function buildMeridianPage(mer) {
         class="glass-panel rounded-xl p-4 text-left transition-all border border-white/10 hover:bg-white/5 w-full"
         style="hover:border-color:${color}44">
         <div class="flex items-center gap-2 mb-2">
-          <span class="font-bold text-sm mer-code" style="color:${color}">${esc(code)}</span>
+          <span class="font-bold text-sm mer-code" style="color:${color}">${esc(displayCode(code))}</span>
           ${pt.cn_name ? `<span class="text-xs text-[#8b90a0] truncate">${esc(pt.cn_name)}</span>` : ''}
         </div>
         ${pt.location ? `<p class="text-xs text-[#c1c6d7] mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(pt.location)}</p>` : ''}
@@ -460,8 +476,9 @@ function getFilteredCodes(q='') {
       const qNorm = q.replace(/\s+/g, '').toLowerCase();
       const pt = points[code] || {};
       const codeLow  = code.toLowerCase();
+      const dispLow  = displayCode(code).toLowerCase();
       const textSearch = ((pt.cn_name||'') + ' ' + (pt.indica||'') + ' ' + (pt.location||'')).toLowerCase();
-      if (!codeLow.includes(qNorm) && !textSearch.includes(qLow)) return false;
+      if (!codeLow.includes(qNorm) && !dispLow.includes(qNorm) && !textSearch.includes(qLow)) return false;
     }
     return true;
   });
@@ -485,7 +502,7 @@ function renderList(q='') {
         <div class="w-1 h-6 rounded-full flex-shrink-0" style="background:${merInfo.color||'#414755'}"></div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <span class="mer-code font-bold text-sm ${activeCode===code?'text-[#00F2FF]':'text-[#adc6ff]'}">${code}</span>
+            <span class="mer-code font-bold text-sm ${activeCode===code?'text-[#00F2FF]':'text-[#adc6ff]'}">${displayCode(code)}</span>
             ${pt.cn_name ? `<span class="text-xs text-[#8b90a0] truncate">${pt.cn_name}</span>` : ''}
           </div>
           ${pt.location ? `<p class="text-[10px] text-[#8b90a0] truncate mt-0.5">${pt.location}</p>` : ''}
@@ -495,10 +512,11 @@ function renderList(q='') {
   }).join('') || `<div class="p-4 text-sm text-[#8b90a0] text-center">${t('atlas:notFound')}</div>`;
 }
 
-window.openVidModal = (code) => {
+window.openVidModal = async (code) => {
+  if (!(await confirmAdult(code))) return;
   const pt = points[code] || {};
   const src = ptVideoSrc(code);
-  document.getElementById('vm-code').textContent = code;
+  document.getElementById('vm-code').textContent = displayCode(code);
   document.getElementById('vm-name').textContent = pt.cn_name || '';
   document.getElementById('vm-info').textContent = pt.location || '';
   const vid = document.getElementById('vm-video');
@@ -528,6 +546,8 @@ window.selectPoint = (code) => {
   const merInfo = MERIDIANS[mer] || {};
   const vidSrc = ptVideoSrc(code);
   const merVid = merVideoSrc(mer||'');
+  const ptGated  = ADULT_POINTS.has(code);
+  const merGated = (mer === 'T' || mer === 'J');
 
   // Update list highlight
   document.querySelectorAll('#point-list button').forEach(b => {
@@ -556,12 +576,12 @@ window.selectPoint = (code) => {
         <div class="flex items-start justify-between mb-4">
           <div>
             <div class="flex items-center gap-3 mb-1">
-              <span class="text-3xl font-bold mer-code text-[#00F2FF] meridian-glow-text">${esc(code)}</span>
+              <span class="text-3xl font-bold mer-code text-[#00F2FF] meridian-glow-text">${esc(displayCode(code))}</span>
               ${pt.cn_name ? `<span class="text-lg text-[#8b90a0]">${esc(pt.cn_name)}</span>` : ''}
             </div>
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full" style="background:${merInfo.color||'#414755'}"></div>
-              <span class="mer-code font-bold text-sm" style="color:${merInfo.color||'#8b90a0'}">${esc(mer||code)}</span>
+              <span class="mer-code font-bold text-sm" style="color:${merInfo.color||'#8b90a0'}">${esc(displayCode(code).replace(/[0-9].*$/, '') || mer)}</span>
               <span class="text-sm font-bold text-[#c1c6d7]">${merInfo.name || mer}</span>
               <span class="text-xs text-[#8b90a0]">· ${merInfo.element||''}</span>
             </div>
@@ -570,13 +590,14 @@ window.selectPoint = (code) => {
         </div>
 
         <!-- Video -->
-        <div class="mb-4 rounded-xl overflow-hidden bg-[#0e0e0e]">
-          <video controls class="w-full block rounded-xl" src="${vidSrc}"
+        <div data-vid data-src="${esc(vidSrc)}" class="mb-4 rounded-xl overflow-hidden bg-[#0e0e0e]" style="position:relative">
+          <video controls class="w-full block rounded-xl" ${ptGated ? '' : `src="${vidSrc}"`}
                  style="max-height:260px;object-fit:contain"
                  controlsList="nodownload noremoteplayback" disablePictureInPicture
                  oncontextmenu="return false"
-                 onerror="this.closest('div').style.display='none'">
+                 onerror="this.closest('[data-vid]').style.display='none'">
           </video>
+          ${ptGated ? _adultPh(code) : ''}
         </div>
 
         ${pt.location ? `
@@ -614,12 +635,13 @@ window.selectPoint = (code) => {
         <div class="text-[10px] text-[#8b90a0] uppercase tracking-widest mb-3 flex items-center justify-between">
           <span>${t('atlas:detail.merVideo', {name: merInfo.name||mer})}</span>
         </div>
-        <div class="vid-wrap">
-          <video controls class="w-full rounded-lg" src="${merVid}"
+        <div class="vid-wrap" data-vid data-src="${esc(merVid)}" style="position:relative">
+          <video controls class="w-full rounded-lg" ${merGated ? '' : `src="${merVid}"`}
                  controlsList="nodownload noremoteplayback" disablePictureInPicture
                  oncontextmenu="return false"
                  onerror="this.closest('.glass-panel').style.display='none'">
           </video>
+          ${merGated ? _adultPh(mer === 'T' ? 'T1' : 'J1') : ''}
         </div>
         <div class="text-[10px] text-[#414755] text-right mt-1 px-1">${t('atlas:detail.copyright')}</div>
       </div>` : ''}
@@ -792,8 +814,8 @@ const STATIC_SECTIONS = {
         { mer:'Перикарда и Тр. обогревателя (MC,TR)',needle:'TR8, TR19, TR20',                                                                   moxa:'MC9, TR4, TR16, TR21, TR23' }, /* i18n-ok */
         { mer:'Желчного пузыря (VB)',               needle:'VB3, VB18, VB21',                                                                     moxa:'VB1, VB15, VB22, VB42' }, /* i18n-ok */
         { mer:'Печени (F)',                         needle:'F12',                                                                                 moxa:'' }, /* i18n-ok */
-        { mer:'Задне-Срединный (VG/T)',             needle:'T1, T10, T11, T15, T17, T22, T23, T24, T25',                                         moxa:'T3, T6, T15, T16, T25' }, /* i18n-ok */
-        { mer:'Передне-Срединный (VC/J)',           needle:'J1, J8, J9, J14, J15, J17',                                                          moxa:'J5, J15' }, /* i18n-ok */
+        { mer:'Задне-Срединный (VG)',               needle:'T1, T10, T11, T15, T17, T22, T23, T24, T25',                                         moxa:'T3, T6, T15, T16, T25' }, /* i18n-ok */
+        { mer:'Передне-Срединный (VC)',             needle:'J1, J8, J9, J14, J15, J17',                                                          moxa:'J5, J15' }, /* i18n-ok */
       ];
       const ptBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#ffb4ab] hover:bg-[#ffb4ab]/15 border border-[#414755] hover:border-[#ffb4ab]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${displayCode(c.trim())}</button>`;
       const moxaBtn = (c) => `<button onclick="openVidModal('${c.trim()}')" class="font-mono text-xs px-2 py-1 rounded-lg bg-[#1f1f1f] text-[#FFD60A] hover:bg-[#FFD60A]/15 border border-[#414755] hover:border-[#FFD60A]/40 transition-all flex items-center gap-1"><span class="material-symbols-outlined text-xs">play_circle</span>${c.trim()}</button>`;

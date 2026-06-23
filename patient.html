@@ -243,7 +243,7 @@
 <div id="pdf-report"></div>
 
 <script type="module">
-import { buildSidebar, initElementClock, esc, safeSetItem } from './shared.js';
+import { buildSidebar, initElementClock, esc, safeSetItem, displayCode } from './shared.js';
 import { requireAuth } from './auth.js';
 import { apiGetRecords } from './api.js';
 
@@ -595,7 +595,7 @@ tl.innerHTML = recs.map((r, idx) => {
       ${pts.length ? `
       <div class="flex flex-wrap gap-1 mt-2">
         ${pts.map(p => `<a href="atlas.html?code=${p}" onclick="event.stopPropagation()"
-          class="text-[10px] mer-code font-bold px-2 py-0.5 rounded bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/10 transition-colors border border-[#414755]">${p}</a>`).join('')}
+          class="text-[10px] mer-code font-bold px-2 py-0.5 rounded bg-[#1f1f1f] text-[#00F2FF] hover:bg-[#00F2FF]/10 transition-colors border border-[#414755]">${displayCode(p)}</a>`).join('')}
       </div>` : ''}
     </div>
   </div>`;
@@ -686,7 +686,7 @@ window.exportPDF = () => {
     last.doctorName ? 'Врач: '+esc(last.doctorName) : ''
   ].filter(Boolean).join(' · ');
 
-  const ptRows = topPts.slice(0,10).map(([p,n])=>`<tr><td class="pts">${p}</td><td>${n}</td></tr>`).join('');
+  const ptRows = topPts.slice(0,10).map(([p,n])=>`<tr><td class="pts">${displayCode(p)}</td><td>${n}</td></tr>`).join('');
 
   // Генерируем светлую версию графика для печати
   const printChartHtml = (() => {
@@ -745,7 +745,7 @@ window.exportPDF = () => {
 
   const statusLabel = { started:'Начат', active:'В процессе', completed:'Завершён' };
   const visitRows = [...recs].reverse().map(r => {
-    const pts  = (r.points||[]).join(', ') || '—';
+    const pts  = (r.points||[]).map(displayCode).join(', ') || '—';
     const oc   = outcomeLabel[r.outcome] || 'Нейтрально';
     const cls  = outcomeClass[r.outcome] || '';
     const st   = statusLabel[r.status]   || '—';

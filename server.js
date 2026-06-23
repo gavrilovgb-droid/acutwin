@@ -742,7 +742,13 @@ async function handleAPI(method, endpoint, req, res) {
     const user = requireAuth(req, res); if (!user) return;
     const body = await readBody(req);
     try {
-      const candidates = db.checkDuplicatePatients(body.fullName, body.phone, body.email);
+      // СТРОГО локальный дедуп — те же права, что и видимость записей (GET /api/records):
+      // admin → все; boss → врачи своей клиники; врач → только свои пациенты.
+      let logins;
+      if (user.role === 'admin') logins = undefined;
+      else if (user.role === 'boss') { const t = db.findTenantByDoctor(user.username); logins = t ? (t.doctorLogins || []) : []; }
+      else logins = [user.username];
+      const candidates = db.checkDuplicatePatients(body.fullName, body.phone, body.email, logins);
       return json(res, 200, { candidates });
     } catch (e) {
       return json(res, 500, { error: 'check_failed' });

@@ -332,7 +332,7 @@ module.exports.addRecord = rec => _addRecord.run({
 });
 module.exports.deleteRecord   = id => _delRecord.run(id);
 
-module.exports.checkDuplicatePatients = (fullName, phone, email) => {
+module.exports.checkDuplicatePatients = (fullName, phone, email, doctorLogins) => {
   const nameNorm  = normalizeFullName(fullName);
   const phoneNorm = normalizePhone(phone);
   const emailNorm = normalizeEmail(email);
@@ -342,12 +342,21 @@ module.exports.checkDuplicatePatients = (fullName, phone, email) => {
   if (emailNorm) { conditions.push('email_normalized = :emailNorm'); params.emailNorm = emailNorm; }
   if (nameNorm)  { conditions.push('full_name_normalized = :nameNorm'); params.nameNorm = nameNorm; }
   if (!conditions.length) return [];
+  // СТРОГО локальный поиск: кандидаты только среди доступных пользователю врачей.
+  // doctorLogins: массив логинов (врач → [свой], boss → врачи клиники); undefined → без ограничения (admin); [] → нет кандидатов.
+  let doctorClause = '';
+  if (Array.isArray(doctorLogins)) {
+    if (!doctorLogins.length) return [];
+    doctorLogins.forEach((d, i) => { params['doc' + i] = d; });
+    doctorClause = `AND doctor IN (${doctorLogins.map((_, i) => ':doc' + i).join(',')})`;
+  }
   const sql = `
     SELECT patient, phone, email, MAX(date) AS last_visit_at,
            phone_normalized, email_normalized, full_name_normalized
     FROM records
     WHERE (${conditions.join(' OR ')})
       AND full_name_normalized IS NOT NULL
+      ${doctorClause}
     GROUP BY full_name_normalized
     ORDER BY last_visit_at DESC
     LIMIT 10

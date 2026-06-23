@@ -206,7 +206,7 @@ document.getElementById('f-doctor').value = session.name;
 // Сброс формы к дефолтам (перекрываем browser autocomplete)
 document.getElementById('f-age').value = '35';
 ['f-fio','f-sex','f-phone','f-email','f-reason'].forEach(id => {
-  const el = document.getElementById(id); if (el) el.value = '';
+  const el = document.getElementById(id); if (el) el.value = (id === 'f-phone') ? '+7 ' : '';
 });
 
 // ── Подстановка пациента из расписания ───────────────────
@@ -403,7 +403,7 @@ window.fillPatient = (r) => {
   document.getElementById('f-fio').value   = r.patient;
   document.getElementById('f-age').value   = r.age    || '35';
   document.getElementById('f-sex').value   = r.gender || '';
-  document.getElementById('f-phone').value = r.phone  || '';
+  document.getElementById('f-phone').value = r.phone  || '+7 ';
   document.getElementById('f-email').value = r.email  || '';
   document.getElementById('fio-drop').classList.add('hidden');
 };

@@ -952,6 +952,9 @@
     const inp = document.getElementById('contact-input');
     inp.type = cfg.type || 'text';
     inp.placeholder = cfg.placeholder;
+    // Для телефона подставляем +7, чтобы не вводить вручную; при переключении на другой метод убираем «голый» +7
+    if (method === 'phone') { if (!inp.value.trim() || inp.value.trim() === '+7') inp.value = '+7 '; }
+    else if (inp.value.trim() === '+7') { inp.value = ''; }
     document.getElementById('contact-hint').textContent = cfg.hint;
     document.getElementById('contact-hint').style.color = '';
     document.getElementById('contact-wrap').style.display = '';

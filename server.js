@@ -126,6 +126,48 @@ async function sendReminderEmail(appt, clinicName, kind = 'day') {
   });
 }
 
+// Письмо-подтверждение пациенту сразу после онлайн-записи (статус pending — ждёт подтверждения врачом)
+async function sendBookingConfirmEmail(appt, clinicName) {
+  if (!process.env.RESEND_API_KEY || !appt.patient_email) return;
+  const dt = new Date(appt.start_at.replace(' ','T'));
+  const dateStr = dt.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+  const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  const subject = `Заявка на приём к ${appt.doctorName} принята`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f9f9f9;border-radius:12px;color:#111">
+      <h2 style="color:#0a0a0a;margin:0 0 14px">Заявка получена ✓</h2>
+      <p style="color:#444;margin:0 0 24px;font-size:15px;line-height:1.5">Здравствуйте, ${escapeHtml(appt.patient)}!<br>Мы получили вашу заявку на приём. Врач подтвердит запись — мы пришлём вам напоминание перед визитом.</p>
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:18px;margin-bottom:18px">
+        <div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Врач</span><br><span style="font-size:17px;font-weight:700">${escapeHtml(appt.doctorName)}</span></div>
+        ${clinicName ? `<div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Клиника</span><br><span style="font-size:15px">${escapeHtml(clinicName)}</span></div>` : ''}
+        <div style="margin-bottom:10px"><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Желаемое время</span><br><span style="font-size:16px;font-weight:600">${escapeHtml(dateStr)} в ${escapeHtml(timeStr)}</span></div>
+        ${appt.notes ? `<div><span style="color:#888;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Жалобы</span><br><span style="font-size:14px">${escapeHtml(appt.notes)}</span></div>` : ''}
+      </div>
+      <p style="font-size:13px;color:#666;line-height:1.5">Заявка ожидает подтверждения врачом. Если планы изменились — просто проигнорируйте это письмо.</p>
+      <p style="font-size:11px;color:#999;margin-top:24px">Это автоматическое письмо от платформы <a href="https://acutwin.ru" style="color:#0A84FF;text-decoration:none">AcuTwin</a></p>
+    </div>`;
+  const body = JSON.stringify({ from: 'AcuTwin <info@acutwin.ru>', to: appt.patient_email, subject, html });
+  return new Promise((resolve, reject) => {
+    const r = https.request({
+      hostname: 'api.resend.com', path: '/emails', method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      }
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+        else reject(new Error(`Resend ${res.statusCode}: ${data}`));
+      });
+    });
+    r.on('error', reject);
+    r.write(body); r.end();
+  });
+}
+
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -513,6 +555,11 @@ async function handleAPI(method, endpoint, req, res) {
     }
     const tenant = db.findTenantByDoctor(u.username);
     sendTgBookingNotify(apptData, u.name, tenant ? tenant.clinic : '', u.email);
+    if (apptData.patient_email && tenant?.plan !== 'demo') {
+      sendBookingConfirmEmail(apptData, tenant ? tenant.clinic : '')
+        .then(() => console.log(`[Booking] confirm email sent: ${apptData.patient} <${apptData.patient_email}>`))
+        .catch(e => console.error(`[Booking] confirm email fail: ${e.message}`));
+    }
     return json(res, 201, { ok: true, id });
   }
 

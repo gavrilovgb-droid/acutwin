@@ -355,6 +355,14 @@ window.openExistingPatient = (patientName) => {
   location.href = 'patient.html';
 };
 
+// #dup-modal выносим на уровень <body>: у предка <main.page-enter> есть transform,
+// из-за чего position:fixed отсчитывается от него, а не от экрана — на мобильном
+// карточка дубля центрировалась ниже видимой области (фон затемнён, контента не видно).
+(() => {
+  const dm = document.getElementById('dup-modal');
+  if (dm && dm.parentElement !== document.body) document.body.appendChild(dm);
+})();
+
 document.getElementById('dup-cancel').addEventListener('click', () => {
   document.getElementById('dup-modal').classList.add('hidden');
   _navigating = false;

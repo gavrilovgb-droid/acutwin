@@ -127,6 +127,15 @@
     <!-- Сетка видео -->
     <div id="vid-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
 
+    <!-- Каноны и техники иглоукалывания -->
+    <div id="canon-section" class="mt-10 hidden">
+      <div class="flex items-center gap-3 mb-4">
+        <h3 class="text-2xl font-bold" style="font-family:'Hanken Grotesk',sans-serif;color:#e2e2e2">Каноны и техники иглоукалывания</h3>
+        <span id="canon-count" class="text-sm text-[#8b90a0] font-mono"></span>
+      </div>
+      <div id="canon-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+    </div>
+
   </main>
 </div>
 
@@ -163,13 +172,15 @@ const THUMB_GRADIENTS = {
 const _authHdr = () => ({ headers: { Authorization: 'Bearer ' + (sessionStorage.getItem('acutwin_token') || '') } });
 const vidData = await fetch('/data/videos.json', _authHdr()).then(r=>r.json()).catch(()=>({ catalog:[], byDisease:{} }));
 const catalog = vidData.catalog || [];
+const diseaseItems = catalog.filter(v => v.category !== 'canons');
+const canonItems   = catalog.filter(v => v.category === 'canons');
 
-document.getElementById('vid-count').textContent = `${catalog.length} видеоуроков`;
+document.getElementById('vid-count').textContent = `${diseaseItems.length} видеоуроков`;
 
 let activeTag = null;
 
 function renderGrid() {
-  const items = activeTag ? catalog.filter(v => v.tags.includes(activeTag)) : catalog;
+  const items = activeTag ? diseaseItems.filter(v => v.tags.includes(activeTag)) : diseaseItems;
   document.getElementById('vid-grid').innerHTML = items.map(v => {
     const tag = v.tags[0] || 'общая';
     const tc = TAG_COLORS[tag] || TAG_COLORS['общая'];
@@ -196,7 +207,7 @@ function renderGrid() {
 }
 
 function renderTagFilters() {
-  const tags = [...new Set(catalog.flatMap(v => v.tags))].filter(Boolean);
+  const tags = [...new Set(diseaseItems.flatMap(v => v.tags))].filter(Boolean);
   const wrap = document.getElementById('tag-filters');
   const btnStyle = (active) => active
     ? 'background:rgba(255,159,10,0.2);border-color:rgba(255,159,10,0.6);color:#FF9F0A'
@@ -238,8 +249,28 @@ window.closeVL = function() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVL(); });
 
+function renderCanons() {
+  if (!canonItems.length) return;
+  document.getElementById('canon-section').classList.remove('hidden');
+  document.getElementById('canon-count').textContent = `${canonItems.length} видео`;
+  document.getElementById('canon-grid').innerHTML = canonItems.map(v => `
+    <div class="vid-card" onclick="openVL('${esc(v.file)}','${esc(v.title)}')">
+      <div class="vid-thumb">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#2a1d3f,#13182e)"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(191,90,242,0.18),transparent 70%)"></div>
+        <span class="material-symbols-outlined" style="position:absolute;bottom:8px;right:10px;font-size:28px;color:#BF5AF2;opacity:0.4">menu_book</span>
+        <div class="play-btn"><div class="play-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg></div></div>
+      </div>
+      <div class="p-3 flex flex-col gap-1.5">
+        <div class="text-sm font-semibold text-[#e2e2e2] leading-tight">${esc(v.title)}</div>
+        <div><span class="tag-badge" style="background:rgba(191,90,242,0.13);border:1px solid rgba(191,90,242,0.4);color:#BF5AF2">канон · техника</span></div>
+      </div>
+    </div>`).join('');
+}
+
 renderTagFilters();
 renderGrid();
+renderCanons();
 </script>
 </body>
 </html>

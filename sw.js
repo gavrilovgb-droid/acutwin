@@ -1,4 +1,4 @@
-const CACHE = 'acutwin-v60';
+const CACHE = 'acutwin-v61';
 
 // JS-файлы с логикой — НЕ кэшируем, чтобы обновления доходили сразу
 const NO_CACHE_JS = ['/shared.js', '/auth.js', '/api.js'];

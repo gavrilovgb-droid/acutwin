@@ -856,6 +856,7 @@ async function handleAPI(method, endpoint, req, res) {
       const ykResp = await ykRequest('POST', '/payments', {
         amount:               { value: amountStr, currency: 'RUB' },
         capture:              true,
+        save_payment_method:  true,
         confirmation: { type: 'redirect', return_url: 'https://acutwin.ru/subscription.html?yk_return=1' },
         description,
         metadata:     { tenant_id: tenant.id, plan_code: planCode, billing_period: billingPeriod },

@@ -438,6 +438,32 @@ export function merVideoSrc(mer) {
   return `../media/mer/mer_${mer}.mp4`;
 }
 
+// Обучающее видео по точке (zhenjiu). Путь: ../media/pts_train/<мер>/<код>.mp4
+export function ptTrainVideoSrc(code) {
+  const m = code.match(/^([A-Za-z]+)(\d+)$/);
+  if (!m) return '';
+  return `../media/pts_train/${m[1]}/${m[1]}${m[2]}.mp4`;
+}
+
+// Точки, для которых есть обучающее видео (показывать вкладку «Обучение»).
+// 131 точка из видео-курса Белоусова (zhenjiu). Коды — внутренние (T=VG, J=VC).
+export const TRAIN_POINTS = new Set([
+  'C1','C5','C7','C8',
+  'E1','E2','E3','E4','E6','E7','E8','E9','E18','E22','E25','E29','E34','E35','E36','E37','E38','E40','E41','E44',
+  'F2','F3','F8','F14',
+  'Gi4','Gi5','Gi10','Gi11','Gi15','Gi20',
+  'J3','J4','J6','J8','J10','J11','J12','J17','J21','J22','J23',
+  'MC4','MC5','MC6',
+  'P5','P7','P10','P11',
+  'R1','R3','R6','R13',
+  'RP1','RP4','RP5','RP6','RP8','RP9','RP10','RP14',
+  'T1','T3','T4','T10','T11','T12','T14','T15','T16','T19','T20','T23','T26',
+  'TR3','TR4','TR5','TR6','TR10','TR14','TR17',
+  'V1','V2','V7','V10','V11','V12','V13','V14','V15','V17','V18','V20','V21','V23','V26','V28','V32','V36','V40','V46','V54','V57','V60','V62','V67',
+  'VB2','VB5','VB8','VB14','VB20','VB21','VB26','VB28','VB30','VB34','VB39','VB40','VB41','VB43',
+  'iG1','iG3','iG4','iG5','iG8','iG9','iG10','iG18',
+]);
+
 export function extractPoints(text) {
   return (text || '').match(/[A-Za-z]{1,4}\d{1,3}/g) || [];
 }

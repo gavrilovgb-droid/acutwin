@@ -117,7 +117,7 @@ body.embed #point-detail { align-items: flex-start !important; }
 </div>
 
 <script type="module">
-import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, esc, displayCode, confirmAdult, ADULT_POINTS } from './shared.js';
+import { buildSidebar, initElementClock, MER_ORDER, MERIDIANS, MER_SIGNS, ptVideoSrc, merVideoSrc, ptTrainVideoSrc, TRAIN_POINTS, esc, displayCode, confirmAdult, ADULT_POINTS } from './shared.js';
 
 // Плейсхолдер-гейт 18+ поверх инлайн-видео (точки/меридианы с чувствительным контентом).
 function _adultPh(confirmCode) {
@@ -546,8 +546,12 @@ window.selectPoint = (code) => {
   const merInfo = MERIDIANS[mer] || {};
   const vidSrc = ptVideoSrc(code);
   const merVid = merVideoSrc(mer||'');
+  const trainSrc = ptTrainVideoSrc(code);
+  const hasTrain = TRAIN_POINTS.has(code) && !ADULT_POINTS.has(code);
   const ptGated  = ADULT_POINTS.has(code);
   const merGated = (mer === 'T' || mer === 'J');
+  window._vidLoc = vidSrc;
+  window._vidTrain = trainSrc;
 
   // Update list highlight
   document.querySelectorAll('#point-list button').forEach(b => {
@@ -589,15 +593,22 @@ window.selectPoint = (code) => {
           ${pt.yin_yang ? `<span class="text-sm font-bold px-3 py-1 rounded-full bg-[#1f1f1f] border border-white/10 text-[#c1c6d7]">${pt.yin_yang}</span>` : ''}
         </div>
 
-        <!-- Video -->
-        <div data-vid data-src="${esc(vidSrc)}" class="mb-4 rounded-xl overflow-hidden bg-[#0e0e0e]" style="position:relative">
-          <video controls class="w-full block rounded-xl" ${ptGated ? '' : `src="${vidSrc}"`}
-                 style="max-height:260px;object-fit:contain"
-                 controlsList="nodownload noremoteplayback" disablePictureInPicture
-                 oncontextmenu="return false"
-                 onerror="this.closest('[data-vid]').style.display='none'">
-          </video>
-          ${ptGated ? _adultPh(code) : ''}
+        <!-- Video (Расположение / Обучение) -->
+        <div class="mb-4">
+          ${hasTrain ? `
+          <div id="vid-tabs" class="flex gap-2 mb-2">
+            <button data-vtab="loc" onclick="switchVid('loc')" style="padding:5px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(0,242,255,0.5);background:rgba(0,242,255,0.12);color:#00F2FF"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;margin-right:3px">my_location</span>Расположение</button>
+            <button data-vtab="train" onclick="switchVid('train')" style="padding:5px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#c1c6d7"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;margin-right:3px">school</span>Обучение</button>
+          </div>` : ''}
+          <div data-vid data-src="${esc(vidSrc)}" class="rounded-xl overflow-hidden bg-[#0e0e0e]" style="position:relative">
+            <video id="pt-video" controls class="w-full block rounded-xl" ${ptGated ? '' : `src="${vidSrc}"`}
+                   style="max-height:260px;object-fit:contain"
+                   controlsList="nodownload noremoteplayback" disablePictureInPicture
+                   oncontextmenu="return false"
+                   onerror="this.closest('[data-vid]').style.display='none'">
+            </video>
+            ${ptGated ? _adultPh(code) : ''}
+          </div>
         </div>
 
         ${pt.location ? `
@@ -646,6 +657,20 @@ window.selectPoint = (code) => {
         <div class="text-[10px] text-[#414755] text-right mt-1 px-1">${t('atlas:detail.copyright')}</div>
       </div>` : ''}
     </div>`;
+};
+
+// Переключение верхнего видео точки: «Расположение» (топология) ↔ «Обучение» (zhenjiu)
+window.switchVid = (which) => {
+  const v = document.getElementById('pt-video');
+  if (!v) return;
+  v.src = which === 'train' ? (window._vidTrain || '') : (window._vidLoc || '');
+  v.load();
+  document.querySelectorAll('#vid-tabs button').forEach(b => {
+    const on = b.dataset.vtab === which;
+    b.style.border = `1px solid ${on ? 'rgba(0,242,255,0.5)' : 'rgba(255,255,255,0.12)'}`;
+    b.style.background = on ? 'rgba(0,242,255,0.12)' : 'rgba(255,255,255,0.04)';
+    b.style.color = on ? '#00F2FF' : '#c1c6d7';
+  });
 };
 
 // Section tabs

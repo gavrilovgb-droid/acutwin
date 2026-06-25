@@ -4864,7 +4864,7 @@ window.showPatientHistory = async function showPatientHistory() {
 <div id="herb-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeHerbAtlas()">
   <div class="w-full max-w-3xl bg-[#12121a] border border-[#414755] rounded-2xl shadow-2xl flex flex-col" style="max-height:90vh">
     <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
+      <div id="herb-modal-title" class="flex items-center gap-2 text-sm font-bold text-[#e2e2e2]">
         <span class="material-symbols-outlined" style="font-size:18px;color:#30D158">local_florist</span>
         Атлас трав (272 растения)
       </div>
@@ -4872,12 +4872,17 @@ window.showPatientHistory = async function showPatientHistory() {
         <span class="material-symbols-outlined" style="font-size:20px">close</span>
       </button>
     </div>
+    <!-- Переключатель режима -->
+    <div class="px-5 pt-3 flex-shrink-0" style="display:flex;gap:6px">
+      <button id="atlas-tab-herbs" onclick="setAtlasMode('herbs')" class="atlas-tab atlas-tab-on">Травы</button>
+      <button id="atlas-tab-formulas" onclick="setAtlasMode('formulas')" class="atlas-tab">Готовые формулы</button>
+    </div>
     <!-- Поиск и фильтры -->
     <div class="px-5 py-3 border-b border-white/10 flex-shrink-0" style="display:flex;flex-direction:column;gap:8px">
       <input id="herb-search" type="text" placeholder="Поиск по названию, каналу, показанию..."
-        oninput="renderHerbs()" autocomplete="off"
+        oninput="onAtlasSearch()" autocomplete="off"
         style="width:100%;background:#1a1a2a;border:1px solid #414755;border-radius:10px;padding:7px 12px;font-size:12px;color:#c1c6d7;outline:none">
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <div id="herb-filters" style="display:flex;gap:6px;flex-wrap:wrap">
         <select id="herb-prop" onchange="renderHerbs()" style="background:#1a1a2a;border:1px solid #414755;border-radius:8px;padding:3px 8px;font-size:11px;color:#8b90a0;cursor:pointer">
           <option value="">Все свойства</option>
           <option>холод</option><option>прохлада</option><option>нейтральный</option><option>тепло</option><option>жара</option>
@@ -4893,6 +4898,8 @@ window.showPatientHistory = async function showPatientHistory() {
       </div>
     </div>
     <div id="herb-grid" class="overflow-y-auto p-4" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px"></div>
+    <div id="formula-grid" class="overflow-y-auto p-4" style="display:none;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+    <div id="formula-detail" class="overflow-y-auto p-5" style="display:none"></div>
     <!-- Копирайт -->
     <div class="px-5 py-2 border-t border-white/10 flex-shrink-0" style="font-size:10px;color:#414755;text-align:right">
       <span data-i18n="sessions:treatment.copyrightAuthor">© П. В. Белоусов</span> — <a href="http://zhong-yi.narod.ru/" target="_blank" style="color:#30D158;text-decoration:none">zhong-yi.narod.ru</a>
@@ -4908,6 +4915,20 @@ window.showPatientHistory = async function showPatientHistory() {
 .herb-card-name { font-size:11px; font-weight:700; color:#e2e2e2; line-height:1.3; }
 .herb-card-pinyin { font-size:10px; color:#30D158; margin-top:2px; }
 .herb-card-prop { font-size:10px; color:#8b90a0; margin-top:2px; }
+.atlas-tab { font-size:12px; font-weight:600; color:#8b90a0; background:#1a1a2a; border:1px solid #414755; border-radius:9px; padding:5px 14px; cursor:pointer; transition:all .15s; }
+.atlas-tab:hover { color:#e2e2e2; border-color:#30D158; }
+.atlas-tab-on { color:#30D158; border-color:rgba(48,209,88,0.6); background:rgba(48,209,88,0.08); }
+.formula-card { cursor:pointer; background:#1a1a2a; border:1px solid #414755; border-radius:12px; padding:12px; transition:border-color .15s,transform .15s; }
+.formula-card:hover { border-color:#30D158; transform:translateY(-2px); }
+.fc-name { font-size:13px; font-weight:700; color:#e2e2e2; line-height:1.3; }
+.fc-cn { font-size:11px; color:#30D158; margin-top:2px; }
+.fc-cat { font-size:10px; color:#8b90a0; margin-top:6px; }
+.fd-sec { margin-top:14px; }
+.fd-sec-h { font-size:10px; font-weight:700; color:#8b90a0; text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+.fd-sec-b { font-size:12px; color:#c1c6d7; line-height:1.5; }
+.fd-herb-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px; }
+.fd-role { font-size:10px; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:6px; }
+.fd-warn { color:#FF9F0A; }
 </style>
 
 <script>
@@ -4915,7 +4936,8 @@ let _herbsData = null;
 
 async function loadHerbs() {
   if (_herbsData) return _herbsData;
-  const r = await fetch('/data/herbs.json', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('acutwin_token') || '') } });
+  const token = sessionStorage.getItem('acutwin_token') || localStorage.getItem('acutwin_token') || '';
+  const r = await fetch('/data/herbs.json', { headers: { Authorization: 'Bearer ' + token } });
   _herbsData = await r.json();
   return _herbsData;
 }
@@ -4929,7 +4951,7 @@ async function openHerbAtlas() {
     document.getElementById('herb-grid').innerHTML = '<div style="color:#8b90a0;font-size:12px;padding:20px">Загрузка...</div>';
     await loadHerbs();
   }
-  renderHerbs();
+  setAtlasMode('herbs');
   document.getElementById('herb-search').focus();
 }
 
@@ -4986,6 +5008,103 @@ function insertHerb(id) {
   ta.dispatchEvent(new Event('input'));
   closeHerbAtlas();
   ta.scrollTop = ta.scrollHeight;
+}
+
+// ── Готовые формулы ──────────────────────────────────────────────────────
+let _formulasData = null;
+let _atlasMode = 'herbs';
+const ROLE_COLOR = { '君':'#FF453A', '臣':'#FF9F0A', '佐':'#30D158', '使':'#0A84FF' };
+const FORMULA_DISCLAIMER = '⚠ Ознакомительный материал. Классические формулы ТКМ приведены справочно, не выверены экспертом-фитотерапевтом и не являются клинической рекомендацией или назначением. Решение и ответственность — за специалистом.';
+
+async function loadFormulas() {
+  if (_formulasData) return _formulasData;
+  const token = sessionStorage.getItem('acutwin_token') || localStorage.getItem('acutwin_token') || '';
+  const r = await fetch('/data/formulas.json', { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) throw new Error('formulas fetch ' + r.status);
+  _formulasData = (await r.json()).formulas;
+  return _formulasData;
+}
+
+async function setAtlasMode(mode) {
+  _atlasMode = mode;
+  document.getElementById('atlas-tab-herbs').classList.toggle('atlas-tab-on', mode === 'herbs');
+  document.getElementById('atlas-tab-formulas').classList.toggle('atlas-tab-on', mode === 'formulas');
+  document.getElementById('herb-filters').style.display = mode === 'herbs' ? 'flex' : 'none';
+  document.getElementById('formula-detail').style.display = 'none';
+  document.getElementById('herb-modal-title').innerHTML = mode === 'herbs'
+    ? '<span class="material-symbols-outlined" style="font-size:18px;color:#30D158">local_florist</span> Атлас трав (272 растения)'
+    : '<span class="material-symbols-outlined" style="font-size:18px;color:#30D158">science</span> Готовые формулы';
+  const search = document.getElementById('herb-search');
+  search.value = '';
+  search.placeholder = mode === 'herbs' ? 'Поиск по названию, каналу, показанию...' : 'Поиск по названию, категории, показанию...';
+  document.getElementById('herb-grid').style.display = mode === 'herbs' ? 'grid' : 'none';
+  document.getElementById('formula-grid').style.display = mode === 'formulas' ? 'grid' : 'none';
+  if (mode === 'formulas') {
+    if (!_formulasData) {
+      document.getElementById('formula-grid').innerHTML = '<div style="color:#8b90a0;font-size:12px;padding:20px">Загрузка...</div>';
+      await loadFormulas();
+    }
+    renderFormulas();
+  } else {
+    renderHerbs();
+  }
+}
+
+function onAtlasSearch() {
+  if (_atlasMode === 'formulas') renderFormulas(); else renderHerbs();
+}
+
+function renderFormulas() {
+  if (!_formulasData) return;
+  const q = (document.getElementById('herb-search').value || '').toLowerCase();
+  const filtered = _formulasData.filter(f => {
+    if (!q) return true;
+    const hay = (f.name_ru + ' ' + f.pinyin + ' ' + f.name_cn + ' ' + f.category + ' ' + f.indications + ' ' + (f.syndromes || []).join(' ')).toLowerCase();
+    return hay.includes(q);
+  });
+  document.getElementById('herb-count').textContent = filtered.length + ' из ' + _formulasData.length;
+  const banner = `<div style="grid-column:1/-1;font-size:11px;line-height:1.45;color:#8b90a0;border:1px solid rgba(255,159,10,0.3);background:rgba(255,159,10,0.06);border-radius:10px;padding:9px 12px;margin-bottom:2px">${FORMULA_DISCLAIMER}</div>`;
+  const cards = filtered.map(f => `
+    <div class="formula-card" onclick="openFormula('${f.id}')">
+      <div class="fc-name">${f.name_ru}</div>
+      <div class="fc-cn">${f.pinyin} · ${f.name_cn}</div>
+      <div class="fc-cat">${f.category}</div>
+    </div>`).join('') || '<div style="grid-column:1/-1;color:#8b90a0;font-size:12px;padding:20px">Ничего не найдено</div>';
+  document.getElementById('formula-grid').innerHTML = banner + cards;
+}
+
+function openFormula(id) {
+  const f = _formulasData.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('formula-grid').style.display = 'none';
+  const det = document.getElementById('formula-detail');
+  det.style.display = 'block';
+  const herbRows = f.composition.map(c => `
+    <div class="fd-herb-row">
+      <span style="color:#c1c6d7">${c.name_ru} <span style="color:#8b90a0">(${c.pinyin})</span></span>
+      <span style="white-space:nowrap;color:#8b90a0">${c.grams} г<span class="fd-role" style="color:${ROLE_COLOR[c.role] || '#8b90a0'};background:${(ROLE_COLOR[c.role] || '#8b90a0')}22">${c.role} ${c.role_ru}</span></span>
+    </div>`).join('');
+  const sec = (h, b) => b ? `<div class="fd-sec"><div class="fd-sec-h">${h}</div><div class="fd-sec-b">${b}</div></div>` : '';
+  const warns = (f.interactions || []).length
+    ? `<div class="fd-sec"><div class="fd-sec-h fd-warn">⚠ Взаимодействия и осторожность</div><div class="fd-sec-b fd-warn">${f.interactions.map(i => '• ' + i).join('<br>')}</div></div>`
+    : '';
+  det.innerHTML = `
+    <button onclick="setAtlasMode('formulas')" style="font-size:11px;color:#8b90a0;background:none;border:none;cursor:pointer;padding:0;margin-bottom:10px">← К списку формул</button>
+    <div class="fc-name" style="font-size:16px">${f.name_ru}</div>
+    <div class="fc-cn">${f.pinyin} · ${f.name_cn}${f.name_ru_lit ? ' · «' + f.name_ru_lit + '»' : ''}</div>
+    <div class="fc-cat">${f.category} · ${f.source_classic}</div>
+    <div class="fd-sec"><div class="fd-sec-h">Состав (роли 君臣佐使)</div>${herbRows}</div>
+    ${sec('Синдромы', (f.syndromes || []).join('; '))}
+    ${sec('Действие', f.actions)}
+    ${sec('Показания', f.indications)}
+    ${sec('Противопоказания', f.contraindications)}
+    ${warns}
+    ${sec('Приготовление', f.preparation)}
+    ${sec('Примечание', f.notes)}
+    <div style="margin-top:16px;font-size:11px;line-height:1.5;color:#8b90a0;border:1px solid rgba(255,159,10,0.3);background:rgba(255,159,10,0.06);border-radius:10px;padding:10px 12px">
+      ${FORMULA_DISCLAIMER}
+    </div>`;
+  det.scrollTop = 0;
 }
 </script>
 
